@@ -47,11 +47,6 @@ minimumReleaseAgeExclude:
   - "brace-expansion"
   - "fast-uri"
   - "js-yaml"
-  # TEMPORARY (remove after 2026-07-16): alchemy 2.0.0-beta.61 and its
-  # matching @distilled.cloud/*@0.28.2 published 2026-07-08 — 2 days shy of
-  # the window. Exact-pinned in package.json.
-  - "alchemy"
-  - "@distilled.cloud/*"
 
 # Security floors for transitive dependencies with published advisories.
 # Overrides outside a parent's declared range are scoped and noted below. Ranges are
@@ -107,9 +102,6 @@ overrides:
   "nanoid@3": "^3.3.18"
   "toml@4": "^4.2.0"
 
-# Cloudflare echoes targeted placement back as `{ mode: "targeted" }` without
-# `region`; 0.28.2's response schema requires it, so alchemy fails a deploy
-# that actually succeeded. Fixed upstream in 1.0.0-rc; drop on upgrade.
 # Build scripts pnpm may run on install; it skips every other package's and
 # warns "Ignored build scripts". esbuild and workerd fetch their binaries.
 allowBuilds:
