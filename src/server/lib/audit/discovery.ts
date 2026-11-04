@@ -8,6 +8,7 @@ import { isSameOrigin, normalizeUrl } from "./url-utils";
 import { isCrawlableUrl } from "./url-policy";
 import { publicFetch } from "@/server/lib/public-fetch";
 import { createRateLimitWait, type RateLimitWait } from "./crawl-throttle";
+import type { SitemapStatus } from "./types";
 import type { CrawlerAccess } from "@/shared/crawler-access";
 import {
   auditRequestHeaders,
@@ -40,6 +41,9 @@ export interface RobotsResult {
   sitemapUrls: string[];
 }
 
+const notThere = (response: Response) =>
+  response.status === 404 || response.status === 410;
+
 /**
  * Fetch the raw robots.txt body (null = missing/unreachable). Kept separate
  * from parsing so Workflows can checkpoint the text as durable step state and
@@ -49,7 +53,7 @@ async function fetchRobotsTxtText(
   origin: string,
   access: CrawlerAccess | null | undefined,
   waitForRateLimit: RateLimitWait,
-): Promise<string | null> {
+): Promise<{ text: string | null; readable: boolean }> {
   try {
     const fetchRobots = () =>
       fetchFollowingRedirects(`${origin}/robots.txt`, 10_000, access);
@@ -60,11 +64,18 @@ async function fetchRobotsTxtText(
     ) {
       fetched = await fetchRobots();
     }
-    if (!fetched?.response.ok) return null;
-    return (await fetched.response.text()).slice(0, MAX_ROBOTS_TXT_BYTES);
+    if (!fetched?.response.ok)
+      return {
+        text: null,
+        readable: fetched ? notThere(fetched.response) : false,
+      };
+    return {
+      text: (await fetched.response.text()).slice(0, MAX_ROBOTS_TXT_BYTES),
+      readable: true,
+    };
   } catch (error) {
     console.warn("Failed to fetch robots.txt:", error);
-    return null;
+    return { text: null, readable: false };
   }
 }
 
@@ -197,10 +208,13 @@ async function fetchSitemapDocumentWithRetry(
   nestedSitemaps: string[];
   pageUrls: string[];
   timedOut: boolean;
+  /** The server answered that no sitemap is here, not just that it failed. */
+  notThere: boolean;
 }> {
+  const nothing = { nestedSitemaps: [], pageUrls: [], timedOut: false };
   const normalizedSitemapUrl = normalizeUrl(sitemapUrl);
   if (!normalizedSitemapUrl) {
-    return { nestedSitemaps: [], pageUrls: [], timedOut: false };
+    return { ...nothing, notThere: false };
   }
 
   let lastError: unknown = null;
@@ -213,13 +227,13 @@ async function fetchSitemapDocumentWithRetry(
         access,
       );
       if (!fetched) {
-        return { nestedSitemaps: [], pageUrls: [], timedOut: false };
+        return { ...nothing, notThere: false };
       }
       const { response } = fetched;
 
       const finalUrl = normalizeUrl(fetched.finalUrl, normalizedSitemapUrl);
       if (!finalUrl || !isSameOrigin(finalUrl, normalizedSitemapUrl)) {
-        return { nestedSitemaps: [], pageUrls: [], timedOut: false };
+        return { ...nothing, notThere: false };
       }
 
       if (
@@ -230,15 +244,16 @@ async function fetchSitemapDocumentWithRetry(
         continue;
       }
       if (!response.ok) {
-        return { nestedSitemaps: [], pageUrls: [], timedOut: false };
+        return { ...nothing, notThere: notThere(response) };
       }
 
       const body = await readBodyCapped(response, MAX_SITEMAP_BYTES);
-      if (
-        body === null ||
-        !isProbablySitemapXml(response.headers.get("content-type"), body)
-      ) {
-        return { nestedSitemaps: [], pageUrls: [], timedOut: false };
+      if (body === null) {
+        return { ...nothing, notThere: false };
+      }
+      // Such as a site that answers every path with its web page.
+      if (!isProbablySitemapXml(response.headers.get("content-type"), body)) {
+        return { ...nothing, notThere: true };
       }
 
       const parsed = xmlParser.parse(body) as unknown;
@@ -250,7 +265,7 @@ async function fetchSitemapDocumentWithRetry(
         .map((loc) => normalizeUrl(loc, finalUrl))
         .filter((loc): loc is string => loc !== null);
 
-      return { nestedSitemaps, pageUrls, timedOut: false };
+      return { nestedSitemaps, pageUrls, timedOut: false, notThere: false };
     } catch (error) {
       lastError = error;
       if (!isTimeoutError(error) || attempt === SITEMAP_RETRIES) {
@@ -260,9 +275,9 @@ async function fetchSitemapDocumentWithRetry(
   }
 
   return {
-    nestedSitemaps: [],
-    pageUrls: [],
+    ...nothing,
     timedOut: isTimeoutError(lastError),
+    notThere: false,
   };
 }
 
@@ -274,9 +289,14 @@ export async function discoverUrls(
   origin: string,
   maxPages = 50,
   access?: CrawlerAccess | null,
-): Promise<{ urls: string[]; robotsText: string | null }> {
+): Promise<{
+  urls: string[];
+  robotsText: string | null;
+  sitemap: SitemapStatus;
+}> {
   const waitForRateLimit = createRateLimitWait();
-  const robotsText = await fetchRobotsTxtText(origin, access, waitForRateLimit);
+  const { text: robotsText, readable: robotsReadable } =
+    await fetchRobotsTxtText(origin, access, waitForRateLimit);
   const robots = parseRobotsTxt(origin, robotsText);
 
   // Collect sitemap URLs: from robots.txt + default location
@@ -297,6 +317,7 @@ export async function discoverUrls(
   let fetchedDocs = 0;
   let failedDocs = 0;
   let timedOutDocs = 0;
+  let notThereDocs = 0;
 
   while (queue.length > 0 && allUrls.size < maxDiscoveredUrls) {
     if (fetchedDocs >= MAX_SITEMAP_DOCS) {
@@ -330,6 +351,9 @@ export async function discoverUrls(
           failedDocs += 1;
           if (result.timedOut) {
             timedOutDocs += 1;
+          }
+          if (result.notThere) {
+            notThereDocs += 1;
           }
           return;
         }
@@ -365,8 +389,15 @@ export async function discoverUrls(
   // already bounded by maxDiscoveredUrls, seeds go straight into the
   // scratchpad DO rather than through durable step state, and the crawl still
   // stops at maxPages.
+  const urls = Array.from(allUrls);
+  // "Absent" needs a robots.txt that could be read, since one that failed may
+  // name another sitemap, and "not here" from every source. A source on another
+  // host is never fetched, so it can't count.
+  const allSourcesNotThere =
+    robotsReadable && notThereDocs === sitemapSources.size;
   return {
-    urls: Array.from(allUrls),
+    urls,
     robotsText,
+    sitemap: urls.length ? "found" : allSourcesNotThere ? "absent" : "unknown",
   };
 }

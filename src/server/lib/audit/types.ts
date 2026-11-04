@@ -9,6 +9,9 @@ import { jsonCodec } from "@/shared/json";
 
 export type LighthouseStrategy = "auto" | "none";
 
+/** What discovery established: "unknown" never counts as evidence of absence. */
+export type SitemapStatus = "found" | "absent" | "unknown";
+
 export interface AuditConfig {
   maxPages: number;
   lighthouseStrategy: LighthouseStrategy;

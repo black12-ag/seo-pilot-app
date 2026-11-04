@@ -7,7 +7,7 @@ import { getAuditScratchpad } from "@/server/features/audit/AuditScratchpad";
 import { AuditProgressKV } from "@/server/lib/audit/progress-kv";
 import { runMultipageChecks } from "@/server/lib/audit/issues/multipage";
 import type { DetectedIssue } from "@/server/lib/audit/issues/page-reporters";
-import type { AuditConfig } from "@/server/lib/audit/types";
+import type { AuditConfig, SitemapStatus } from "@/server/lib/audit/types";
 import { normalizeUrl } from "@/server/lib/audit/url-utils";
 import { captureServerEvent } from "@/server/lib/posthog";
 import type { CrawlPhaseResult } from "./siteAuditWorkflowCrawl";
@@ -23,6 +23,8 @@ export async function finalizeAudit(args: {
   startUrl: string;
   config: AuditConfig;
   crawl: CrawlPhaseResult;
+  /** Absent from a discovery step checkpointed before this was recorded. */
+  sitemap?: SitemapStatus;
 }) {
   const {
     step,
@@ -33,6 +35,7 @@ export async function finalizeAudit(args: {
     startUrl,
     config,
     crawl,
+    sitemap,
   } = args;
 
   await pgStep(step, "multipage-checks", MULTIPAGE_CHECKS_STEP, async () => {
@@ -54,7 +57,10 @@ export async function finalizeAudit(args: {
 
     const checksStartedAt = Date.now();
     console.info("Audit finalization started", { auditId });
-    const { issues, hasUnreadShells } = await runMultipageChecks({ auditId });
+    const { issues, hasUnreadShells } = await runMultipageChecks({
+      auditId,
+      sitemap,
+    });
     console.info("Audit multipage checks completed", {
       auditId,
       durationMs: Date.now() - checksStartedAt,

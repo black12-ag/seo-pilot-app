@@ -255,3 +255,67 @@ describe("uncited text marked as not factual", () => {
     expect(draft.openQuestions).toHaveLength(2);
   });
 });
+
+describe("a citation that says the opposite", () => {
+  const OPPOSITE = "Left out, its source says the opposite";
+  const assembleOne = (statement: string, quote: string) =>
+    assemble(
+      [say(statement, cite(quote))],
+      {},
+      new Map([["S1", source("one", quote)]]),
+    );
+
+  it.each([
+    ["Acme is HIPAA certified.", "Acme is not HIPAA certified for any plan."],
+    ["Acme is not HIPAA certified.", "Acme is HIPAA certified for every plan."],
+    ["Acme is SOC 2 compliant.", "Acme isn't SOC 2 compliant."],
+    ["Acme is SOC 2 compliant.", "Acme isn\u2019t SOC 2 compliant."],
+    ["Plans include refunds.", "Plans do not include refunds or credits."],
+    ["Plans include credits.", "Plans do not include refunds or credits."],
+    ["Acme stores customer data.", "No customer data is ever stored by Acme."],
+    ["Sencha is roasted.", "Sencha is steamed, not roasted."],
+    ["Acme works with a contract.", "Acme works without a contract."],
+    ["Acme is licensed.", "Acme is non-licensed in most states."],
+  ])("leaves out %j cited to %j", (statement, quote) => {
+    const draft = assembleOne(statement, quote);
+    expect(draft.markdown).toBe("");
+    expect(draft.omissions).toEqual([`${OPPOSITE}: ${statement}`]);
+  });
+
+  it.each([
+    ["Acme is HIPAA certified.", "Acme is HIPAA certified for every plan."],
+    ["Acme is not HIPAA certified.", "Acme is not HIPAA certified at all."],
+    ["Acme does not charge fees.", "Acme charges no fees."],
+    ["Acme charges no fees.", "Acme does not charge fees."],
+    ["Sencha is steamed.", "Sencha is steamed, not roasted."],
+    ["Sencha is steamed.", "Sencha is not roasted but steamed."],
+    ["Sencha is rolled.", "Sencha is not only steamed but also rolled."],
+    ["Sencha is steamed.", "Sencha is not just steamed for flavor."],
+    ["Refunds arrive in days.", "Refunds arrive no later than 30 days out."],
+    ["Acme is certified.", "Acme is certified. Rivals have no such plan."],
+    ["Acme sells sencha.", "Not every shop does. Acme sells sencha."],
+  ])("keeps %j cited to %j", (statement, quote) => {
+    const draft = assembleOne(statement, quote);
+    expect(draft.markdown).toContain(statement);
+    expect(draft.omissions).toEqual([]);
+  });
+
+  it("leaves it out when one of several citations disagrees", () => {
+    const yes = "Acme is HIPAA certified for the Pro plan.";
+    const no = "Acme is not HIPAA certified for the Starter plan.";
+    const draft = assemble(
+      [say("Acme is HIPAA certified.", [...cite(yes), ...cite(no)])],
+      {},
+      new Map([["S1", source("one", `${yes} ${no}`)]]),
+    );
+    expect(draft.claims).toEqual([]);
+    expect(draft.omissions[0]).toContain(OPPOSITE);
+  });
+
+  it("leaves text it can't read for a person, flagged by hand", () => {
+    const quote = "Acme ist nicht nach HIPAA zertifiziert.";
+    const draft = assembleOne("Acme ist nach HIPAA zertifiziert.", quote);
+    expect(draft.omissions).toEqual([]);
+    expect(draft.openQuestions[0]).toContain("Check this draft by hand");
+  });
+});

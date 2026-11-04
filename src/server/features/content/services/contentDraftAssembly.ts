@@ -7,6 +7,7 @@ import type { ContentDraftOutput } from "@/types/schemas/contentDraft";
 import type { ContentBrief, ContentMetadata } from "@/types/schemas/content";
 import {
   checkUncitedText,
+  contradictsQuote,
   isEnglishLanguage,
   numbersMatchQuote,
   readsAsEnglish,
@@ -143,11 +144,18 @@ export function assembleContentDraft(
     const cited = evidence.map((entry) => entry.excerpt).join(" ");
     // Word checks need one language on both sides. Text that can't be compared
     // stays as a claim and the draft is flagged for a closer look.
-    const readable =
-      draftIsEnglish &&
-      !foreignSource &&
-      usesLatinScript(text) &&
-      readsAsEnglish(cited);
+    const comparesWords = draftIsEnglish && usesLatinScript(text);
+    const readable = comparesWords && !foreignSource && readsAsEnglish(cited);
+    // Each passage counts: one that denies the statement can't sit beside one
+    // that agrees and be shown as support. A quote too short to read as English
+    // can still deny it, so this doesn't wait for `readable`.
+    if (
+      comparesWords &&
+      evidence.some((entry) => contradictsQuote(text, entry.excerpt))
+    ) {
+      leaveOut("Left out, its source says the opposite", text);
+      return null;
+    }
     // A number has to appear in the passage that is meant to support it.
     if (!numbersMatchQuote(text, cited, readable)) {
       leaveOut("Left out, its numbers are not in the source", text);

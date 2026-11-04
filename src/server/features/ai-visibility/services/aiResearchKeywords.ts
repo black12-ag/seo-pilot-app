@@ -344,7 +344,7 @@ export async function startAiResearchAttemptSetup(
       review: null,
       failure: "privacy_erased" as const,
     };
-  if (admitted.status !== "admitted")
+  if (admitted.status !== "admitted" || !("ownsLaunch" in admitted))
     return getAiResearchAttemptSetup(input.projectId, actor);
   const instanceId = `ai-research-setup-${input.requestId}`;
   try {
@@ -362,12 +362,12 @@ export async function startAiResearchAttemptSetup(
         input.requestId,
         Date.now(),
       );
+      // Only closes an unclaimed launch: once a worker has claimed the row it
+      // owns the outcome, and its deadline ends a run that dies.
       if (authority)
         await WebsiteResearchAttemptRepository.finish(
           input.requestId,
-          authority.row.executionToken
-            ? { executionToken: authority.row.executionToken }
-            : { admissionToken: authority.row.admissionToken },
+          { admissionToken: authority.row.admissionToken },
           "unknown",
           "launch_unconfirmed",
           Date.now(),

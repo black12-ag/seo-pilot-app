@@ -84,7 +84,10 @@ async function create(isScheduled = false) {
     renderingMode: "plain",
   });
 }
-function finalize(workflowInstanceId = "audit") {
+function finalize(
+  workflowInstanceId = "audit",
+  sitemap?: "found" | "absent" | "unknown",
+) {
   return finalizeAudit({
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- runtime step boundary only; callbacks and SQL are real
     step: {
@@ -103,8 +106,41 @@ function finalize(workflowInstanceId = "audit") {
       projectId: "project",
     },
     crawl: { pagesCrawled: 1, completed: true },
+    sitemap,
   });
 }
+describe(`sitemap issues (${testDb.provider})`, () => {
+  const issueTypes = async () =>
+    (await AuditRepository.getIssuesForAudit("audit", {})).map(
+      ({ issueType }) => issueType,
+    );
+  // A one-page budget: the page crawled was never seeded from the sitemap.
+  const crawlOnePage = async () => {
+    await create();
+    await testDb.executeMultiple(
+      "update audit_pages set in_sitemap=0, is_indexable=1, crawl_depth=0",
+    );
+  };
+  it("doesn't report a sitemap missing when its URLs were outside the crawl", async () => {
+    await crawlOnePage();
+    await finalize("audit", "found");
+    const types = await issueTypes();
+    expect(types).not.toContain("missing-sitemap");
+    expect(types).toContain("page-not-in-sitemap");
+  });
+  it("reports it missing only when discovery established that", async () => {
+    await crawlOnePage();
+    await finalize("audit", "absent");
+    expect(await issueTypes()).toContain("missing-sitemap");
+  });
+  it("says nothing either way when discovery couldn't tell", async () => {
+    await crawlOnePage();
+    await finalize("audit", "unknown");
+    const types = await issueTypes();
+    expect(types).not.toContain("missing-sitemap");
+    expect(types).not.toContain("page-not-in-sitemap");
+  });
+});
 describe(`manual finalization compatibility (${testDb.provider})`, () => {
   it("completes a genuine pre-migration manual run while preserving unknown evidence", async () => {
     await create();

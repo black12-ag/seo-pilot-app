@@ -1,5 +1,5 @@
-import { generateText, Output } from "ai";
-import { subscriptionRun } from "@/server/lib/aiEngine/billing";
+import { APICallError, generateText, Output } from "ai";
+import { aiAccessKind, subscriptionRun } from "@/server/lib/aiEngine/billing";
 import { requireOpenRouterCostUsd } from "@/server/lib/chatAgent";
 import { buildChatAgentModel, type AiAccess } from "@/server/lib/openrouter";
 import { getOptionalEnvValue } from "@/server/lib/runtime-env";
@@ -162,7 +162,17 @@ type ContentDraftModelResult = {
   costMissing: boolean;
   /** Ran on the operator's own login, so there is no per-call price. */
   includedInSubscription: boolean;
+  /** No reply came back, so the call may have finished and been charged. */
+  outcomeUnknown: boolean;
 };
+
+// The provider's own answer that it turned the request away (bad key, no
+// credits, not allowed), so no model ran. Other statuses can come from a model
+// that already started, and a lost reply says nothing at all.
+const REFUSED_BEFORE_ANY_MODEL_RAN = [401, 402, 403];
+const refusedBeforeAnyModelRan = (error: unknown) =>
+  APICallError.isInstance(error) &&
+  REFUSED_BEFORE_ANY_MODEL_RAN.includes(error.statusCode ?? 0);
 
 /** One call with no tools. A failed reply is never retried here. */
 export async function callContentDraftModel(
@@ -178,6 +188,7 @@ export async function callContentDraftModel(
   let costUsd: number | null = null;
   let costMissing = false;
   let includedInSubscription = false;
+  let replied = false;
   try {
     const result = await generateText({
       model,
@@ -189,6 +200,7 @@ export async function callContentDraftModel(
       prompt: request.prompt,
       // Runs before the output is parsed, so a bad reply still reports its cost.
       onStepFinish: (step) => {
+        replied = true;
         modelId = step.response.modelId || modelId;
         if (subscriptionRun(step.providerMetadata)) {
           includedInSubscription = true;
@@ -205,7 +217,14 @@ export async function callContentDraftModel(
     const output = contentDraftOutputSchema.parse(result.output);
     if (byteLength(JSON.stringify(output)) > contentDraftLimits.maxOutputBytes)
       throw new Error("Draft output exceeds the fixed byte budget");
-    return { output, modelId, costUsd, costMissing, includedInSubscription };
+    return {
+      output,
+      modelId,
+      costUsd,
+      costMissing,
+      includedInSubscription,
+      outcomeUnknown: false,
+    };
   } catch (error) {
     console.error("content.draft.model-failed", describeError(error));
     return {
@@ -214,6 +233,11 @@ export async function callContentDraftModel(
       costUsd,
       costMissing,
       includedInSubscription,
+      // A subscription run has no per-call price, so nothing is left unknown.
+      outcomeUnknown:
+        !replied &&
+        aiAccessKind(access) !== "subscription" &&
+        !refusedBeforeAnyModelRan(error),
     };
   }
 }

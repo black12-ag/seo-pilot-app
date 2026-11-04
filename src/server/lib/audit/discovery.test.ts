@@ -10,6 +10,11 @@ function sitemapXml(urls: string[]): string {
   return `<?xml version="1.0" encoding="UTF-8"?><urlset>${entries}</urlset>`;
 }
 
+const robotsFile =
+  (body = "User-agent: *\nAllow: /") =>
+  () =>
+    new Response(body);
+
 describe("discoverUrls", () => {
   afterEach(() => {
     vi.useRealTimers();
@@ -48,6 +53,117 @@ describe("discoverUrls", () => {
     const { urls } = await discovery;
 
     expect(urls).toEqual(["https://example.com/a"]);
+  });
+
+  describe("whether the site has a sitemap", () => {
+    const XML = { headers: { "content-type": "application/xml" } };
+    type Routes = Record<string, () => Response>;
+    const serve = (routes: Routes) =>
+      vi.stubGlobal(
+        "fetch",
+        vi.fn((url: string) =>
+          Promise.resolve(
+            routes[new URL(url).pathname]?.() ??
+              new Response(null, { status: 404 }),
+          ),
+        ),
+      );
+
+    it("finds a sitemap whose URLs are far past the crawl budget", async () => {
+      const products = Array.from(
+        { length: 100 },
+        (_, index) => `https://example.com/products/${index}`,
+      );
+      serve({
+        "/robots.txt": robotsFile(),
+        "/sitemap.xml": () => new Response(sitemapXml(products), XML),
+      });
+      const { sitemap, urls } = await discoverUrls("https://example.com", 1);
+      expect(sitemap).toBe("found");
+      expect(urls).toHaveLength(100);
+    });
+
+    it.each([
+      ["robots.txt answers 404", () => new Response(null, { status: 404 })],
+      ["robots.txt names no sitemap", robotsFile()],
+    ])("is absent when every place 404s and %s", async (_name, robotsReply) => {
+      serve({ "/robots.txt": robotsReply });
+      const { sitemap } = await discoverUrls("https://example.com", 10);
+      expect(sitemap).toBe("absent");
+    });
+
+    it("is absent when the default location serves a web page", async () => {
+      serve({
+        "/robots.txt": robotsFile(),
+        "/sitemap.xml": () =>
+          new Response("<!doctype html><title>Home</title>", {
+            headers: { "content-type": "text/html" },
+          }),
+      });
+      const { sitemap } = await discoverUrls("https://example.com", 10);
+      expect(sitemap).toBe("absent");
+    });
+
+    it.each<[string, Routes]>([
+      [
+        "the sitemap answers 500",
+        {
+          "/robots.txt": robotsFile(),
+          "/sitemap.xml": () => new Response(null, { status: 500 }),
+        },
+      ],
+      [
+        "the sitemap answers 403",
+        {
+          "/robots.txt": robotsFile(),
+          "/sitemap.xml": () => new Response(null, { status: 403 }),
+        },
+      ],
+      [
+        "the sitemap lists nothing",
+        {
+          "/robots.txt": robotsFile(),
+          "/sitemap.xml": () => new Response(sitemapXml([]), XML),
+        },
+      ],
+      [
+        "robots.txt fails, so it may name another sitemap",
+        { "/robots.txt": () => new Response(null, { status: 503 }) },
+      ],
+      [
+        "robots.txt names a sitemap on another host",
+        {
+          "/robots.txt": robotsFile(
+            "User-agent: *\nSitemap: https://cdn.example.net/sitemap.xml",
+          ),
+        },
+      ],
+      [
+        "a sitemap index's children all fail",
+        {
+          "/robots.txt": robotsFile(),
+          "/sitemap.xml": () =>
+            new Response(
+              '<?xml version="1.0"?><sitemapindex><sitemap><loc>https://example.com/a.xml</loc></sitemap></sitemapindex>',
+              XML,
+            ),
+          "/a.xml": () => new Response(null, { status: 500 }),
+        },
+      ],
+    ])("stays unknown when %s", async (_name, routes) => {
+      serve(routes);
+      const { sitemap } = await discoverUrls("https://example.com", 10);
+      expect(sitemap).toBe("unknown");
+    });
+
+    it("stays unknown when the network fails", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() => Promise.reject(new Error("network down"))),
+      );
+      const { sitemap } = await discoverUrls("https://example.com", 10);
+      expect(sitemap).toBe("unknown");
+    });
   });
 
   // Seeding the frontier is what sets a page's in-sitemap flag, so a URL
