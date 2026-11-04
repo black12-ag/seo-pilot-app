@@ -4,7 +4,6 @@ FROM node:22-bookworm-slim@sha256:48e4b67d85f87bd551df43704e24d252f56cc5f8e97188
 WORKDIR /build
 RUN corepack enable && corepack prepare pnpm@10.30.1 --activate
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY patches ./patches
 RUN pnpm install --frozen-lockfile
 COPY . .
 # The client bundle inlines AUTH_MODE at build time (vite envPrefix) only as a
