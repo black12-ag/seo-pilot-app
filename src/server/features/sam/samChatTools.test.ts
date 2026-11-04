@@ -1,0 +1,156 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { Tool } from "ai";
+import { z } from "zod";
+import { makeToolContext } from "@/server/mcp/tools/tool-test-support";
+import { buildSamMcpTools } from "./samChatTools";
+import { toModelOutput } from "./adaptMcpTool";
+import { waitingAuditStatusTool } from "./samAuditTools";
+
+vi.mock("cloudflare:workers", () => ({
+  env: {},
+  DurableObject: class {
+    kind = "mock";
+  },
+}));
+
+// The server-side wait in SAM's get_audit_status: a completed audit must
+// return without waiting, and a running one must return as soon as the status
+// line changes — a regression in either turns every status check into the
+// full 50-second budget.
+
+const running = (line: string) => ({
+  summary: line,
+  data: { status: { status: "running" } },
+});
+const completed = {
+  summary: "done",
+  data: { status: { status: "completed" } },
+};
+
+function buildTool(outputs: unknown[]) {
+  const execute = vi.fn(() => Promise.resolve(outputs.shift()));
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the wrapper only touches execute
+  const tool = waitingAuditStatusTool(() => ({ execute }) as unknown as Tool);
+  return { tool, execute };
+}
+
+const callOptions = { toolCallId: "t", messages: [] };
+
+it("offers the four shared authority tools without a model-supplied projectId", () => {
+  const tools = buildSamMcpTools(makeToolContext().auth, {
+    id: "bound-project",
+    domain: null,
+  });
+  for (const name of [
+    "get_site_authority",
+    "issue_site_authority_challenge",
+    "check_site_authority_challenge",
+    "revoke_site_authority",
+  ]) {
+    const schema = tools[name]?.inputSchema;
+    expect(schema).toBeInstanceOf(z.ZodObject);
+    if (!(schema instanceof z.ZodObject))
+      throw new Error("Missing tool schema");
+    expect(schema.shape).not.toHaveProperty("projectId");
+  }
+});
+
+it("keeps competitor model inputs strict and validates injected full arguments", async () => {
+  const projectId = "11111111-1111-4111-8111-111111111111";
+  const candidateId = "22222222-2222-4222-8222-222222222222";
+  const tools = buildSamMcpTools(makeToolContext().auth, {
+    id: projectId,
+    domain: null,
+  });
+  const getSchema = tools.get_competitor_research?.inputSchema;
+  expect(getSchema).toBeInstanceOf(z.ZodObject);
+  if (!(getSchema instanceof z.ZodObject))
+    throw new Error("Missing get schema");
+  expect(getSchema.safeParse({}).success).toBe(true);
+  expect(getSchema.safeParse({ projectId }).success).toBe(false);
+  const startSchema = tools.start_competitor_research?.inputSchema;
+  expect(startSchema).toBeInstanceOf(z.ZodObject);
+  if (!(startSchema instanceof z.ZodObject))
+    throw new Error("Missing start schema");
+  const startInput = {
+    requestId: crypto.randomUUID(),
+    expectedContextVersion: 0,
+    contextHash: "a".repeat(64),
+    capabilityFingerprint: "b".repeat(64),
+    confirmedPaidWork: true,
+  };
+  expect(startSchema.safeParse(startInput).success).toBe(true);
+  expect(
+    startSchema.safeParse({
+      ...startInput,
+      sourceUrl: "https://forged.example",
+    }).success,
+  ).toBe(false);
+  const review: unknown = await tools.accept_competitor_research?.execute?.(
+    {
+      runId: crypto.randomUUID(),
+      mutationId: crypto.randomUUID(),
+      expectedContextVersion: 0,
+      selections: [
+        { candidateId, name: "Rival", notes: "" },
+        { candidateId, name: "Rival", notes: "" },
+      ],
+    },
+    callOptions,
+  );
+  expect(review).toHaveProperty("error");
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe("waitingAuditStatusTool", () => {
+  it("returns a finished audit without waiting", async () => {
+    const { tool, execute } = buildTool([completed]);
+    await expect(tool.execute?.({}, callOptions)).resolves.toBe(completed);
+    expect(execute).toHaveBeenCalledTimes(1);
+  });
+
+  it("waits while running and returns as soon as progress changes", async () => {
+    vi.useFakeTimers();
+    const { tool, execute } = buildTool([
+      running("phase crawl, 3/56 pages"),
+      running("phase crawl, 3/56 pages"),
+      running("phase lighthouse, 56/56 pages"),
+    ]);
+    const call: unknown = tool.execute?.({}, callOptions);
+    await vi.advanceTimersByTimeAsync(10_000);
+    await expect(call).resolves.toMatchObject({
+      summary: "phase lighthouse, 56/56 pages",
+    });
+    expect(execute).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("toModelOutput", () => {
+  const rows = Array.from({ length: 40 }, (_, i) => ({ keyword: `kw ${i}` }));
+  const text = rows.map((row) => `| ${row.keyword} | 100 |`).join("\n");
+
+  it("keeps only the head of the text when the structured data carries the rows", () => {
+    const out = toModelOutput({
+      content: [{ type: "text", text }],
+      structuredContent: { rows },
+    });
+    expect(out.data).toEqual({ rows });
+    expect(out.summary.length).toBeLessThan(text.length);
+    expect(out.summary).toContain("(full rows in data)");
+  });
+
+  it("keeps the full text when structuredContent is only a meta deep link", () => {
+    expect(
+      toModelOutput({
+        content: [{ type: "text", text }],
+        structuredContent: { meta: { url: "https://example.com" } },
+      }),
+    ).toEqual({
+      summary: text,
+      data: { meta: { url: "https://example.com" } },
+    });
+  });
+});

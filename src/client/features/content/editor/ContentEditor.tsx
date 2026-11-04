@@ -1,0 +1,389 @@
+import { useRef, useState } from "react";
+import { useBlocker } from "@tanstack/react-router";
+import { Button } from "@/client/components/ui/button";
+import type {
+  SavedContentRevision,
+  SaveContentRevisionInput,
+  SaveContentRevisionResult,
+} from "@/types/schemas/content";
+import type {
+  ContentSourceInput,
+  SavedContentSource,
+} from "@/types/schemas/contentEvidence";
+import { ContentBriefForm } from "./ContentBriefForm";
+import { ContentDraftGenerator } from "./ContentDraftGenerator";
+import { ContentEditorFields, ContextRefresh } from "./ContentEditorFields";
+import { ContentClaimPanel } from "./ContentClaimPanel";
+import { ContentPreview } from "./ContentPreview";
+import { ContentEditorNavigation } from "./ContentEditorNavigation";
+import { ContentEditorSources } from "./ContentEditorSources";
+import type {
+  CaptureContentUrlsInput,
+  CaptureContentUrlsResult,
+} from "@/types/schemas/contentSourceIntake";
+
+type Draft = Omit<SaveContentRevisionInput, "mutationId">;
+export type ContentEditorTab =
+  | "write"
+  | "sources"
+  | "claims"
+  | "preview"
+  | "brief";
+
+function draftFromRevision(revision: SavedContentRevision): Draft {
+  return {
+    projectId: revision.projectId,
+    contentId: revision.contentId,
+    expectedHeadVersion: revision.version,
+    expectedContextVersion: revision.contextVersion,
+    brief: revision.brief,
+    markdown: revision.markdown,
+    metadata: revision.metadata,
+    sourceIds: revision.sourceIds,
+    claims: revision.claims.map(
+      ({ target, text, kind, factual, evidence }) => ({
+        target,
+        text,
+        kind,
+        factual,
+        evidence: evidence.map(
+          ({ sourceId, start, end, excerpt, relation }) => ({
+            sourceId,
+            start,
+            end,
+            excerpt,
+            relation,
+          }),
+        ),
+      }),
+    ),
+    openQuestions: revision.openQuestions,
+    omissions: revision.omissions,
+  };
+}
+
+function useUnsavedChangesBlocker(dirty: boolean) {
+  useBlocker({
+    shouldBlockFn: ({ current, next }) =>
+      dirty &&
+      current.pathname !== next.pathname &&
+      !window.confirm("Discard unsaved changes?"),
+    enableBeforeUnload: dirty,
+  });
+}
+
+export function ContentEditor({
+  revision,
+  sources,
+  unavailableSources,
+  currentContextVersion,
+  currentContextSnapshot,
+  contextReady,
+  onLocaleChange,
+  archived,
+  onArchive,
+  restoration,
+  onRestoreApplied,
+  tab,
+  onTabChange,
+  onSave,
+  onCapture,
+  onCaptureUrls,
+}: {
+  revision: SavedContentRevision;
+  sources: SavedContentSource[];
+  unavailableSources: string[];
+  currentContextVersion: number;
+  currentContextSnapshot: unknown;
+  contextReady: boolean;
+  onLocaleChange: (locale: SavedContentRevision["brief"]["locale"]) => void;
+  archived: boolean;
+  onArchive: (expectedHeadVersion: number) => Promise<void>;
+  restoration: SavedContentRevision | null;
+  onRestoreApplied: () => void;
+  tab: ContentEditorTab;
+  onTabChange: (tab: ContentEditorTab) => void;
+  onSave: (
+    input: SaveContentRevisionInput,
+  ) => Promise<SaveContentRevisionResult>;
+  onCapture: (source: ContentSourceInput) => Promise<void>;
+  onCaptureUrls: (
+    requests: CaptureContentUrlsInput["requests"],
+  ) => Promise<CaptureContentUrlsResult>;
+}) {
+  const [draft, setDraft] = useState(() => draftFromRevision(revision));
+  const [savedContextJson, setSavedContextJson] = useState(
+    revision.contextJson,
+  );
+  const [savedLocale, setSavedLocale] = useState(revision.brief.locale);
+  const [baseline, setBaseline] = useState(() =>
+    JSON.stringify(draftFromRevision(revision)),
+  );
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const pending = saving || generating;
+  const [locallyArchived, setLocallyArchived] = useState(false);
+  const [briefDirty, setBriefDirty] = useState(false);
+  const [sourceDirty, setSourceDirty] = useState(false);
+  const [urlDirty, setUrlDirty] = useState(false);
+  const [claimDirty, setClaimDirty] = useState(false);
+  const [briefKey, setBriefKey] = useState(0);
+  const attempt = useRef<{ serialized: string; mutationId: string } | null>(
+    null,
+  );
+  const unsubmitted = briefDirty || sourceDirty || urlDirty || claimDirty;
+  const dirty = JSON.stringify(draft) !== baseline || unsubmitted;
+  useUnsavedChangesBlocker(dirty);
+  function applySaved(next: SavedContentRevision) {
+    const saved = draftFromRevision(next);
+    setDraft(saved);
+    setSavedContextJson(next.contextJson);
+    setSavedLocale(next.brief.locale);
+    setBaseline(JSON.stringify(saved));
+    setBriefKey((key) => key + 1);
+    attempt.current = null;
+  }
+  async function save() {
+    const serialized = JSON.stringify(draft);
+    if (attempt.current?.serialized !== serialized) {
+      attempt.current = { serialized, mutationId: crypto.randomUUID() };
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const result = await onSave({
+        ...draft,
+        mutationId: attempt.current.mutationId,
+      });
+      if (!result.ok) {
+        setError(
+          `The saved content changed (current version ${result.currentHeadVersion}). Your draft is still here; review the latest version before saving.`,
+        );
+        return;
+      }
+      applySaved(result.revision);
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Could not save. Your draft is still here.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+  return (
+    <section className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4">
+        <p className="text-muted-foreground text-sm font-medium">
+          Revision {draft.expectedHeadVersion} ·{" "}
+          {dirty ? "Unsaved changes" : "Saved"}
+        </p>
+        <Button
+          type="button"
+          onClick={save}
+          disabled={
+            pending || !dirty || unsubmitted || archived || locallyArchived
+          }
+        >
+          {saving ? "Saving…" : "Save revision"}
+        </Button>
+      </div>
+      {archived || locallyArchived ? (
+        <p className="text-sm">
+          This content is archived. Its saved history remains available; new
+          saves are disabled.
+        </p>
+      ) : (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={pending}
+          onClick={async () => {
+            if (
+              !window.confirm(
+                dirty
+                  ? "Archive this content? Unsaved changes will remain local and cannot be saved while archived."
+                  : "Archive this content? Its history will be retained.",
+              )
+            )
+              return;
+            setSaving(true);
+            setError(null);
+            try {
+              await onArchive(draft.expectedHeadVersion);
+              setLocallyArchived(true);
+            } catch (cause) {
+              setError(
+                cause instanceof Error
+                  ? cause.message
+                  : "Could not archive content.",
+              );
+            } finally {
+              setSaving(false);
+            }
+          }}
+        >
+          Archive content
+        </Button>
+      )}
+      {error ? (
+        <p
+          role="alert"
+          className="rounded border border-destructive p-3 text-sm"
+        >
+          {error}
+        </p>
+      ) : null}
+      {unsubmitted ? (
+        <p className="text-sm">
+          Apply or capture your open form before saving the revision.
+        </p>
+      ) : null}
+      <ContentDraftGenerator
+        revision={revision}
+        sources={sources}
+        draft={draft}
+        currentContextVersion={currentContextVersion}
+        archived={archived || locallyArchived}
+        dirty={dirty}
+        onBusyChange={setGenerating}
+        onGenerated={applySaved}
+      />
+
+      {restoration ? (
+        <div className="rounded border p-3 text-sm">
+          <p>
+            Revision {restoration.id} is selected for restoration. Applying it
+            replaces the local draft; saving creates a new revision.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={pending}
+            onClick={() => {
+              if (
+                !window.confirm(
+                  "Replace your local draft with this saved revision?",
+                )
+              )
+                return;
+              const restored = draftFromRevision(restoration);
+              onLocaleChange(restored.brief.locale);
+              setDraft((current) => ({
+                ...restored,
+                expectedHeadVersion: current.expectedHeadVersion,
+                expectedContextVersion: current.expectedContextVersion,
+              }));
+              setBriefDirty(false);
+              setSourceDirty(false);
+              setClaimDirty(false);
+              setBriefKey((key) => key + 1);
+              onRestoreApplied();
+            }}
+          >
+            Load as draft
+          </Button>
+        </div>
+      ) : null}
+      {revision.version > draft.expectedHeadVersion ? (
+        <div className="space-y-2 text-sm">
+          <p>
+            A newer saved revision is available. Your draft has not been
+            replaced.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={pending}
+            onClick={() => {
+              if (
+                window.confirm(
+                  "Keep your draft and use the latest revision as its base? Review the differences first.",
+                )
+              ) {
+                setDraft((current) => ({
+                  ...current,
+                  expectedHeadVersion: revision.version,
+                }));
+                setError(null);
+              }
+            }}
+          >
+            Keep draft on latest base
+          </Button>
+        </div>
+      ) : null}
+      {currentContextVersion !== draft.expectedContextVersion ||
+      JSON.stringify(savedLocale) !== JSON.stringify(draft.brief.locale) ? (
+        <ContextRefresh
+          saved={savedContextJson}
+          current={currentContextSnapshot}
+          disabled={pending || !contextReady}
+          onUse={() =>
+            setDraft((current) => ({
+              ...current,
+              expectedContextVersion: currentContextVersion,
+            }))
+          }
+        />
+      ) : null}
+      <fieldset disabled={pending} className="min-w-0 space-y-5">
+        <ContentEditorNavigation tab={tab} onTabChange={onTabChange} />
+        {tab === "write" ? (
+          <ContentEditorFields draft={draft} setDraft={setDraft} />
+        ) : null}
+        <div hidden={tab !== "sources"}>
+          <ContentEditorSources
+            draft={draft}
+            setDraft={setDraft}
+            briefKey={briefKey}
+            onCapture={onCapture}
+            onCaptureUrls={onCaptureUrls}
+            setSourceDirty={setSourceDirty}
+            setUrlDirty={setUrlDirty}
+            sources={sources}
+            unavailableSources={unavailableSources}
+          />
+        </div>
+        <div hidden={tab !== "claims"}>
+          <ContentClaimPanel
+            key={briefKey}
+            markdown={draft.markdown}
+            metadata={draft.metadata}
+            sources={sources
+              .filter((source) => draft.sourceIds.includes(source.id))
+              .map((source) => ({
+                id: source.id,
+                title: source.title,
+                text: source.sourceText,
+                kind: source.kind,
+              }))}
+            claims={draft.claims}
+            onDirtyChange={setClaimDirty}
+            onChange={(claims) =>
+              setDraft((current) => ({ ...current, claims }))
+            }
+          />
+        </div>
+        {tab === "preview" ? (
+          <ContentPreview markdown={draft.markdown} />
+        ) : null}
+        <div hidden={tab !== "brief"}>
+          <ContentBriefForm
+            key={briefKey}
+            initialBrief={draft.brief}
+            submitLabel="Apply brief changes"
+            onDirtyChange={setBriefDirty}
+            onSubmit={async (brief) => {
+              setDraft((current) => ({ ...current, brief }));
+              onLocaleChange(brief.locale);
+            }}
+          />
+        </div>
+      </fieldset>
+    </section>
+  );
+}
