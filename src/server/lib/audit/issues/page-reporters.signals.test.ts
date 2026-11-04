@@ -166,31 +166,61 @@ describe("runPageReporters: structured data, social, https, hreflang, answers", 
 });
 
 describe("findSitemapIssues", () => {
+  const homeOnly = () => [
+    slim({
+      id: "home",
+      url: "https://example.com/",
+      inSitemap: false,
+      crawlDepth: 0,
+    }),
+  ];
+
   it("reports no sitemap once, on the home page", () => {
-    const issues = findSitemapIssues([
-      slim({ id: "a", url: "https://example.com/a", inSitemap: false }),
-      slim({
-        id: "home",
-        url: "https://example.com/",
-        inSitemap: false,
-        crawlDepth: 0,
-      }),
-    ]);
+    const issues = findSitemapIssues(
+      [
+        slim({ id: "a", url: "https://example.com/a", inSitemap: false }),
+        ...homeOnly(),
+      ],
+      "absent",
+    );
     expect(issues.map((i) => [i.issueType, i.pageId])).toEqual([
       ["missing-sitemap", "home"],
     ]);
   });
 
-  it("lists indexable crawled pages left out of an existing sitemap", () => {
-    const issues = findSitemapIssues([
-      slim({ id: "in" }),
-      slim({ id: "out", inSitemap: false }),
-      slim({ id: "noindex", inSitemap: false, isIndexable: false }),
-      slim({ id: "pdf", inSitemap: false, isHtml: false }),
-      slim({ id: "moved", inSitemap: false, statusCode: 301 }),
-    ]);
+  // One crawled page and a sitemap that only lists product URLs: nothing crawled
+  // carries the flag, but the sitemap is there.
+  it("doesn't call a sitemap missing when its URLs were outside the crawl budget", () => {
+    const issues = findSitemapIssues(homeOnly(), "found");
     expect(issues.map((i) => [i.issueType, i.pageId])).toEqual([
-      ["page-not-in-sitemap", "out"],
+      ["page-not-in-sitemap", "home"],
     ]);
   });
+
+  it.each(["unknown", undefined] as const)(
+    "reports nothing about the sitemap when discovery couldn't tell (%s)",
+    (sitemap) => {
+      expect(findSitemapIssues(homeOnly(), sitemap)).toEqual([]);
+    },
+  );
+
+  // An audit checkpointed before discovery recorded the signal has only the flags.
+  it.each(["found", "unknown", undefined] as const)(
+    "lists indexable crawled pages left out of an existing sitemap (%s)",
+    (sitemap) => {
+      const issues = findSitemapIssues(
+        [
+          slim({ id: "in" }),
+          slim({ id: "out", inSitemap: false }),
+          slim({ id: "noindex", inSitemap: false, isIndexable: false }),
+          slim({ id: "pdf", inSitemap: false, isHtml: false }),
+          slim({ id: "moved", inSitemap: false, statusCode: 301 }),
+        ],
+        sitemap,
+      );
+      expect(issues.map((i) => [i.issueType, i.pageId])).toEqual([
+        ["page-not-in-sitemap", "out"],
+      ]);
+    },
+  );
 });

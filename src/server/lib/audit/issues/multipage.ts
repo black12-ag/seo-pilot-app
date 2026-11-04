@@ -17,9 +17,11 @@ import {
   type SlimPage,
 } from "./multipage-checks";
 import type { DetectedIssue } from "@/server/lib/audit/issues/page-reporters";
+import type { SitemapStatus } from "@/server/lib/audit/types";
 
 export async function runMultipageChecks(input: {
   auditId: string;
+  sitemap?: SitemapStatus;
 }): Promise<{ issues: DetectedIssue[]; hasUnreadShells: boolean }> {
   // Unrendered app shells carry a persisted coverage warning. Their
   // placeholder titles and loading text must not become duplicate findings.
@@ -63,7 +65,7 @@ export async function runMultipageChecks(input: {
     issues: [
       ...findDuplicates(pages),
       ...findRedirectChainsAndLoops(pages),
-      ...findSitemapIssues(pages),
+      ...findSitemapIssues(pages, input.sitemap),
     ],
     hasUnreadShells: shellPageIds.size > 0,
   };

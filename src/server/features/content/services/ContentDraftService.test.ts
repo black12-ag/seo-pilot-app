@@ -202,12 +202,12 @@ describe("draft generation", () => {
     expect(doGenerate).toHaveBeenCalledOnce();
   });
 
-  it("never repeats a failed call, and reports a stranded one as unknown", async () => {
+  it("never repeats a call with no reply, and reports a stranded one as unknown", async () => {
     const { request } = await fixture();
     doGenerate.mockRejectedValue(new Error("timeout"));
-    const failed = { status: "failed", reason: "model_failed" };
-    expect(await generate(request)).toEqual(failed);
-    expect(await generate(request)).toEqual(failed);
+    const noReply = { status: "unknown", reason: "no_response" };
+    expect(await generate(request)).toEqual(noReply);
+    expect(await generate(request)).toEqual(noReply);
     expect(doGenerate).toHaveBeenCalledOnce();
     const stranded = { ...request, requestId: crypto.randomUUID() };
     doGenerate.mockReturnValue(new Promise(() => undefined));

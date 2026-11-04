@@ -108,6 +108,7 @@ export async function runAuditPhases(
     startUrl,
     config,
     crawl,
+    sitemap: discovery.sitemap,
   });
 }
 
@@ -172,7 +173,11 @@ async function runDiscoveryPhase(
       pagesTotal: Math.min(seededCount, maxPages),
       currentPhase: "crawling",
     });
-    return { robotsText: result.robotsText, seededCount };
+    return {
+      robotsText: result.robotsText,
+      seededCount,
+      sitemap: result.sitemap,
+    };
   });
 }
 

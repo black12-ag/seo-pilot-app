@@ -241,8 +241,11 @@ export function ContentDraftGenerator({
       {confirming && setup.data ? (
         <div className="space-y-2 rounded-md border p-3">
           <p>
-            Uses only this brief, your project context and these sources. Any
-            fact it can’t tie to a source is left out and listed for you.
+            Uses only this brief, your project context and these sources. A fact
+            with no matching source, or whose source says the opposite, is left
+            out and listed for you. These checks only compare words, and only in
+            English, so a statement can still misread its source. Check each
+            claim against its source in review.
           </p>
           <ul className="text-muted-foreground list-disc pl-5">
             {attached.map((source) => (

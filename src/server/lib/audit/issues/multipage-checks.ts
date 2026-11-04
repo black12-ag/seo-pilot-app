@@ -4,6 +4,7 @@
  * orphans) live in multipage.ts.
  */
 import type { DetectedIssue } from "@/server/lib/audit/issues/page-reporters";
+import type { SitemapStatus } from "@/server/lib/audit/types";
 import type { PageFetchClass } from "@/shared/audit-fetch-class";
 
 const DUPLICATE_GROUP_SAMPLE = 3;
@@ -184,17 +185,24 @@ export function findRedirectChainsAndLoops(pages: SlimPage[]): DetectedIssue[] {
 }
 
 /**
- * Sitemap checks from the in-sitemap flag the crawl already recorded, so no
- * extra requests are made. "No sitemap" means none of the crawled pages was
- * listed in one; "not in sitemap" is only reported when a sitemap exists.
+ * Sitemap checks from discovery's result and the in-sitemap flag the crawl
+ * already recorded, so no extra requests are made. The flag only covers crawled
+ * pages, so a sitemap listing other URLs leaves it false everywhere: "no
+ * sitemap" takes discovery establishing that. "Not in sitemap" is only reported
+ * when a sitemap exists, which a set flag also proves.
  */
-export function findSitemapIssues(pages: SlimPage[]): DetectedIssue[] {
+export function findSitemapIssues(
+  pages: SlimPage[],
+  sitemap: SitemapStatus | undefined,
+): DetectedIssue[] {
   const candidates = pages.filter(
     (page) => isDuplicateCandidate(page) && page.isHtml !== false,
   );
   if (candidates.length === 0) return [];
 
-  if (!pages.some((page) => page.inSitemap)) {
+  const exists = sitemap === "found" || pages.some((page) => page.inSitemap);
+  if (!exists) {
+    if (sitemap !== "absent") return [];
     const home =
       candidates.find((page) => page.crawlDepth === 0) ?? candidates[0];
     return [

@@ -283,7 +283,12 @@ async function start(
       input.requestId,
       admitted.admissionToken,
     );
-  return view(scope, input.projectId, input.requestId);
+  const result = await view(scope, input.projectId, input.requestId);
+  // A concurrent copy of this request gets the same receipt from "replayed"
+  // above, so only the caller that created the row launches it.
+  return mode === "ai_setup"
+    ? { ...result, ownsLaunch: true as const }
+    : result;
 }
 
 async function get(

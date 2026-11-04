@@ -49,11 +49,17 @@ const failureFrom = (resultId: string) =>
 // Stored as the claim's result. A paid call that can't be metered isn't a plain
 // failure: nobody knows what it cost, and it is never run again.
 const COST_NOT_REPORTED = "cost_not_reported";
+// Also stored as the claim's result. The request may have reached the model and
+// no reply came back, so neither its outcome nor its cost is known.
+const NO_RESPONSE = "no_response";
 
 type ContentDraftResult =
   | { status: "none" }
   | { status: "running" }
-  | { status: "unknown"; reason?: typeof COST_NOT_REPORTED }
+  | {
+      status: "unknown";
+      reason?: typeof COST_NOT_REPORTED | typeof NO_RESPONSE;
+    }
   | { status: "needs_setup" }
   | { status: "busy" }
   | {
@@ -105,8 +111,8 @@ async function readRequest(
     return { status: "done", revision, replayed: true };
   }
   if (claim.completed === 1) {
-    if (claim.resultId === COST_NOT_REPORTED)
-      return { status: "unknown", reason: COST_NOT_REPORTED };
+    if (claim.resultId === COST_NOT_REPORTED || claim.resultId === NO_RESPONSE)
+      return { status: "unknown", reason: claim.resultId };
     const reason = failureFrom(claim.resultId);
     return reason ? { status: "failed", reason } : { status: "unknown" };
   }
@@ -162,6 +168,17 @@ async function runClaimed({
     sources: refs,
   });
   const called = await callContentDraftModel(access, request);
+  // Billing an empty list would record this as settled and free.
+  if (called.outcomeUnknown) {
+    console.error("content.draft.no-response", {
+      organizationId: actor.organizationId,
+      projectId: input.projectId,
+      requestId: input.requestId,
+      modelId: called.modelId,
+    });
+    await finish(NO_RESPONSE);
+    return { status: "unknown", reason: NO_RESPONSE };
+  }
   // Credits can't be charged without a cost, so a hosted draft isn't handed
   // over for free. Where the install pays its own key there is nothing to meter
   // and the revision records that the cost was not reported.

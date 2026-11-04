@@ -249,6 +249,55 @@ export function numbersMatchQuote(
   });
 }
 
+const NEGATION =
+  /^(?:not?|non|none|nothing|nobody|nowhere|never|neither|nor|without|cannot|unable|lack|lacks|lacking|\p{L}+n['’]t)$/u;
+// "Not only" and "no later than" don't deny what follows them.
+const NOT_A_DENIAL = /^(?:only|just|merely|later|earlier|more|less|fewer)$/u;
+const CLAUSE_END =
+  /^(?:[.;:!?]|but|however|although|though|yet|instead|whereas|while)$/u;
+
+/**
+ * Terms a negation reaches, up to the end of its clause. Commas don't end it, so
+ * "not certified, licensed or audited" denies all three. That also catches some
+ * later clauses, which only means a statement is left out and listed.
+ */
+function deniedTerms(text: string) {
+  const tokens =
+    text.toLowerCase().match(/\p{L}+(?:['’]\p{L}+)*|[.;:!?]/gu) ?? [];
+  const denied: string[] = [];
+  let denying = false;
+  tokens.forEach((token, index) => {
+    if (CLAUSE_END.test(token)) denying = false;
+    else if (
+      NEGATION.test(token) &&
+      !NOT_A_DENIAL.test(tokens[index + 1] ?? "")
+    )
+      denying = true;
+    else if (denying) denied.push(...termsOf(token));
+  });
+  return denied;
+}
+
+/**
+ * Whether a statement and its quote explicitly disagree: one denies terms the
+ * other uses, and they deny none in common. "Charges no fees" and "does not
+ * charge fees" agree. This reads polarity only, not meaning, so passing it
+ * doesn't make the quote support the statement.
+ */
+export function contradictsQuote(rawStatement: string, rawQuote: string) {
+  const statement = comparable(rawStatement);
+  const quote = comparable(rawQuote);
+  const deniedInStatement = deniedTerms(statement);
+  const deniedInQuote = deniedTerms(quote);
+  const overlap = (a: string[], b: string[]) =>
+    a.some((term) => b.some((other) => sameTerm(term, other)));
+  return (
+    !overlap(deniedInStatement, deniedInQuote) &&
+    (overlap(deniedInQuote, termsOf(statement)) ||
+      overlap(deniedInStatement, termsOf(quote)))
+  );
+}
+
 /**
  * A cited statement must use its quote's words: every sensitive term, and at
  * least two terms or a third of them, whichever is more. One shared name such
