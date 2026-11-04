@@ -3,13 +3,14 @@ import { normalizeAndValidateStartUrl } from "@/server/lib/audit/url-policy";
 import { publicFetch } from "@/server/lib/public-fetch";
 import { readBoundedText } from "@/server/lib/read-bounded-text";
 import { getOptionalEnvValue, getWorkersEnv } from "@/server/lib/runtime-env";
+import { inertTitle, sameTitle } from "./wordpressDraft";
 
 export type WordPressSite = {
   origin: string;
   username: string;
   applicationPassword: string;
   /** Asked right before each request. False means the password stays here. */
-  stillAllowed: () => Promise<boolean>;
+  stillAllowed: (mutating: boolean) => Promise<boolean>;
 };
 
 /**
@@ -45,6 +46,7 @@ const READ_TIMEOUT_MS = 15_000;
 const WRITE_TIMEOUT_MS = 30_000;
 const POST_FIELDS = "id,status,slug,modified_gmt,title,content";
 const SEARCHABLE_STATUSES = "draft,pending,private,publish,future,trash";
+const SEARCH_PAGE_SIZE = 20;
 
 const currentUserSchema = z.object({
   id: z.number().int().positive(),
@@ -112,7 +114,7 @@ async function send<T>(
   } catch {
     return { kind: "rejected", status: null, code: "blocked_target" };
   }
-  if (!(await site.stillAllowed()))
+  if (!(await site.stillAllowed(options.method !== "GET")))
     return { kind: "rejected", status: null, code: ACCESS_WITHDRAWN };
   const timeout = AbortSignal.timeout(
     options.method === "GET" ? READ_TIMEOUT_MS : WRITE_TIMEOUT_MS,
@@ -201,25 +203,30 @@ export function getWordPressPost(site: WordPressSite, postId: number) {
 /**
  * Finds what an earlier attempt may have created. Core REST has no idempotency
  * support, so each draft carries a marker. The search can be replaced by a site
- * plugin, so the exact slug is queried too, and a post only counts if its stored
- * content holds the marker. Any failed probe means we do not know.
+ * plugin, and a site can strip the marker, so the post's own slug is queried too
+ * (or its title when it has no slug). A post only counts as ours if its stored
+ * content holds the marker. One that matches without it may still be ours, and a
+ * full page may hide more, so either makes the result `ambiguous`: not proof of
+ * absence. Any failed probe means we do not know.
  */
 export async function findWordPressPostsByMarker(
   site: WordPressSite,
   marker: string,
-  slug: string,
-): Promise<WordPressReply<WordPressPost[]>> {
+  draft: { title: string; slug: string },
+): Promise<WordPressReply<{ posts: WordPressPost[]; ambiguous: boolean }>> {
+  const { title, slug } = draft;
   const shared = {
     context: "edit",
     status: SEARCHABLE_STATUSES,
-    per_page: "20",
+    per_page: String(SEARCH_PAGE_SIZE),
     _fields: POST_FIELDS,
   };
   const queries = [
     { ...shared, search: marker },
-    ...(slug ? [{ ...shared, slug }] : []),
+    slug ? { ...shared, slug } : { ...shared, search: inertTitle(title) },
   ];
   const found = new Map<number, WordPressPost>();
+  let ambiguous = false;
   for (const query of queries) {
     const reply = await send(site, z.array(postSchema), {
       method: "GET",
@@ -227,10 +234,14 @@ export async function findWordPressPostsByMarker(
       query,
     });
     if (reply.kind !== "ok") return reply;
-    for (const post of reply.value)
+    if (reply.value.length >= SEARCH_PAGE_SIZE) ambiguous = true;
+    for (const post of reply.value) {
       if (post.content.raw.includes(marker)) found.set(post.id, post);
+      else if (slug ? post.slug === slug : sameTitle(post.title.raw, title))
+        ambiguous = true;
+    }
   }
-  return { kind: "ok", value: [...found.values()] };
+  return { kind: "ok", value: { posts: [...found.values()], ambiguous } };
 }
 
 /** Sites can turn revisions off, so an empty or refused list is not an error. */

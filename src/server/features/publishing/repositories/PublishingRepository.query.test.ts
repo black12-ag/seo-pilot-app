@@ -241,12 +241,13 @@ describe(`publishing records (${testDb.provider})`, () => {
 });
 
 describe(`publishing connections (${testDb.provider})`, () => {
-  const usable = (needsRead: boolean, as = scope) =>
+  const usable = (needsRead: boolean, as = scope, needsWrite = false) =>
     repository.credentialUsable(as, {
       projectId: "project",
       credentialId: "credential",
       origin,
       needsRead,
+      needsWrite,
       nowMs,
     });
 
@@ -262,6 +263,20 @@ describe(`publishing connections (${testDb.provider})`, () => {
       "update project_site_authority set status = 'revoked', verified_until_ms = null, verified_at_ms = null, current_challenge_id = null;",
     );
     expect(await usable(false)).toBe(false);
+  });
+
+  it("only lets a change go out under a current write and read grant", async () => {
+    expect(await usable(false, scope, true)).toBe(true);
+    expect(await usable(false, { ...scope, role: "member" }, true)).toBe(false);
+    await testDb.executeMultiple(
+      "update wordpress_connections set write_status = 'revoked';",
+    );
+    expect(await usable(true)).toBe(true);
+    expect(await usable(false, scope, true)).toBe(false);
+    await testDb.executeMultiple(
+      "update wordpress_connections set write_status = 'granted', read_status = 'revoked';",
+    );
+    expect(await usable(false, scope, true)).toBe(false);
   });
 
   const connection = {
@@ -299,26 +314,54 @@ describe(`publishing connections (${testDb.provider})`, () => {
     ).toBe(false);
   });
 
+  const storedConnection = async () => {
+    const row = await repository.getConnection("organization", "project");
+    if (!row) throw new Error("Not connected");
+    return row;
+  };
+  const check = { grant: "read", status: "granted", nowMs } as const;
+
   it("drops a check result that belongs to a replaced password", async () => {
+    const replaced = await storedConnection();
     await repository.saveConnection(scope, connection);
-    const input = {
-      projectId: "project",
-      grant: "read" as const,
-      status: "granted" as const,
-      nowMs,
-    };
     expect(
       await repository.recordGrantCheck(scope, {
-        ...input,
-        credentialId: "credential",
+        ...check,
+        connection: replaced,
       }),
     ).toBe(false);
     expect(
       await repository.recordGrantCheck(scope, {
-        ...input,
-        credentialId: "new-credential",
+        ...check,
+        connection: await storedConnection(),
       }),
     ).toBe(true);
+  });
+
+  it("drops a check result once a revoke lands, even in the same millisecond", async () => {
+    await repository.revokeGrant(scope, {
+      projectId: "project",
+      grant: "read",
+      nowMs,
+    });
+    const seen = await storedConnection();
+    await repository.revokeGrant(scope, {
+      projectId: "project",
+      grant: "read",
+      nowMs,
+    });
+    expect(
+      await repository.recordGrantCheck(scope, { ...check, connection: seen }),
+    ).toBe(false);
+    expect(await storedConnection()).toMatchObject({ readStatus: "revoked" });
+  });
+
+  it("drops the slower of two checks, on a clock running behind too", async () => {
+    const seen = await storedConnection();
+    const earlier = { ...check, connection: seen, nowMs: 0 };
+    expect(await repository.recordGrantCheck(scope, earlier)).toBe(true);
+    expect((await storedConnection()).readCheckedAtMs).toBe(2);
+    expect(await repository.recordGrantCheck(scope, earlier)).toBe(false);
   });
 
   it("turns off a grant and removes the saved password only for its own workspace", async () => {

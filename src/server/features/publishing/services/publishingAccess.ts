@@ -36,7 +36,8 @@ export async function verifiedOrigin(access: Access, projectId: string) {
 /**
  * Everything a request needs before it can leave. The password stays in memory,
  * and is only opened for a verified site and a granted read. `stillAllowed` asks
- * the database again before each request, since the site can be slow to answer.
+ * the database again before each request, since the site can be slow to answer,
+ * and a request that changes the site needs write access at that moment too.
  */
 export async function openConnection(
   access: Access,
@@ -72,12 +73,13 @@ export async function openConnection(
     connection,
     site: {
       ...credential,
-      stillAllowed: () =>
+      stillAllowed: (mutating) =>
         PublishingRepository.credentialUsable(access.scope, {
           projectId,
           credentialId: connection.credentialId,
           origin: connection.origin,
           needsRead,
+          needsWrite: mutating,
           nowMs: Date.now(),
         }),
     },

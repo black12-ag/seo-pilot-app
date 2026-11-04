@@ -151,6 +151,78 @@ describe(`the trash baseline (${testDb.provider})`, () => {
     expect(site.trashes).toBe(0);
   });
 
+  describe("an edit within the same timestamp second", () => {
+    const edits = [
+      [
+        "title",
+        () => {
+          if (site.posts[0]) site.posts[0].title.raw = "Owner's title";
+        },
+      ],
+      [
+        "slug",
+        () => {
+          if (site.posts[0]) site.posts[0].slug = "owners-slug";
+        },
+      ],
+      [
+        "revision",
+        () => {
+          site.latestRevision = 901;
+        },
+      ],
+      [
+        "revision list, now empty",
+        () => {
+          site.latestRevision = null;
+        },
+      ],
+    ] as const;
+
+    it.each(edits)("won't trash a changed %s", async (_field, edit) => {
+      const record = await sent();
+      edit();
+      expect(await service.trash(actor, input(record.id))).toMatchObject({
+        status: "refused",
+        reason: "owner_edited",
+      });
+      expect(site.trashes).toBe(0);
+      expect(site.posts[0]?.status).toBe("draft");
+    });
+
+    it("won't trash a first revision on a post that had none", async () => {
+      site.latestRevision = null;
+      const record = await sent();
+      site.latestRevision = 901;
+      expect(await service.trash(actor, input(record.id))).toMatchObject({
+        status: "refused",
+        reason: "owner_edited",
+      });
+      expect(site.trashes).toBe(0);
+    });
+
+    it("trashes an untouched draft on a site that keeps no revisions", async () => {
+      site.latestRevision = null;
+      const record = await sent();
+      expect(await service.trash(actor, input(record.id))).toMatchObject({
+        status: "recorded",
+        record: { state: "trashed" },
+      });
+    });
+  });
+
+  it("won't trash when the baseline has no modified time to compare", async () => {
+    const record = await sent();
+    await testDb.executeMultiple(
+      "update wordpress_publish_records set remote_modified_gmt = null;",
+    );
+    expect(await service.trash(actor, input(record.id))).toMatchObject({
+      status: "refused",
+      reason: "owner_edited",
+    });
+    expect(site.trashes).toBe(0);
+  });
+
   it("records the baseline once a read back does match", async () => {
     site.filterContent = (html) => html.replace("world", "edited");
     const record = await sent();

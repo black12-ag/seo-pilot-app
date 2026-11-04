@@ -25,6 +25,7 @@ import {
   createWordPressDraft,
   findWordPressPostsByMarker,
   getWordPressPost,
+  latestWordPressRevisionId,
   postIsGone,
   trashWordPressPost,
   type WordPressSite,
@@ -268,23 +269,24 @@ async function publish(
   const found = await findWordPressPostsByMarker(
     site,
     wordPressMarker(idempotencyKey),
-    draft.slug,
+    draft,
   );
   if (found.kind !== "ok")
     return refused(
       found.kind === "rejected" ? rejectionRefusal(found) : "check_failed",
       prior,
     );
-  if (found.value.length > 0) {
+  if (found.value.posts.length > 0) {
     const settled = await settleFromPost(
       actor.organizationId,
       site,
       prior,
       [prior.state],
-      found.value,
+      found.value.posts,
     );
     return recorded(await latest(actor, prior, settled));
   }
+  if (found.value.ambiguous) return refused("ambiguous_match", prior);
   // The search can take a while, so everything it relied on is decided again.
   const latestDraft = await currentDraft();
   if ("refused" in latestDraft) return refused(latestDraft.refused, prior);
@@ -342,7 +344,8 @@ async function trash(
   )
     return refused("not_ours", record);
   if (current.value.status !== "draft") return refused("not_a_draft", record);
-  if (!(await unchangedSinceLastWrite(record, current.value)))
+  const revisionId = await latestWordPressRevisionId(site, record.remotePostId);
+  if (!(await unchangedSinceLastWrite(record, current.value, revisionId)))
     return refused("owner_edited", record);
   const claimed = await PublishingRepository.claimTrash(
     access.scope,

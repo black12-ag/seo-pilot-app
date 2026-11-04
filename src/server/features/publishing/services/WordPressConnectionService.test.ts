@@ -37,6 +37,8 @@ const actor = {
 const projectId = "project";
 let site: FakeWordPress;
 
+const userRead = (url: URL) => url.pathname.endsWith("/users/me");
+
 beforeEach(async () => {
   vi.stubEnv("BETTER_AUTH_SECRET", "x".repeat(40));
   vi.stubEnv("AUTH_MODE", "password");
@@ -58,6 +60,78 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 afterAll(testDb.close);
+
+describe(`a check that outlives a decision (${testDb.provider})`, () => {
+  const grants = ["read", "write"] as const;
+
+  it.each(grants)(
+    "keeps %s access revoked when a slow check answers afterwards",
+    async (grant) => {
+      site.whenRequest(userRead, () =>
+        connections.revokeGrant(actor, { projectId, grant }),
+      );
+      expect(await connections.checkGrant(actor, { projectId, grant })).toEqual(
+        { status: "refused", reason: "grant_changed" },
+      );
+      expect(site.userReads).toBe(1);
+      const { connection } = await connections.status(actor, { projectId });
+      expect(connection?.[grant].status).toBe("revoked");
+    },
+  );
+
+  it.each(grants)(
+    "lets a check started after the revoke grant %s access again",
+    async (grant) => {
+      await connections.revokeGrant(actor, { projectId, grant });
+      expect(
+        await connections.checkGrant(actor, { projectId, grant }),
+      ).toMatchObject({ connection: { [grant]: { status: "granted" } } });
+    },
+  );
+
+  it.each(grants)(
+    "drops a second revoke's slow %s check too, though the status looks the same",
+    async (grant) => {
+      await connections.revokeGrant(actor, { projectId, grant });
+      site.whenRequest(userRead, () =>
+        connections.revokeGrant(actor, { projectId, grant }),
+      );
+      expect(
+        await connections.checkGrant(actor, { projectId, grant }),
+      ).toMatchObject({ status: "refused", reason: "grant_changed" });
+      const { connection } = await connections.status(actor, { projectId });
+      expect(connection?.[grant].status).toBe("revoked");
+    },
+  );
+
+  it("won't store a write check once read access was revoked during it", async () => {
+    await connections.revokeGrant(actor, { projectId, grant: "write" });
+    site.whenRequest(userRead, () =>
+      connections.revokeGrant(actor, { projectId, grant: "read" }),
+    );
+    expect(
+      await connections.checkGrant(actor, { projectId, grant: "write" }),
+    ).toMatchObject({ status: "refused", reason: "grant_changed" });
+    const { connection } = await connections.status(actor, { projectId });
+    expect(connection?.write.status).toBe("revoked");
+  });
+
+  it("can't grant a password that was replaced during the check", async () => {
+    site.whenRequest(userRead, () =>
+      connections.connect(actor, {
+        projectId,
+        siteUrl: origin,
+        username: "editor",
+        applicationPassword: password,
+      }),
+    );
+    expect(
+      await connections.checkGrant(actor, { projectId, grant: "read" }),
+    ).toMatchObject({ status: "refused", reason: "grant_changed" });
+    const { connection } = await connections.status(actor, { projectId });
+    expect(connection?.read.status).toBe("unchecked");
+  });
+});
 
 describe(`connecting (${testDb.provider})`, () => {
   const input = {

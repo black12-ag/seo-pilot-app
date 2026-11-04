@@ -78,6 +78,7 @@ async function getConnection(organizationId: string, projectId: string) {
 /**
  * Whether this exact password may still go to its site right now. A grant check
  * is how read access gets established, so only it passes `needsRead: false`.
+ * Anything that changes the site passes `needsWrite`, the same test as admission.
  */
 async function credentialUsable(
   scope: AuthorityScope,
@@ -86,10 +87,12 @@ async function credentialUsable(
     credentialId: string;
     origin: string;
     needsRead: boolean;
+    needsWrite: boolean;
     nowMs: number;
   },
 ) {
-  const { projectId, credentialId, origin, needsRead, nowMs } = input;
+  const { projectId, credentialId, origin, needsRead, needsWrite, nowMs } =
+    input;
   const rows = await db
     .select({ projectId: connections.projectId })
     .from(connections)
@@ -98,7 +101,10 @@ async function credentialUsable(
         eq(connections.projectId, projectId),
         eq(connections.credentialId, credentialId),
         eq(connections.origin, origin),
-        needsRead ? eq(connections.readStatus, "granted") : undefined,
+        needsRead || needsWrite
+          ? eq(connections.readStatus, "granted")
+          : undefined,
+        needsWrite ? eq(connections.writeStatus, "granted") : undefined,
         authorityHeld(scope, projectId, origin, nowMs),
       ),
     )
@@ -143,35 +149,56 @@ async function saveConnection(
   return rows.length === 1;
 }
 
+const grantFields = (grant: WordPressGrant) =>
+  grant === "read"
+    ? ({ status: "readStatus", checkedAt: "readCheckedAtMs" } as const)
+    : ({ status: "writeStatus", checkedAt: "writeCheckedAtMs" } as const);
+
+// The time only ever moves forward, even within one millisecond or on a clock
+// running behind, so a grant's status and time together work as its version.
 function grantColumns(
   grant: WordPressGrant,
   status: WordPressConnectionRow["readStatus"],
   nowMs: number,
 ) {
-  return grant === "read"
-    ? { readStatus: status, readCheckedAtMs: nowMs, updatedAtMs: nowMs }
-    : { writeStatus: status, writeCheckedAtMs: nowMs, updatedAtMs: nowMs };
+  const fields = grantFields(grant);
+  const checkedAt = connections[fields.checkedAt];
+  return {
+    [fields.status]: status,
+    [fields.checkedAt]: sql<number>`case when ${checkedAt} >= ${nowMs} then ${checkedAt} + 1 else ${nowMs} end`,
+    updatedAtMs: nowMs,
+  };
 }
 
-/** Only the credential that was tested can receive the result of the test. */
+/**
+ * Stores a test's result only if the grant is still as it was read before the
+ * test began. A revoke, a newer result or a new password in between drops it, so
+ * a slow site can't undo a person's decision.
+ */
 async function recordGrantCheck(
   scope: AuthorityScope,
   input: {
-    projectId: string;
-    credentialId: string;
+    connection: WordPressConnectionRow;
     grant: WordPressGrant;
     status: WordPressConnectionRow["readStatus"];
     nowMs: number;
   },
 ) {
+  const { connection, grant } = input;
+  const { projectId, credentialId } = connection;
+  const { status, checkedAt } = grantFields(grant);
   const rows = await db
     .update(connections)
-    .set(grantColumns(input.grant, input.status, input.nowMs))
+    .set(grantColumns(grant, input.status, input.nowMs))
     .where(
       and(
-        eq(connections.projectId, input.projectId),
-        eq(connections.credentialId, input.credentialId),
-        authorityScope(scope, input.projectId),
+        eq(connections.projectId, projectId),
+        eq(connections.credentialId, credentialId),
+        eq(connections[status], connection[status]),
+        sql`coalesce(${connections[checkedAt]}, -1) = ${connection[checkedAt] ?? -1}`,
+        // Testing write access requires read access, right up to the result.
+        grant === "write" ? eq(connections.readStatus, "granted") : undefined,
+        authorityScope(scope, projectId),
       ),
     )
     .returning({ projectId: connections.projectId });

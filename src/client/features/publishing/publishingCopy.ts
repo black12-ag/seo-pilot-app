@@ -15,14 +15,19 @@ const refusals: Record<string, string> = {
   credential_unreadable:
     "The saved password can't be read. Connect WordPress again.",
   grant_missing: "Check read and write access first.",
+  grant_changed:
+    "Access changed while this was being checked, so the result was dropped. Check again if you still want it.",
   preview_changed: "This draft changed. Review the new preview.",
   title_missing: "Add a title to this content first.",
   not_ready: "Another request is working on this. Try again in two minutes.",
   check_too_soon:
     "It's too early to be sure. Check again in two minutes, and don't resend yet.",
+  ambiguous_match:
+    "The site has a post with this slug or title that doesn't hold our marker, so it may be this draft. Nothing was sent. Rename or remove it in WordPress to send again.",
   not_ours: "That post no longer holds our marker, so it was left alone.",
   not_a_draft: "That post is no longer a draft, so it was left alone.",
-  owner_edited: "Someone edited that draft, so it was left alone.",
+  owner_edited:
+    "That draft may have been edited since we sent it, so it was left alone. Manage it in WordPress.",
   baseline_missing:
     "We never confirmed this copy matches what we sent, so it was left alone. Manage it in WordPress.",
   record_erased:

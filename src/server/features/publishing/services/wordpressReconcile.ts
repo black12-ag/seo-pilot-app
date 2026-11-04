@@ -176,30 +176,32 @@ export async function reconcileWordPressRecord(
   const found = await findWordPressPostsByMarker(
     site,
     wordPressMarker(record.idempotencyKey),
-    record.slug,
+    record,
   );
   if (found.kind !== "ok")
     return refused(
       found.kind === "rejected" ? rejectionRefusal(found) : "check_failed",
       record,
     );
-  if (found.value.length === 0 && inFlight)
-    return refused("check_too_soon", record);
-  const settled =
-    found.value.length === 0
-      ? await PublishingRepository.settleRecord(
-          actor.organizationId,
-          record,
-          from,
-          { state: "not_found" },
-          Date.now(),
-        )
-      : await settleFromPost(
-          actor.organizationId,
-          site,
-          record,
-          from,
-          found.value,
-        );
-  return recorded(await latest(actor, record, settled));
+  const { posts, ambiguous } = found.value;
+  if (posts.length > 0) {
+    const settled = await settleFromPost(
+      actor.organizationId,
+      site,
+      record,
+      from,
+      posts,
+    );
+    return recorded(await latest(actor, record, settled));
+  }
+  if (inFlight) return refused("check_too_soon", record);
+  const settled = await PublishingRepository.settleRecord(
+    actor.organizationId,
+    record,
+    from,
+    { state: ambiguous ? "uncertain" : "not_found" },
+    Date.now(),
+  );
+  const now = await latest(actor, record, settled);
+  return ambiguous ? refused("ambiguous_match", now) : recorded(now);
 }

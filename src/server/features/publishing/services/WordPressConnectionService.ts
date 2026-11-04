@@ -144,13 +144,12 @@ async function checkGrant(
         (name) => reply.value.capabilities?.[name] === true,
       ));
   const recorded = await PublishingRepository.recordGrantCheck(access.scope, {
-    projectId: input.projectId,
-    credentialId: opened.connection.credentialId,
+    connection: opened.connection,
     grant: input.grant,
     status: allowed ? "granted" : "failed",
     nowMs: Date.now(),
   });
-  if (!recorded) return refuse("check_failed");
+  if (!recorded) return refuse("grant_changed");
   const row = await PublishingRepository.getConnection(
     actor.organizationId,
     input.projectId,

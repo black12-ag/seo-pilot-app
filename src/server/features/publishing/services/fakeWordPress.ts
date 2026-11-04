@@ -20,7 +20,7 @@ const draftBody = z.object({
   title: z.string(),
   content: z.string(),
   status: z.string(),
-  slug: z.string(),
+  slug: z.string().default(""),
 });
 
 const dnsAnswer = (url: URL) =>
@@ -55,6 +55,7 @@ export function fakeWordPress(origin: string) {
     failReads: false,
     firewallNotFound: false,
     rejectAuth: false,
+    latestRevision: 900 as number | null,
     capabilities: { edit_posts: true, delete_posts: true } as Record<
       string,
       boolean
@@ -116,7 +117,10 @@ export function fakeWordPress(origin: string) {
       if (path === "/posts" && method === "POST") return create(init);
       if (path === "/posts") return search(url);
       const revisions = /^\/posts\/(\d+)\/revisions$/.exec(path);
-      if (revisions) return Response.json([{ id: 900 }]);
+      if (revisions)
+        return Response.json(
+          site.latestRevision === null ? [] : [{ id: site.latestRevision }],
+        );
       const single = /^\/posts\/(\d+)$/.exec(path);
       if (single) {
         if (site.firewallNotFound)
@@ -168,7 +172,9 @@ export function fakeWordPress(origin: string) {
     const slug = url.searchParams.get("slug");
     return Response.json(
       site.posts.filter((post) =>
-        term ? post.content.raw.includes(term) : post.slug === slug,
+        term
+          ? post.content.raw.includes(term) || post.title.raw.includes(term)
+          : post.slug === slug,
       ),
     );
   }

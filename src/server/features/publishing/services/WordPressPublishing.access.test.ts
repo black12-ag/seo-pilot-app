@@ -221,6 +221,90 @@ describe(`the saved password (${testDb.provider})`, () => {
   });
 });
 
+describe(`access that goes after a change was admitted (${testDb.provider})`, () => {
+  const revoke = (grant: "read" | "write") => () =>
+    connections.revokeGrant(actor, { projectId, grant });
+  const losses = [
+    ["the write grant is revoked", revoke("write")],
+    ["the read grant is revoked", revoke("read")],
+    [
+      "the password is replaced",
+      () =>
+        testDb.executeMultiple(
+          "update wordpress_connections set credential_id = 'replaced';",
+        ),
+    ],
+    [
+      "the sender's role is lowered",
+      () => testDb.executeMultiple("update member set role = 'member';"),
+    ],
+    [
+      "the site's authority lapses",
+      () =>
+        testDb.executeMultiple(
+          "update project_site_authority set verified_until_ms = 2;",
+        ),
+    ],
+  ] as const;
+
+  // The address check is the last wait before the request, after the claim.
+  function onLastCheckWhileIn(state: string, action: () => Promise<unknown>) {
+    let ran = false;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: unknown, init?: RequestInit) => {
+        const dns = new URL(String(url)).hostname === "cloudflare-dns.com";
+        if (!ran && dns) {
+          const claimed = await testDb.execute(
+            `select id from wordpress_publish_records where state = '${state}'`,
+          );
+          if (claimed.length > 0) {
+            ran = true;
+            await action();
+          }
+        }
+        return site.fetch(url, init);
+      }),
+    );
+    return () => ran;
+  }
+
+  it.each(losses)("sends no POST once %s", async (_label, lose) => {
+    const ran = onLastCheckWhileIn("sending", lose);
+    expect(await sent()).toMatchObject({
+      state: "failed",
+      failureCode: "access_withdrawn",
+    });
+    expect(ran()).toBe(true);
+    expect(site.creates).toBe(0);
+    expect(site.posts).toHaveLength(0);
+  });
+
+  it.each(losses)("sends no DELETE once %s", async (_label, lose) => {
+    const record = await sent();
+    const ran = onLastCheckWhileIn("trashing", lose);
+    expect(await service.trash(actor, input(record.id))).toMatchObject({
+      status: "refused",
+      reason: "grant_missing",
+      record: { state: "verified", failureCode: "access_withdrawn" },
+    });
+    expect(ran()).toBe(true);
+    expect(site.trashes).toBe(0);
+    expect(site.posts[0]?.status).toBe("draft");
+  });
+
+  it("still reads the site with write access revoked, so a check can settle", async () => {
+    site.nextCreate = "lost_after_insert";
+    const record = await sent();
+    await revoke("write")();
+    expect(await service.reconcile(actor, input(record.id))).toMatchObject({
+      status: "recorded",
+      record: { state: "verified", remotePostId: site.posts[0]?.id },
+    });
+    expect(site.creates).toBe(1);
+  });
+});
+
 describe(`approval during a retry (${testDb.provider})`, () => {
   beforeEach(async () => {
     site.nextCreate = "reject";
