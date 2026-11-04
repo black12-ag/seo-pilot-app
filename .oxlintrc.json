@@ -65,6 +65,21 @@
       "rules": {
         "eslint/no-restricted-imports": "off"
       }
+    },
+    {
+      // Plain JavaScript that runs on its own, with no types for these to read.
+      "files": ["services/**/*.mjs"],
+      "rules": {
+        "typescript/no-unsafe-member-access": "off",
+        "typescript/no-unsafe-assignment": "off",
+        "typescript/no-unsafe-call": "off",
+        "typescript/no-unsafe-return": "off",
+        "typescript/no-unsafe-argument": "off",
+        "typescript/no-unsafe-unary-minus": "off",
+        "typescript/no-base-to-string": "off",
+        "typescript/restrict-template-expressions": "off",
+        "typescript/no-floating-promises": "off"
+      }
     }
   ]
 }

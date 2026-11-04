@@ -21,7 +21,7 @@ const body = `
 <table>
 <tr><th>Service</th><th>What it receives</th></tr>
 <tr><td>DataForSEO</td><td>Keywords, domains, URLs, locations and AI prompts you research or track</td></tr>
-<tr><td>OpenRouter and the AI companies it routes to</td><td>SAM chats, project details, page text and sources used for research and drafts, and results from tools SAM uses for you. This can include Search Console and Google Analytics data if you ask SAM about it. These companies may keep this data under their own terms</td></tr>
+<tr><td>OpenRouter and the AI companies it routes to, or whichever AI provider the operator connected (Google, Anthropic or OpenAI)</td><td>SAM chats, project details, page text and sources used for research and drafts, and results from tools SAM uses for you. This can include Search Console and Google Analytics data if you ask SAM about it. These companies may keep this data under their own terms</td></tr>
 <tr><td>Google</td><td>Sign-in details, your Search Console and Analytics requests, map views, and the domains whose icons we show, sent directly from your browser</td></tr>
 <tr><td>Ahrefs</td><td>Domains shown in the Backlinks table, to look up their public rating</td></tr>
 <tr><td>Context.dev</td><td>URLs of pages that need rendering, if enabled</td></tr>

@@ -153,11 +153,16 @@ export function CompetitorResearchReview({
       <p className="text-xs text-muted-foreground">
         Known provider cost:{" "}
         {run.knownCostUsd === null
-          ? "not reported"
+          ? run.modelIncludedInSubscription
+            ? "included in subscription"
+            : "not reported"
           : `$${run.knownCostUsd.toFixed(4)}`}
-        {run.costComplete ? "" : " (incomplete)"}. Billing:{" "}
-        {run.billingState.replaceAll("_", " ")}. The 2,000-token setting limits
-        requested model output, not input, reasoning or dollars.
+        {run.costComplete ? "" : " (incomplete)"}
+        {run.modelIncludedInSubscription && run.knownCostUsd !== null
+          ? ", with the AI model included in subscription"
+          : ""}
+        . Billing: {run.billingState.replaceAll("_", " ")}. The 2,000-token
+        setting limits requested model output, not input, reasoning or dollars.
       </p>
       {run.outcome === "unknown" ||
       run.outcome === "partial" ||

@@ -37,6 +37,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ci": "vitest run --reporter=dot",
+    "ai-engine": "node services/ai-engine/server.mjs",
+    "test:ai-engine": "node --test services/ai-engine/service.test.mjs services/ai-engine/lockdown.test.mjs",
     "test:standalone:gateway": "node --test scripts/celld/runtime/crawl-gateway.test.mjs",
     "test:standalone:runtime": "sh scripts/celld/conformance/conformance.sh",
     "test:e2e": "playwright test -c tests/playwright.config.ts",

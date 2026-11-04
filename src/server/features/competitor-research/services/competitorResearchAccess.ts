@@ -1,12 +1,13 @@
 import { checkUsageCreditsDepleted } from "@/server/billing/subscription";
 import { hasDataforseoAccess } from "@/server/lib/provider-access";
 import {
-  buildChatAgentModel,
-  getOpenRouterAccess,
-} from "@/server/lib/openrouter";
+  aiAccessKind,
+  aiBackendId,
+  isSubscriptionBackend,
+} from "@/server/lib/aiEngine/billing";
+import { buildChatAgentModel, resolveAiAccess } from "@/server/lib/openrouter";
 import {
   getOptionalEnvValue,
-  getWorkersEnv,
   isHostedServerAuthMode,
   usesBetterAuthServer,
 } from "@/server/lib/runtime-env";
@@ -36,15 +37,13 @@ export async function competitorExecutionConfiguration() {
     durableAuthority ? hasDataforseoAccess() : Promise.resolve(false),
     getOptionalEnvValue("OPENROUTER_MODEL"),
   ]);
-  const access = durableAuthority
-    ? getOpenRouterAccess((await getWorkersEnv()) ?? {})
-    : null;
+  const access = durableAuthority ? await resolveAiAccess() : null;
   const modelConfigured = Boolean(access);
-  const backendId = modelConfigured ? "openrouter" : null;
+  const backendId = aiBackendId(access);
   const modelConfigurationHash = await sha256Hex(
     JSON.stringify({
       backendId,
-      accessKind: access ? ("apiKey" in access ? "api_key" : "gateway") : null,
+      accessKind: aiAccessKind(access),
       requestedModelId: access
         ? buildChatAgentModel(access, modelName, "low").modelId
         : null,
@@ -103,7 +102,9 @@ export async function competitorCapability(
       backendId,
       configured: modelConfigured,
       authorizedForCaller: durableAuthority && modelConfigured,
-      usageBasis: "usd" as const,
+      usageBasis: isSubscriptionBackend(backendId)
+        ? ("quota" as const)
+        : ("usd" as const),
       outputTokenLimitSupported: modelConfigured,
     },
   };

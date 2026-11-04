@@ -36,7 +36,7 @@ vi.mock("@/server/lib/chatAgent", () => ({
 vi.mock("@/server/lib/openrouter", async () => {
   const { MockLanguageModelV3 } = await import("ai/test");
   return {
-    getOpenRouterAccess: () => access.value,
+    resolveAiAccess: async () => (() => access.value)(),
     buildChatAgentModel: () =>
       new MockLanguageModelV3({ modelId: "test-model", doGenerate }),
   };
@@ -257,6 +257,31 @@ describe("draft generation", () => {
     await expect(
       generate({ ...request, expectedHeadVersion: 3 }),
     ).rejects.toThrow("mutation_id_conflict");
+  });
+
+  it("records a subscription run as included, never as a price", async () => {
+    const { request } = await fixture();
+    const priced = reply([SUPPORTED], { cost: 0.0312 });
+    doGenerate.mockResolvedValue({
+      ...priced,
+      providerMetadata: {
+        aiEngine: {
+          billing: "included_in_subscription",
+          engine: "agy",
+          model: "Gemini 3.8 Flash (Low)",
+        },
+      },
+      response: { modelId: "agy/Gemini 3.8 Flash (Low)" },
+    });
+    await done(request);
+    const read = await head(request.contentId);
+    const note = read.checks.checks.find(
+      ({ rule }) => rule === "generated_draft",
+    );
+    expect(note?.explanation).toContain("Model: agy/Gemini 3.8 Flash (Low)");
+    expect(note?.explanation).toContain("Known cost: included in subscription");
+    expect(note?.explanation).not.toContain("$");
+    expect(spend).toHaveBeenCalledWith(expect.anything(), []);
   });
 
   it("labels the revision, records provenance and has no way to publish", async () => {

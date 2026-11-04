@@ -38,6 +38,9 @@ services:
       CELLD_MAX_REQUEST_BODY_BYTES: "33554432"
       RUST_LOG: warn,cell_console=info
     mem_limit: 2g
+    # Lets the app reach an AI engine service running on this host, when one is
+    # set up. See docs/AI_ENGINE.md.
+    extra_hosts: ["host.docker.internal:host-gateway"]
     logging:
       driver: json-file
       options: { max-size: 10m, max-file: "3" }
@@ -65,6 +68,8 @@ services:
       DATAFORSEO_API_KEY: ${DATAFORSEO_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-}
+      AI_ENGINE_URL: ${AI_ENGINE_URL:-}
+      AI_ENGINE_TOKEN: ${AI_ENGINE_TOKEN:-}
       LEGACY_SETUP_CUTOVER_VERIFIED: ${LEGACY_SETUP_CUTOVER_VERIFIED:-false}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}

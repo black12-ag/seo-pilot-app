@@ -227,3 +227,37 @@ it("releases an admitted-before-link orphan only after the original attempt expi
   });
   expect((await attempts.get(scope, "project", input.id)).state).toBe("failed");
 });
+
+it("records a subscription run as quota use with no price", async () => {
+  const { run, token, scope } = await finishedSetup();
+  const input = {
+    runId: run.id,
+    admissionToken: token,
+    knownCostUsd: null,
+    costComplete: true,
+    billingStatus: "not_required" as const,
+    includedInSubscription: true,
+    nowMs: 1003,
+  };
+  expect(await repo.recordSetupSettlement(input)).toEqual({ kind: "stored" });
+  const rows = await testDb.execute(
+    `select cost_usd,usage_basis from project_competitor_research_operations where run_id='${run.id}'`,
+  );
+  expect(rows[0]).toMatchObject({ cost_usd: null, usage_basis: "quota" });
+  const read = await repo.getRun(scope, "project", run.id);
+  expect(read.run.billingState).toBe("not_started");
+});
+
+it("still refuses a complete cost with no price outside a subscription run", async () => {
+  const { run, token } = await finishedSetup();
+  expect(
+    await repo.recordSetupSettlement({
+      runId: run.id,
+      admissionToken: token,
+      knownCostUsd: null,
+      costComplete: true,
+      billingStatus: "not_required",
+      nowMs: 1003,
+    }),
+  ).toEqual({ kind: "conflict" });
+});

@@ -19,8 +19,8 @@ import {
 import { AppError } from "@/server/lib/errors";
 import {
   buildChatAgentModel,
-  requireOpenRouterAccess,
-  type OpenRouterAccess,
+  requireAiAccess,
+  type AiAccess,
 } from "@/server/lib/openrouter";
 import { buildCacheKey, getCached, setCached } from "@/server/lib/r2-cache";
 import {
@@ -100,7 +100,7 @@ export async function researchAiPrompts(
       "INSUFFICIENT_CREDITS",
       "You need usage credits to research prompts.",
     );
-  const openRouter = await requireOpenRouterAccess();
+  const openRouter = await requireAiAccess();
   const state = await getTracker({ projectId: input.projectId });
   const keyword = normalizeAiSuggestion(input.keyword);
   // DataForSEO has ChatGPT prompt data only in US English.
@@ -226,7 +226,7 @@ async function relevantQuestions(
     projectId: string;
     keyword: string;
     prompts: CachedPrompt[];
-    openRouter: OpenRouterAccess;
+    openRouter: AiAccess;
   },
   customer: BillingCustomerContext,
 ): Promise<Set<string>> {

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { Tool } from "ai";
+import { asSchema, type Tool } from "ai";
 import { z } from "zod";
 import { makeToolContext } from "@/server/mcp/tools/tool-test-support";
 import { buildSamMcpTools } from "./samChatTools";
@@ -35,6 +35,26 @@ function buildTool(outputs: unknown[]) {
 }
 
 const callOptions = { toolCallId: "t", messages: [] };
+
+it("gives every tool a schema the subscription engines can check", async () => {
+  const tools = buildSamMcpTools(makeToolContext().auth, {
+    id: "bound-project",
+    domain: "example.com",
+  });
+  const unreadable: string[] = [];
+  for (const [name, definition] of Object.entries(tools)) {
+    const { jsonSchema } = asSchema(definition.inputSchema);
+    try {
+      z.fromJSONSchema(
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the same call the model adapter makes
+        (await jsonSchema) as Parameters<typeof z.fromJSONSchema>[0],
+      );
+    } catch {
+      unreadable.push(name);
+    }
+  }
+  expect(unreadable).toEqual([]);
+});
 
 it("offers the four shared authority tools without a model-supplied projectId", () => {
   const tools = buildSamMcpTools(makeToolContext().auth, {

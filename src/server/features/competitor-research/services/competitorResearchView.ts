@@ -2,6 +2,7 @@ import {
   competitorResearchRunSchema,
   type CompetitorResearchRun,
 } from "@/types/schemas/competitorResearch";
+import { isSubscriptionBackend } from "@/server/lib/aiEngine/billing";
 import { competitorLimits } from "./competitorResearchAccess";
 import type { CompetitorResearchRepository } from "../repositories/CompetitorResearchRepository";
 
@@ -74,8 +75,9 @@ export function publicCompetitorRun({
             operations.some(
               (operation) =>
                 operation.slot === "setup_evidence" &&
-                operation.usageBasis === "usd" &&
-                operation.costUsd !== null,
+                (operation.usageBasis === "quota" ||
+                  (operation.usageBasis === "usd" &&
+                    operation.costUsd !== null)),
             ),
           )
         : operations.every(
@@ -83,8 +85,10 @@ export function publicCompetitorRun({
               operation.state === "prepared" ||
               !["search", "model"].includes(operation.kind) ||
               (["succeeded", "failed"].includes(operation.state) &&
-                operation.costUsd !== null),
+                (operation.costUsd !== null ||
+                  operation.usageBasis === "quota")),
           ),
+    modelIncludedInSubscription: isSubscriptionBackend(run.modelBackendId),
     modelUsage:
       classify?.state === "succeeded" && run.modelBackendId
         ? {

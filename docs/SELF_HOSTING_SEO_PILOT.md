@@ -70,6 +70,9 @@ revisions, human review and exports. Capture works without model or data provide
 keys when the protected transport is configured and available. Paid generation,
 paid rendering checks and publishing remain in development.
 
+AI features can run on an OpenRouter key or on your own logged-in `agy`, `claude`
+or `codex` on this server. See [Choose how AI runs](AI_ENGINE.md).
+
 ## Stop and restart
 
 ```sh

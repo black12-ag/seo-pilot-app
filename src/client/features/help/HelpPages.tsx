@@ -22,7 +22,11 @@ const topics = [
     HELP_PATHS.dataforseo,
     "Enable keyword, domain, backlink and rank data.",
   ],
-  ["OpenRouter", HELP_PATHS.openrouter, "Enable SAM and AI research."],
+  [
+    "AI setup",
+    HELP_PATHS.openrouter,
+    "Enable SAM and AI research with an API key or your own subscription.",
+  ],
   ["AI agents", HELP_PATHS.agent, "Connect an agent to this installation."],
   ["Crawler", HELP_PATHS.crawler, "Understand audit access and crawl limits."],
   [

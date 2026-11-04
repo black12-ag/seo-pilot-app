@@ -16,7 +16,9 @@ SEO Pilot is a self-hosted SEO and AI search workspace. It runs on the owner's o
 
 ## Costs
 
-The software doesn't include data or models. DataForSEO, OpenRouter and hosting are billed separately by those providers.
+The software doesn't include data or models. DataForSEO, the AI route and hosting are billed separately by those providers.
+
+Whoever runs an install chooses how AI runs and can switch at any time in Settings: an OpenRouter API key, or their own logged-in subscription on their server through the agy, claude or codex command-line tools. An API key is billed per use. A subscription has no per-call price, and its plan limits apply. Subscription logins are for your own use: check your provider's terms, and don't serve paying customers from one. AI work goes to OpenRouter or to the provider the operator connected (Google, Anthropic or OpenAI).
 
 ## What it doesn't do yet
 

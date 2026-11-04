@@ -6,6 +6,12 @@ import {
 } from "@openrouter/ai-sdk-provider";
 import { wrapLanguageModel } from "ai";
 import { isEveryAppAuthMode } from "@/lib/auth-mode";
+import {
+  fetchAiEngineStatus,
+  getAiEngineConnection,
+  type AiEngineConnection,
+} from "@/server/lib/aiEngine/client";
+import { createAiEngineModel } from "@/server/lib/aiEngine/model";
 import { gatewayCallFor } from "@/server/lib/gateway-attribution";
 import { getEnvValueSync, getWorkersEnv } from "@/server/lib/runtime-env";
 
@@ -18,6 +24,24 @@ import { getEnvValueSync, getWorkersEnv } from "@/server/lib/runtime-env";
 export type OpenRouterAccess =
   | { apiKey: string }
   | { gatewayFetch: typeof fetch };
+
+/** Any way this deployment can run AI, including the operator's own login. */
+export type AiAccess =
+  | OpenRouterAccess
+  | {
+      subscription: {
+        connection: AiEngineConnection;
+        engine: string;
+        model: string;
+      };
+    };
+
+const NO_AI_MESSAGE =
+  "No AI is set up yet. Add an OpenRouter API key, or connect your own AI subscription in Settings.";
+const API_KEY_MISSING_MESSAGE =
+  "API key mode is selected in Settings, but OPENROUTER_API_KEY isn't set. Add the key, or choose your own AI subscription.";
+const ENGINE_UNREACHABLE_MESSAGE =
+  "The AI engine service isn't reachable. Start it, or remove AI_ENGINE_URL to use the API key.";
 
 const GATEWAY_BASE_URL =
   "https://every-app-gateway.invalid/api/ai/openrouter/api/v1";
@@ -53,31 +77,88 @@ export function getOpenRouterAccess(env: object): OpenRouterAccess | null {
   return apiKey ? { apiKey } : null;
 }
 
-/** SAM's model, from its Durable Object env. Sync: Think's getModel() is. */
+/**
+ * Where this call should run, read fresh each time: the owner can switch in
+ * Settings with no restart. With the engine service set up, it holds the
+ * choice. If it can't be reached the call stops rather than quietly spending
+ * the API key.
+ */
+export async function resolveAiRoute(
+  env: object,
+): Promise<{ access: AiAccess | null; message: string | null }> {
+  const apiAccess = getOpenRouterAccess(env);
+  const connection = getAiEngineConnection(env);
+  if (!connection)
+    return { access: apiAccess, message: apiAccess ? null : NO_AI_MESSAGE };
+  let status;
+  try {
+    status = await fetchAiEngineStatus(connection);
+  } catch {
+    return { access: null, message: ENGINE_UNREACHABLE_MESSAGE };
+  }
+  if (status.engine === "api")
+    return {
+      access: apiAccess,
+      message: apiAccess ? null : API_KEY_MISSING_MESSAGE,
+    };
+  if (!status.usable || !status.model)
+    return {
+      access: null,
+      message: status.message ?? "This AI engine isn't ready yet.",
+    };
+  return {
+    access: {
+      subscription: { connection, engine: status.engine, model: status.model },
+    },
+    message: null,
+  };
+}
+
+export async function resolveAiAccess(): Promise<AiAccess | null> {
+  return (await resolveAiRoute((await getWorkersEnv()) ?? {})).access;
+}
+
+/** For server code: the access, or the reason there is none. */
+export async function requireAiAccess(): Promise<AiAccess> {
+  const route = await resolveAiRoute((await getWorkersEnv()) ?? {});
+  if (!route.access) throw new Error(route.message ?? NO_AI_MESSAGE);
+  return route.access;
+}
+
+/**
+ * SAM's model, from its Durable Object env. Sync: Think's getModel() is. With
+ * the engine service set up, each call looks up the current choice.
+ */
 export function buildSamChatModel(
   env: object,
   reasoningEffort: "max" | "low",
 ): LanguageModelV3 {
-  const access = getOpenRouterAccess(env);
-  if (!access) {
-    throw new Error("OPENROUTER_API_KEY is required for the SAM agent");
-  }
-  return buildChatAgentModel(
-    access,
-    getEnvValueSync(env, "OPENROUTER_MODEL"),
-    reasoningEffort,
-  );
-}
-
-/** For server code: the access, or the error a missing key always threw. */
-export async function requireOpenRouterAccess(): Promise<OpenRouterAccess> {
-  const access = getOpenRouterAccess((await getWorkersEnv()) ?? {});
-  if (!access) {
-    throw new Error(
-      "Missing required environment variable: OPENROUTER_API_KEY",
+  const build = (access: AiAccess) =>
+    buildChatAgentModel(
+      access,
+      getEnvValueSync(env, "OPENROUTER_MODEL"),
+      reasoningEffort,
     );
+  if (!getAiEngineConnection(env)) {
+    const access = getOpenRouterAccess(env);
+    if (!access) {
+      throw new Error("OPENROUTER_API_KEY is required for the SAM agent");
+    }
+    return build(access);
   }
-  return access;
+  const pick = async () => {
+    const route = await resolveAiRoute(env);
+    if (!route.access) throw new Error(route.message ?? NO_AI_MESSAGE);
+    return build(route.access);
+  };
+  return {
+    specificationVersion: "v3",
+    provider: "seo-pilot-ai-route",
+    modelId: "current-ai-engine",
+    supportedUrls: {},
+    doGenerate: async (options) => (await pick()).doGenerate(options),
+    doStream: async (options) => (await pick()).doStream(options),
+  };
 }
 
 // OpenRouter model slug used for the SAM in-app chat agent. Override with
@@ -135,10 +216,14 @@ async function openAiBlockedHere(): Promise<boolean> {
  * so the SAM agent reads its access/model from its DO env and builds here.
  */
 export function buildChatAgentModel(
-  access: OpenRouterAccess,
+  access: AiAccess,
   modelId?: string,
   reasoningEffort: "max" | "low" = "max",
 ): LanguageModelV3 {
+  if ("subscription" in access) {
+    const { connection, engine, model } = access.subscription;
+    return createAiEngineModel(connection, { engine, model });
+  }
   const model = modelId ?? DEFAULT_CHAT_AGENT_MODEL;
   const openrouter =
     "apiKey" in access

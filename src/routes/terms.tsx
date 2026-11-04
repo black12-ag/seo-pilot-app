@@ -24,7 +24,7 @@ const body = `
 <p>AI drafts, answers and suggestions can be wrong, incomplete or out of date. Review them before you rely on or publish them. You're responsible for what you publish. Evidence and source checks help, but they don't prove something is true or legally safe.</p>
 
 <h2>Connected services and costs</h2>
-<p>Some features need outside services, such as DataForSEO, OpenRouter, Google or WordPress. Their own terms apply. Where you use your own keys, those providers bill you directly and we aren't responsible for their charges. Features that cost money say so before they run.</p>
+<p>Some features need outside services, such as DataForSEO, OpenRouter or another AI provider, Google or WordPress. Their own terms apply. Where you use your own keys, those providers bill you directly and we aren't responsible for their charges. Features that cost money say so before they run.</p>
 
 <h2>Publishing and sharing</h2>
 <p>You choose what gets sent to your site and what gets shared. WordPress publishing creates drafts for you to review. A report share link works for anyone who has it until you revoke it.</p>

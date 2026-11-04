@@ -27,23 +27,22 @@ export function SamSetupGate({
               your Every App gateway. An admin creates a key on OpenRouter and
               sets it on the gateway with{" "}
               <code>pnpm everyapp secret set OPENROUTER_API_KEY</code>, then
-              confirm here.
+              check again here.
             </p>
           ) : (
             <p>
-              SAM, SEO Pilot&apos;s in-app AI agent, needs an OpenRouter API
-              key. Create a key on OpenRouter, set it as the{" "}
-              <code>OPENROUTER_API_KEY</code> environment variable, restart SEO
-              Pilot, then confirm here.
+              SAM, SEO Pilot&apos;s in-app AI agent, needs a way to run AI. Use
+              an OpenRouter API key, or your own logged-in subscription on this
+              server. Choose in Settings, then check again here.
             </p>
           )}
           <p className="text-xs">
-            Step-by-step instructions for every deployment are in the{" "}
+            Step-by-step instructions are in the{" "}
             <Link
               className="underline underline-offset-2 hover:text-foreground"
               to="/help/openrouter-api-key"
             >
-              OpenRouter API key setup guide
+              AI setup guide
             </Link>
             .
           </p>
@@ -52,21 +51,15 @@ export function SamSetupGate({
       actions={
         <>
           <Button size="lg" pending={isRefetching} onClick={onRetry}>
-            Confirm API Key
+            Check again
           </Button>
           <Button
             size="lg"
             variant="outline"
             nativeButton={false}
-            render={
-              <a
-                href="https://openrouter.ai/settings/keys"
-                target="_blank"
-                rel="noreferrer"
-              />
-            }
+            render={<Link to="/settings" />}
           >
-            Open OpenRouter Keys
+            Open AI engine settings
           </Button>
         </>
       }

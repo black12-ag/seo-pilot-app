@@ -205,7 +205,7 @@ export function getCompetitorResearchRunTool(surface: "mcp" | "sam") {
         return mcpResponse({
           text:
             result.state === "available"
-              ? `Competitor run ${result.run.id}: ${result.run.outcome ?? result.run.state}; ${result.run.candidates.length} sourced suggestion(s). Known cost: ${result.run.knownCostUsd === null ? "unreported" : `$${result.run.knownCostUsd.toFixed(4)}`}${result.run.costComplete ? "" : " (incomplete)"}. Review before saving.`
+              ? `Competitor run ${result.run.id}: ${result.run.outcome ?? result.run.state}; ${result.run.candidates.length} sourced suggestion(s). Known cost: ${result.run.knownCostUsd === null ? (result.run.modelIncludedInSubscription ? "included in subscription" : "unreported") : `$${result.run.knownCostUsd.toFixed(4)}`}${result.run.costComplete ? "" : " (incomplete)"}. Review before saving.`
               : `Competitor run ${result.runId} is unavailable after privacy erasure.`,
           structuredContent: result,
           meta: buildProjectMeta(

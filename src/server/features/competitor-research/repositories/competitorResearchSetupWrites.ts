@@ -18,6 +18,7 @@ type Settlement = {
   knownCostUsd: number | null;
   costComplete: boolean;
   billingStatus: "selfhost_external" | "unknown" | "not_required";
+  includedInSubscription?: boolean;
   nowMs: number;
 };
 
@@ -25,9 +26,12 @@ function validSettlement(input: Settlement) {
   return (
     (input.knownCostUsd === null ||
       (Number.isFinite(input.knownCostUsd) && input.knownCostUsd >= 0)) &&
-    (!input.costComplete || input.knownCostUsd !== null) &&
+    (!input.costComplete ||
+      input.knownCostUsd !== null ||
+      Boolean(input.includedInSubscription)) &&
     (input.billingStatus !== "not_required" ||
-      (input.costComplete && input.knownCostUsd === 0)) &&
+      (input.costComplete &&
+        (input.knownCostUsd === 0 || Boolean(input.includedInSubscription)))) &&
     Number.isSafeInteger(input.nowMs) &&
     input.nowMs >= 0
   );
@@ -66,6 +70,11 @@ export async function recordSetupSettlement(input: Settlement) {
   const valid = sql`exists (select 1 from projects p join "user" u on u.id=${run.sponsorUserId}
     where p.id=${run.projectId} and p.organization_id=${run.organizationId})`;
   const operationId = crypto.randomUUID();
+  const usageBasis = !input.costComplete
+    ? "unknown"
+    : input.includedInSubscription && input.knownCostUsd === null
+      ? "quota"
+      : "usd";
   const receipt = sql`exists (select 1 from project_competitor_research_runs r where r.id=${run.id} and r.billing_token=${marker})`;
   try {
     await runBatch((tx) => [
@@ -97,14 +106,14 @@ export async function recordSetupSettlement(input: Settlement) {
       tx
         .insert(operations)
         .select(
-          sql`select ${operationId},${run.projectId},${run.id},'setup_evidence','legacy','unknown',null,null,null,null,null,null,${input.nowMs},null,null,null,null,${input.costComplete ? "usd" : "unknown"},${input.knownCostUsd},null,null where ${receipt}`,
+          sql`select ${operationId},${run.projectId},${run.id},'setup_evidence','legacy','unknown',null,null,null,null,null,null,${input.nowMs},null,null,null,null,${usageBasis},${input.knownCostUsd},null,null where ${receipt}`,
         )
         .onConflictDoNothing(),
       tx
         .update(operations)
         .set({
           costUsd: input.knownCostUsd,
-          usageBasis: input.costComplete ? "usd" : "unknown",
+          usageBasis,
         })
         .where(
           and(

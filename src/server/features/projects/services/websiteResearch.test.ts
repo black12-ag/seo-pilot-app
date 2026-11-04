@@ -32,7 +32,7 @@ vi.mock("@/server/lib/runtime-env", () => ({
 }));
 vi.mock("@/server/lib/openrouter", () => ({
   buildChatAgentModel: vi.fn(),
-  requireOpenRouterAccess: vi.fn(async () => ({ apiKey: "test-key" })),
+  requireAiAccess: vi.fn(async () => ({ apiKey: "test-key" })),
 }));
 vi.mock("@/server/lib/chatAgent", () => ({
   requireOpenRouterCostUsd: vi.fn(),
@@ -50,7 +50,7 @@ vi.mock(
 );
 
 import { NoObjectGeneratedError } from "ai";
-import { researchWebsite } from "./websiteResearch";
+import { researchWebsite, researchWebsiteDetailed } from "./websiteResearch";
 import { billResearchSpend } from "@/server/billing/researchSpend";
 import { AppError } from "@/server/lib/errors";
 import { customer } from "@/server/features/ai-visibility/services/aiVisibilityTestFixtures";
@@ -182,6 +182,40 @@ describe("researchWebsite", () => {
       if (field === "keywords") expect(readSite).not.toHaveBeenCalled();
     },
   );
+
+  it("settles a subscription run as included, with no price", async () => {
+    listKeywords.mockResolvedValue([]);
+    const succeed = generateText.getMockImplementation()!;
+    generateText.mockImplementationOnce(
+      async (options: { onStepFinish: (step: unknown) => void }) => {
+        options.onStepFinish({
+          providerMetadata: {
+            aiEngine: {
+              billing: "included_in_subscription",
+              engine: "agy",
+              model: "Gemini 3.8 Flash (Low)",
+            },
+          },
+        });
+        await succeed(options);
+        return {
+          output: { suggestedTopics: topics, suggestedKeywords: [] },
+        };
+      },
+    );
+    vi.mocked(billResearchSpend).mockResolvedValue({ status: "not_required" });
+    const onSettled = vi.fn();
+    await researchWebsiteDetailed("https://saved.com", project, customer, {
+      onSettled,
+    });
+    expect(billResearchSpend).toHaveBeenCalledWith(customer, []);
+    expect(onSettled).toHaveBeenCalledWith({
+      knownCostUsd: null,
+      costComplete: true,
+      billingStatus: "not_required",
+      includedInSubscription: true,
+    });
+  });
 
   it("drops malformed suggested keywords instead of failing the paid run", async () => {
     listKeywords.mockResolvedValue([]);

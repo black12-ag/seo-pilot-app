@@ -8,9 +8,10 @@ import { Button } from "@/client/components/ui/button";
 import { useSamAccess } from "@/client/features/sam/useSamAccess";
 
 /**
- * AI visibility setup researches the brand and suggests prompts through
- * OpenRouter, so a self-hosted install without a key would only fail after
- * the user starts research. Ask for the key first (hosted always has one).
+ * AI visibility setup researches the brand and suggests prompts with AI, so an
+ * install with no AI route would only fail after the user starts research. Ask
+ * for one first: an API key or the owner's own subscription (hosted always has
+ * a key).
  */
 export function OpenRouterKeyGate({
   projectId,
@@ -26,7 +27,7 @@ export function OpenRouterKeyGate({
     return (
       <QueryError
         error={access.error}
-        fallback="Could not check the OpenRouter API key."
+        fallback="Could not check your AI setup."
         onRetry={access.onRetry}
         isRetrying={access.isRetrying}
       />
@@ -37,27 +38,27 @@ export function OpenRouterKeyGate({
         className="max-w-2xl"
         icon={KeyRound}
         tone="warning"
-        title="Add an OpenRouter API key"
+        title="Choose how AI runs"
         description={
           <>
             <p>
-              AI visibility uses OpenRouter to research your brand and suggest
-              the prompts worth tracking, so you don&apos;t have to write them
+              AI visibility uses AI to research your brand and suggest the
+              prompts worth tracking, so you don&apos;t have to write them
               yourself. The tracking results, what ChatGPT and other AI engines
               actually answer, come from your DataForSEO account.
             </p>
             <p>
-              Create a key on OpenRouter, set it as{" "}
-              <code>OPENROUTER_API_KEY</code>, restart SEO Pilot, then confirm
-              here. The{" "}
+              Use an OpenRouter API key, or your own logged-in subscription on
+              this server. The{" "}
               <Link
                 className="underline underline-offset-2 hover:text-foreground"
                 to="/help/openrouter-api-key"
               >
-                OpenRouter API key setup guide
+                AI setup guide
               </Link>{" "}
-              has the steps for each deployment.
+              has the steps for each one.
             </p>
+            {access.errorMessage ? <p>{access.errorMessage}</p> : null}
           </>
         }
         actions={
@@ -67,21 +68,15 @@ export function OpenRouterKeyGate({
               pending={access.isRefetching}
               onClick={access.onRetry}
             >
-              Confirm API Key
+              Check again
             </Button>
             <Button
               size="lg"
               variant="outline"
               nativeButton={false}
-              render={
-                <a
-                  href="https://openrouter.ai/settings/keys"
-                  target="_blank"
-                  rel="noreferrer"
-                />
-              }
+              render={<Link to="/settings" />}
             >
-              Open OpenRouter Keys
+              Open AI engine settings
             </Button>
           </>
         }

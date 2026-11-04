@@ -1,6 +1,7 @@
 import type { LanguageModelV3 } from "@openrouter/ai-sdk-provider";
 import { subscribe } from "agents/observability";
 import { z } from "zod";
+import { subscriptionRun } from "@/server/lib/aiEngine/billing";
 
 // The chat agent's most common failure modes — a provider stream dying
 // mid-turn ("chat:request:failed", stage "stream") and a DO restart whose
@@ -35,7 +36,10 @@ export function openRouterCostUsd(providerMetadata: unknown): number {
   return parsed.success ? parsed.data.openrouter.usage.cost : 0;
 }
 
+// A run on the operator's own login has no per-call price, so nothing to bill.
+// Callers that record a cost check subscriptionRun first and say so instead.
 export function requireOpenRouterCostUsd(providerMetadata: unknown): number {
+  if (subscriptionRun(providerMetadata)) return 0;
   return openRouterUsageSchema.parse(providerMetadata).openrouter.usage.cost;
 }
 

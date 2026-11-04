@@ -41,8 +41,8 @@ vi.mock("@/server/lib/runtime-env", () => ({
   getOptionalEnvValue: async () => null,
 }));
 vi.mock("@/server/lib/openrouter", () => ({
-  getOpenRouterAccess: openRouterAccess,
-  requireOpenRouterAccess: async () => {
+  resolveAiAccess: async () => openRouterAccess(),
+  requireAiAccess: async () => {
     const access = openRouterAccess();
     if (!access) throw new Error("Missing required environment variable");
     return access;

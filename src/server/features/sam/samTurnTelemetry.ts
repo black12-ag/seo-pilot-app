@@ -4,6 +4,7 @@ import type {
   ToolCallResultContext,
 } from "@cloudflare/think";
 import type { UIMessage } from "ai";
+import { subscriptionRun } from "@/server/lib/aiEngine/billing";
 import { captureServerError, captureServerEvent } from "@/server/lib/posthog";
 
 type SamTurnStatus =
@@ -43,6 +44,7 @@ export class SamTurnStats {
   refusal: SamRefusalReason | null = null;
   reported = false;
   model: string | null = null;
+  provider = "openrouter";
   steps = 0;
   inputTokens = 0;
   outputTokens = 0;
@@ -71,6 +73,8 @@ export class SamTurnStats {
     const cached =
       usage.inputTokenDetails.cacheReadTokens ?? usage.cachedInputTokens ?? 0;
     this.model = ctx.response.modelId;
+    const included = subscriptionRun(ctx.providerMetadata);
+    if (included) this.provider = included.engine;
     this.steps += 1;
     this.inputTokens += usage.inputTokens ?? 0;
     this.outputTokens += usage.outputTokens ?? 0;
@@ -81,13 +85,14 @@ export class SamTurnStats {
       $ai_parent_id: this.turnId,
       $ai_span_id: crypto.randomUUID(),
       $ai_span_name: `step ${this.steps}`,
-      $ai_provider: "openrouter",
+      $ai_provider: this.provider,
       $ai_model: ctx.response.modelId,
       $ai_input_tokens: usage.inputTokens ?? 0,
       $ai_output_tokens: usage.outputTokens ?? 0,
       $ai_reasoning_tokens: reasoning,
       $ai_cache_read_input_tokens: cached,
-      $ai_total_cost_usd: costUsd,
+      // A run on the owner's own login has no per-call price to report.
+      $ai_total_cost_usd: included ? null : costUsd,
       $ai_latency: latencySeconds,
       $ai_is_error: false,
       $ai_tools_called: ctx.toolCalls.map((call) => call.toolName).join(","),
@@ -138,7 +143,7 @@ export class SamTurnStats {
     return {
       $ai_trace_id: this.turnId,
       $ai_span_name: "sam_turn",
-      $ai_provider: "openrouter",
+      $ai_provider: this.provider,
       $ai_model: this.model,
       $ai_latency: (Date.now() - this.startedAt) / 1000,
       $ai_is_error: status === "error",

@@ -1,6 +1,7 @@
 import { FirebaseLinkForm } from "@/client/features/auth/FirebaseLinkForm";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { AiEngineSettings } from "@/client/features/settings/AiEngineSettings";
 import { ApiKeySettings } from "@/client/features/settings/ApiKeySettings";
 import { SectionHeader } from "@/client/components/PageHeader";
 import { ThemePreferenceRadio } from "@/client/components/ThemePreferenceMenuItems";
@@ -40,6 +41,8 @@ function PersonalSettings() {
       {hasAccounts && !isHosted ? <FirebaseLinkForm /> : null}
 
       {hasAccounts ? <ApiKeySettings /> : null}
+
+      {isEveryAppClientAuthMode() ? null : <AiEngineSettings />}
 
       {isHosted ? (
         <PrivacySettings />

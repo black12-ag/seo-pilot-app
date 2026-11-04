@@ -28,7 +28,12 @@ services:
       # Optional: AI features (SAM, the in-app SEO agent)
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
       - OPENROUTER_MODEL=${OPENROUTER_MODEL:-}
+      # Optional: run AI on your own logged-in CLI. See docs/AI_ENGINE.md.
+      - AI_ENGINE_URL=${AI_ENGINE_URL:-}
+      - AI_ENGINE_TOKEN=${AI_ENGINE_TOKEN:-}
       - VITE_SHOW_DEVTOOLS=false
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "127.0.0.1:${PORT:-3001}:${PORT:-3001}"
     volumes:

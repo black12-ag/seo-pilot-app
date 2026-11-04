@@ -6,7 +6,7 @@ vi.mock("ai", () => ({
   Output: { object: (value: unknown) => value },
 }));
 vi.mock("@/server/lib/openrouter", () => ({
-  requireOpenRouterAccess: async () => ({ apiKey: "test" }),
+  requireAiAccess: async () => ({ apiKey: "test" }),
   buildChatAgentModel: () => ({ modelId: "test-model" }),
 }));
 vi.mock("@/server/lib/chatAgent", () => ({
@@ -87,4 +87,30 @@ it("rejects a foreign candidate ID without a repair call", async () => {
     }),
   ).rejects.toThrow();
   expect(generateText).toHaveBeenCalledTimes(1);
+});
+
+it("records quota use and no price for a subscription run", async () => {
+  generateText.mockResolvedValue({
+    output: { selections: [{ candidateId, reason: "Same market" }] },
+    response: { modelId: "agy/Gemini 3.8 Flash (Low)" },
+    providerMetadata: {
+      aiEngine: {
+        billing: "included_in_subscription",
+        engine: "agy",
+        model: "Gemini 3.8 Flash (Low)",
+      },
+    },
+    usage: { inputTokens: 100, outputTokens: 20 },
+  });
+  const result = await classifyCompetitorCandidates(request, {
+    signal: AbortSignal.timeout(1000),
+  });
+  expect(result.status).toBe("succeeded");
+  if (result.status === "succeeded")
+    expect(result.usage).toMatchObject({
+      backendId: "subscription-agy",
+      modelId: "agy/Gemini 3.8 Flash (Low)",
+      basis: "quota",
+      costUsd: null,
+    });
 });

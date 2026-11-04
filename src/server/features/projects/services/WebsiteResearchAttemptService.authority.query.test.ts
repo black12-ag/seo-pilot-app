@@ -26,8 +26,8 @@ vi.mock("@/server/lib/runtime-env", () => ({
   getOptionalEnvValue: async () => null,
 }));
 vi.mock("@/server/lib/openrouter", () => ({
-  getOpenRouterAccess: () => ({ apiKey: "test" }),
-  requireOpenRouterAccess: async () => ({ apiKey: "test" }),
+  resolveAiAccess: async () => (() => ({ apiKey: "test" }))(),
+  requireAiAccess: async () => ({ apiKey: "test" }),
   buildChatAgentModel: () => ({ modelId: "test-model" }),
 }));
 vi.mock("ai", async (importOriginal) => ({

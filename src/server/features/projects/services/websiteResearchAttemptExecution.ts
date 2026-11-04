@@ -8,11 +8,9 @@ import {
   prepareWebsiteTracking,
   startWebsiteTrackingRun,
 } from "@/server/features/ai-visibility/services/websiteTrackingSetup";
-import {
-  buildChatAgentModel,
-  getOpenRouterAccess,
-} from "@/server/lib/openrouter";
-import { getOptionalEnvValue, getWorkersEnv } from "@/server/lib/runtime-env";
+import { aiAccessKind, aiBackendId } from "@/server/lib/aiEngine/billing";
+import { buildChatAgentModel, resolveAiAccess } from "@/server/lib/openrouter";
+import { getOptionalEnvValue } from "@/server/lib/runtime-env";
 import {
   researchWebsiteDetailed,
   type WebsiteResearchSettlement,
@@ -23,7 +21,7 @@ import { WEBSITE_UNREADABLE_MESSAGE } from "@/types/schemas/projectWebsite";
 const MODEL_NOT_CONFIGURED = "model_not_configured";
 
 async function modelDescriptor() {
-  const access = getOpenRouterAccess((await getWorkersEnv()) ?? {});
+  const access = await resolveAiAccess();
   const model = access
     ? buildChatAgentModel(
         access,
@@ -32,15 +30,11 @@ async function modelDescriptor() {
       )
     : null;
   return {
-    modelBackendId: model ? "openrouter" : null,
+    modelBackendId: aiBackendId(access),
     modelConfigurationHash: await sha256Hex(
       JSON.stringify({
         profile: "legacy_website_setup",
-        accessKind: access
-          ? "apiKey" in access
-            ? "api_key"
-            : "gateway"
-          : null,
+        accessKind: aiAccessKind(access),
         modelId: model?.modelId ?? null,
       }),
     ),
@@ -124,7 +118,7 @@ export async function executeWebsiteResearchAttempt(
   };
   try {
     // Nothing is called without a key, so this must not read as an unknown charge.
-    if (!getOpenRouterAccess((await getWorkersEnv()) ?? {}))
+    if (!(await resolveAiAccess()))
       throw new AppError("VALIDATION_ERROR", MODEL_NOT_CONFIGURED);
     const current = await competitors.getSnapshot(scope.actor, row.projectId);
     if (

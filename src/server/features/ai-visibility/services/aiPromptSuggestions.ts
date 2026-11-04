@@ -9,10 +9,7 @@ import {
 } from "@/server/billing/subscription";
 import { billResearchSpend } from "@/server/billing/researchSpend";
 import { requireOpenRouterCostUsd } from "@/server/lib/chatAgent";
-import {
-  buildChatAgentModel,
-  requireOpenRouterAccess,
-} from "@/server/lib/openrouter";
+import { buildChatAgentModel, requireAiAccess } from "@/server/lib/openrouter";
 import {
   getOptionalEnvValue,
   isHostedServerAuthMode,
@@ -76,7 +73,7 @@ export async function generateAiPrompts(
     : suggestedAiTopicSchema;
   const result = await generateText({
     model: buildChatAgentModel(
-      await requireOpenRouterAccess(),
+      await requireAiAccess(),
       await getOptionalEnvValue("OPENROUTER_MODEL"),
       "low",
     ),

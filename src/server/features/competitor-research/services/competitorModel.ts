@@ -6,11 +6,12 @@ import {
   type CompetitorClassificationRequest,
   type CompetitorClassificationResponse,
 } from "@/shared/competitorWorkerContract";
-import { requireOpenRouterCostUsd } from "@/server/lib/chatAgent";
 import {
-  buildChatAgentModel,
-  requireOpenRouterAccess,
-} from "@/server/lib/openrouter";
+  subscriptionBackendId,
+  subscriptionRun,
+} from "@/server/lib/aiEngine/billing";
+import { requireOpenRouterCostUsd } from "@/server/lib/chatAgent";
+import { buildChatAgentModel, requireAiAccess } from "@/server/lib/openrouter";
 import { getOptionalEnvValue } from "@/server/lib/runtime-env";
 
 export async function classifyCompetitorCandidates(
@@ -20,7 +21,7 @@ export async function classifyCompetitorCandidates(
   const request = competitorClassificationRequestSchema.parse(input);
   if (new TextEncoder().encode(JSON.stringify(request)).byteLength > 32768)
     throw new Error("Classifier request exceeds the fixed byte budget");
-  const access = await requireOpenRouterAccess();
+  const access = await requireAiAccess();
   const result = await generateText({
     model: buildChatAgentModel(
       access,
@@ -44,6 +45,7 @@ export async function classifyCompetitorCandidates(
     new TextEncoder().encode(JSON.stringify(output)).byteLength > 16384
   )
     throw new Error("Classifier output failed the evidence or byte budget");
+  const included = subscriptionRun(result.providerMetadata);
   return competitorClassificationResponseSchema.parse({
     v: 1,
     operation: "classify_competitors",
@@ -51,10 +53,15 @@ export async function classifyCompetitorCandidates(
     status: "succeeded",
     output,
     usage: {
-      backendId: "openrouter",
+      backendId: included
+        ? subscriptionBackendId(included.engine)
+        : "openrouter",
       modelId: result.response.modelId ?? null,
-      basis: "usd",
-      costUsd: requireOpenRouterCostUsd(result.providerMetadata),
+      // Quota use, not a price: the login's owner pays for the plan as a whole.
+      basis: included ? "quota" : "usd",
+      costUsd: included
+        ? null
+        : requireOpenRouterCostUsd(result.providerMetadata),
       inputTokens: result.usage.inputTokens ?? null,
       outputTokens: result.usage.outputTokens ?? null,
     },

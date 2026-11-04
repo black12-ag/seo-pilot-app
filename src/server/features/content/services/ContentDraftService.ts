@@ -3,16 +3,11 @@ import { billResearchSpend } from "@/server/billing/researchSpend";
 import { checkUsageCreditsDepleted } from "@/server/billing/subscription";
 import { ContentDraftRepository as drafts } from "@/server/features/content/repositories/contentDraftWrites";
 import { ContentRepository } from "@/server/features/content/repositories/ContentRepository";
+import { INCLUDED_IN_SUBSCRIPTION_LABEL } from "@/server/lib/aiEngine/billing";
 import { sha256Hex } from "@/server/lib/audit/ids";
 import { AppError, describeError } from "@/server/lib/errors";
-import {
-  getOpenRouterAccess,
-  type OpenRouterAccess,
-} from "@/server/lib/openrouter";
-import {
-  getWorkersEnv,
-  isHostedServerAuthMode,
-} from "@/server/lib/runtime-env";
+import { resolveAiAccess, type AiAccess } from "@/server/lib/openrouter";
+import { isHostedServerAuthMode } from "@/server/lib/runtime-env";
 import {
   contentDraftRequestSchema,
   contentDraftSetupInputSchema,
@@ -124,11 +119,16 @@ function generationNote(
   modelId: string,
   sources: SavedContentSource[],
   costUsd: number | null,
+  includedInSubscription: boolean,
 ) {
   const versions = sources
     .map((source) => `${source.id}@${source.textHash.slice(0, 12)}`)
     .join(", ");
-  const cost = costUsd === null ? "not reported" : `$${costUsd.toFixed(4)} USD`;
+  const cost = includedInSubscription
+    ? INCLUDED_IN_SUBSCRIPTION_LABEL
+    : costUsd === null
+      ? "not reported"
+      : `$${costUsd.toFixed(4)} USD`;
   return `Generated draft. Model: ${modelId}. Prompt: ${CONTENT_DRAFT_PROMPT_VERSION}. Source versions: ${versions}. Known cost: ${cost}.`;
 }
 
@@ -147,7 +147,7 @@ async function runClaimed({
   head: SavedContentRevision;
   sources: SavedContentSource[];
   snapshot: Awaited<ReturnType<typeof contentContextSnapshot>>["snapshot"];
-  access: OpenRouterAccess;
+  access: AiAccess;
   finish: (resultId: string) => Promise<void>;
   userEmail: string;
 }): Promise<ContentDraftResult> {
@@ -219,7 +219,12 @@ async function runClaimed({
         ...draft,
         omissions: [...notes, ...draft.omissions].slice(0, 100),
       },
-      generationNote(called.modelId, sources, called.costUsd),
+      generationNote(
+        called.modelId,
+        sources,
+        called.costUsd,
+        called.includedInSubscription,
+      ),
     );
     if (!saved.ok) return await fail("head_changed");
     await finish(saved.revision.id);
@@ -278,7 +283,7 @@ async function generate(
       ["usable", "partial"].includes(source.extractionStatus),
   );
   if (!sources.length) return { status: "blocked", reason: "no_sources" };
-  const access = getOpenRouterAccess((await getWorkersEnv()) ?? {});
+  const access = await resolveAiAccess();
   if (!access) return { status: "needs_setup" };
   if (
     (await isHostedServerAuthMode()) &&
@@ -346,7 +351,7 @@ async function getSetup(actor: ContentActor, raw: { projectId: string }) {
   const input = contentDraftSetupInputSchema.parse(raw);
   await contentAccess(actor, input.projectId);
   return {
-    configured: Boolean(getOpenRouterAccess((await getWorkersEnv()) ?? {})),
+    configured: Boolean(await resolveAiAccess()),
     usesCredits: await isHostedServerAuthMode(),
     maxOutputTokens: contentDraftLimits.maxOutputTokens,
   };

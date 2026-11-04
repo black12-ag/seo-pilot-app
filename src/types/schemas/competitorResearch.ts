@@ -86,6 +86,7 @@ export const competitorResearchRunSchema = z.strictObject({
   candidates: z.array(competitorResearchCandidateSchema).max(5),
   knownCostUsd: z.number().finite().nonnegative().nullable(),
   costComplete: z.boolean(),
+  modelIncludedInSubscription: z.boolean(),
   modelUsage: competitorModelUsageSchema.nullable(),
   billingState: z.enum([
     "not_started",

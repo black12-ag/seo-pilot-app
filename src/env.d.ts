@@ -118,6 +118,10 @@ declare namespace Cloudflare {
     OPENROUTER_API_KEY?: string;
     // Optional OpenRouter model slug override (defaults in openrouter.ts).
     OPENROUTER_MODEL?: string;
+    // The local service that runs AI on the operator's own logged-in CLI. Both
+    // are needed to offer that choice in Settings. See docs/AI_ENGINE.md.
+    AI_ENGINE_URL?: string;
+    AI_ENGINE_TOKEN?: string;
     LEGACY_SETUP_CUTOVER_VERIFIED?: string;
   }
 }

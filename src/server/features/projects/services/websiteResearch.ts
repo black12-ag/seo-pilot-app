@@ -5,13 +5,11 @@ import {
   billResearchSpend,
   type ResearchSpend,
 } from "@/server/billing/researchSpend";
+import { subscriptionRun } from "@/server/lib/aiEngine/billing";
 import { requireOpenRouterCostUsd } from "@/server/lib/chatAgent";
 import { normalizeBacklinksTarget } from "@/server/lib/dataforseoBacklinksTarget";
 import { AppError } from "@/server/lib/errors";
-import {
-  buildChatAgentModel,
-  requireOpenRouterAccess,
-} from "@/server/lib/openrouter";
+import { buildChatAgentModel, requireAiAccess } from "@/server/lib/openrouter";
 import { getOptionalEnvValue } from "@/server/lib/runtime-env";
 import { readSite } from "@/server/lib/scrape";
 import {
@@ -62,6 +60,8 @@ export type WebsiteResearchSettlement = {
   knownCostUsd: number | null;
   costComplete: boolean;
   billingStatus: "selfhost_external" | "unknown" | "not_required";
+  /** The model ran on the operator's own login: no price is known or owed. */
+  includedInSubscription?: boolean;
 };
 type ResearchOptions = {
   ensureAuthorized?: () => Promise<void>;
@@ -137,6 +137,7 @@ export async function researchWebsiteDetailed(
   };
   let costComplete = true;
   let completed = false;
+  let includedInSubscription = false;
   const outputSchema = z.object({
     ...(missingOverview
       ? { overview: websiteResearchSchema.shape.overview.max(3500) }
@@ -186,7 +187,7 @@ export async function researchWebsiteDetailed(
       await options.ensureAuthorized?.();
       return generateText({
         model: buildChatAgentModel(
-          await requireOpenRouterAccess(),
+          await requireAiAccess(),
           await getOptionalEnvValue("OPENROUTER_MODEL"),
           "low",
         ),
@@ -245,6 +246,10 @@ export async function researchWebsiteDetailed(
             })
           : undefined,
         onStepFinish: (step) => {
+          if (subscriptionRun(step.providerMetadata)) {
+            includedInSubscription = true;
+            return;
+          }
           let costUsd: number;
           try {
             costUsd = requireOpenRouterCostUsd(step.providerMetadata);
@@ -338,7 +343,7 @@ export async function researchWebsiteDetailed(
     options.onSettled?.({
       knownCostUsd: spend.length
         ? spend.reduce((total, item) => total + item.costUsd, 0)
-        : completed
+        : completed && !includedInSubscription
           ? 0
           : null,
       costComplete: completed && costComplete,
@@ -346,6 +351,7 @@ export async function researchWebsiteDetailed(
         billing.status === "selfhost_external" || (completed && costComplete)
           ? billing.status
           : "unknown",
+      ...(includedInSubscription ? { includedInSubscription } : {}),
     });
   }
 }

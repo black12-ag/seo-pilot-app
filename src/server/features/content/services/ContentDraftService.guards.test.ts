@@ -31,7 +31,7 @@ vi.mock("@/server/billing/subscription", () => ({
 vi.mock("@/server/lib/openrouter", async () => {
   const { MockLanguageModelV3 } = await import("ai/test");
   return {
-    getOpenRouterAccess: () => ({ apiKey: "test" }),
+    resolveAiAccess: async () => (() => ({ apiKey: "test" }))(),
     buildChatAgentModel: () =>
       new MockLanguageModelV3({ modelId: "test-model", doGenerate }),
   };

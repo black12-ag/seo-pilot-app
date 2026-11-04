@@ -42,12 +42,16 @@ function OpenrouterApiKeyHelpPage() {
   );
   return (
     <SecretHelpPage
-      title="Set up your OpenRouter API key"
+      title="Set up AI"
       intro={
         <>
-          SEO Pilot needs the <code>OPENROUTER_API_KEY</code> secret before AI
-          features like SAM, the in-app SEO agent, can run. It is optional —
-          everything else in SEO Pilot works without it.
+          AI features like SAM, the in-app SEO agent, need one of two things:
+          the <code>OPENROUTER_API_KEY</code> secret below, or your own
+          logged-in subscription on your server (Google, Anthropic or OpenAI),
+          which you choose in Settings once <code>AI_ENGINE_URL</code> and{" "}
+          <code>AI_ENGINE_TOKEN</code> are set. Setup for that route is in{" "}
+          <code>docs/AI_ENGINE.md</code>. Both are optional: everything else in
+          SEO Pilot works without them.
         </>
       }
       everyAppIntro="SAM, prompt suggestions and website research run on OpenRouter. On Every App the gateway holds the key once, for every app."

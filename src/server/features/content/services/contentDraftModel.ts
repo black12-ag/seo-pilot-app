@@ -1,9 +1,7 @@
 import { generateText, Output } from "ai";
+import { subscriptionRun } from "@/server/lib/aiEngine/billing";
 import { requireOpenRouterCostUsd } from "@/server/lib/chatAgent";
-import {
-  buildChatAgentModel,
-  type OpenRouterAccess,
-} from "@/server/lib/openrouter";
+import { buildChatAgentModel, type AiAccess } from "@/server/lib/openrouter";
 import { getOptionalEnvValue } from "@/server/lib/runtime-env";
 import { describeError } from "@/server/lib/errors";
 import {
@@ -162,11 +160,13 @@ type ContentDraftModelResult = {
   costUsd: number | null;
   /** The provider answered, so the call may be paid, but reported no cost. */
   costMissing: boolean;
+  /** Ran on the operator's own login, so there is no per-call price. */
+  includedInSubscription: boolean;
 };
 
 /** One call with no tools. A failed reply is never retried here. */
 export async function callContentDraftModel(
-  access: OpenRouterAccess,
+  access: AiAccess,
   request: { system: string; prompt: string },
 ): Promise<ContentDraftModelResult> {
   const model = buildChatAgentModel(
@@ -177,6 +177,7 @@ export async function callContentDraftModel(
   let modelId = model.modelId;
   let costUsd: number | null = null;
   let costMissing = false;
+  let includedInSubscription = false;
   try {
     const result = await generateText({
       model,
@@ -189,6 +190,10 @@ export async function callContentDraftModel(
       // Runs before the output is parsed, so a bad reply still reports its cost.
       onStepFinish: (step) => {
         modelId = step.response.modelId || modelId;
+        if (subscriptionRun(step.providerMetadata)) {
+          includedInSubscription = true;
+          return;
+        }
         try {
           costUsd = requireOpenRouterCostUsd(step.providerMetadata);
         } catch {
@@ -200,9 +205,15 @@ export async function callContentDraftModel(
     const output = contentDraftOutputSchema.parse(result.output);
     if (byteLength(JSON.stringify(output)) > contentDraftLimits.maxOutputBytes)
       throw new Error("Draft output exceeds the fixed byte budget");
-    return { output, modelId, costUsd, costMissing };
+    return { output, modelId, costUsd, costMissing, includedInSubscription };
   } catch (error) {
     console.error("content.draft.model-failed", describeError(error));
-    return { output: null, modelId, costUsd, costMissing };
+    return {
+      output: null,
+      modelId,
+      costUsd,
+      costMissing,
+      includedInSubscription,
+    };
   }
 }

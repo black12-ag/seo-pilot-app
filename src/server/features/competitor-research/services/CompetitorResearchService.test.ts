@@ -38,7 +38,7 @@ vi.mock("@/server/lib/provider-access", () => ({
   hasDataforseoAccess: async () => true,
 }));
 vi.mock("@/server/lib/openrouter", () => ({
-  getOpenRouterAccess: modelAccess,
+  resolveAiAccess: async () => modelAccess(),
   buildChatAgentModel: (_access: { apiKey: string }, modelId?: string) => ({
     modelId: modelId ?? modelSettings.defaultId,
   }),

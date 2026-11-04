@@ -25,7 +25,7 @@ const reasons: Record<string, string> = {
   project_domain_missing: "Set this project's website first.",
   dataforseo_not_configured:
     "DataForSEO is not configured for this installation.",
-  model_not_configured: "OpenRouter is not configured for this installation.",
+  model_not_configured: "AI isn't set up for this installation.",
   unsupported_background_authority:
     "Background research is not available for this sign-in mode.",
   insufficient_credits:
@@ -134,7 +134,7 @@ export function CompetitorResearchPanel({ projectId }: { projectId: string }) {
                   </a>{" "}
                   ·{" "}
                   <a className="underline" href={HELP_PATHS.openrouter}>
-                    OpenRouter setup guide
+                    AI setup guide
                   </a>
                 </p>
               </div>
@@ -209,9 +209,9 @@ export function CompetitorResearchPanel({ projectId }: { projectId: string }) {
                   submit(newCompetitorStart(state));
                 }}
               >
-                This calls DataForSEO and OpenRouter with the limits shown above
-                and can incur real spend or quota use. Suggestions require your
-                review; no competitor is added automatically.
+                This calls DataForSEO and your AI provider with the limits shown
+                above and can incur real spend or quota use. Suggestions require
+                your review; no competitor is added automatically.
               </ConfirmDialog>
             ) : null}
           </>
