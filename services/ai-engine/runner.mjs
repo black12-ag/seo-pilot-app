@@ -57,6 +57,8 @@ export function runCli({
     let bytes = 0;
     let outcome = "exited";
     let killTimer;
+    let releaseTimer;
+    let heldOpen = false;
 
     const killGroup = (name) => {
       try {
@@ -77,12 +79,10 @@ export function runCli({
     if (signal?.aborted) onAbort();
 
     const collect = (sink) => (chunk) => {
+      const room = maxOutputBytes - bytes;
       bytes += chunk.length;
-      if (bytes > maxOutputBytes) {
-        stop("overflow");
-        return;
-      }
-      sink.push(chunk);
+      if (room > 0) sink.push(chunk.subarray(0, room));
+      if (bytes > maxOutputBytes) stop("overflow");
     };
     child.stdout.on("data", collect(stdout));
     child.stderr.on("data", collect(stderr));
@@ -101,8 +101,19 @@ export function runCli({
         stderr: "",
       });
     });
+    // Something that left the process group can hold the pipes open forever, so
+    // "close" alone could wedge the queue. It can't be killed from here, so the
+    // caller is told and treats it as a broken lock.
+    child.on("exit", () => {
+      releaseTimer = setTimeout(() => {
+        heldOpen = true;
+        child.stdout.destroy();
+        child.stderr.destroy();
+      }, killGraceMs);
+    });
     child.on("close", (code) => {
       clearTimeout(timeout);
+      clearTimeout(releaseTimer);
       signal?.removeEventListener("abort", onAbort);
       // Something the child started can hold its pipes open past its own exit.
       killGroup("SIGKILL");
@@ -110,6 +121,7 @@ export function runCli({
       resolve({
         outcome,
         code,
+        heldOpen,
         stdout: Buffer.concat(stdout).toString("utf8"),
         stderr: Buffer.concat(stderr).toString("utf8"),
       });

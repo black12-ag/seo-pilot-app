@@ -4,7 +4,9 @@ import { getEnvValueSync } from "@/server/lib/runtime-env";
 
 export type AiEngineConnection = { url: string; token: string };
 
-const STATUS_TIMEOUT_MS = 8_000;
+// The first status after a restart waits for the CLI checks, which can take up
+// to 20 seconds, and a timeout here would stop AI.
+const STATUS_TIMEOUT_MS = 25_000;
 const SETTING_TIMEOUT_MS = 15_000;
 const TEST_TIMEOUT_MS = 180_000;
 // Longer than the service's own limits, so it answers with a reason first.
@@ -86,9 +88,15 @@ export class AiEngineError extends Error {
   }
 }
 
-/** The service, or null without both settings, or on the hosted service. */
+/** The hosted service and the Every App gateway never use a personal login. */
+export function refusesAiEngine(env: object) {
+  const mode = getEnvValueSync(env, "AUTH_MODE");
+  return isHostedAuthMode(mode) || mode === "everyapp";
+}
+
+/** The service, or null without both settings, or where it's refused. */
 export function getAiEngineConnection(env: object): AiEngineConnection | null {
-  if (isHostedAuthMode(getEnvValueSync(env, "AUTH_MODE"))) return null;
+  if (refusesAiEngine(env)) return null;
   const rawUrl = getEnvValueSync(env, "AI_ENGINE_URL");
   const token = getEnvValueSync(env, "AI_ENGINE_TOKEN");
   if (!rawUrl || !token) return null;
@@ -100,6 +108,20 @@ export function getAiEngineConnection(env: object): AiEngineConnection | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Why the engine settings can't be used, if someone started setting it up. AI
+ * then stops, rather than quietly going back to spending the API key.
+ */
+export function getAiEngineSetupProblem(env: object): string | null {
+  if (refusesAiEngine(env) || getAiEngineConnection(env)) return null;
+  const partlySet =
+    getEnvValueSync(env, "AI_ENGINE_URL") ||
+    getEnvValueSync(env, "AI_ENGINE_TOKEN");
+  return partlySet
+    ? "AI_ENGINE_URL and AI_ENGINE_TOKEN must both be set, and the URL must start with http:// or https://. Fix them, or remove both to use the API key."
+    : null;
 }
 
 async function request<T>(

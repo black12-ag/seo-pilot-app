@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { spawn } from "node:child_process";
+import { connect } from "node:net";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -76,6 +77,26 @@ describe("auth", () => {
     }
     assert.deepEqual(await fx.calls(), []);
   });
+
+  it("survives a request line that isn't a valid URL", async () => {
+    const fx = await fixture();
+    for (const target of ["//", "//x:y:z", "http://["]) {
+      const reply = await new Promise((resolve, reject) => {
+        const { hostname, port } = new URL(fx.base);
+        const socket = connect(Number(port), hostname, () =>
+          socket.write(
+            `GET ${target} HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n`,
+          ),
+        );
+        let text = "";
+        socket.on("data", (chunk) => (text += chunk));
+        socket.on("close", () => resolve(text));
+        socket.on("error", reject);
+      });
+      assert.match(reply, /^HTTP\/1\.1 401/, target);
+    }
+    assert.equal((await fx.json("GET", "/v1/status")).status, 200);
+  });
 });
 
 describe("engine choice", () => {
@@ -129,6 +150,25 @@ describe("engine choice", () => {
     assert.deepEqual(models.body.models, ["Gemini 3.8 Flash (Low)"]);
     assert.equal(models.body.defaultModel, "Gemini 3.8 Flash (Low)");
     assert.equal((await fx.json("GET", "/v1/models?engine=nope")).status, 400);
+    assert.equal(
+      (await fx.json("GET", "/v1/models?engine=__proto__")).status,
+      400,
+    );
+  });
+
+  it("stops rather than using the API key when the saved choice is broken", async () => {
+    const fx = await fixture();
+    await selectAgyAndPass(fx);
+    writeFileSync(join(fx.dir, "state", "state.json"), "{ broken");
+    const status = await fx.json("GET", "/v1/status");
+    assert.equal(status.body.engine, "unreadable");
+    assert.equal(status.body.usable, false);
+    const generate = await fx.json("POST", "/v1/generate", { prompt: "x" });
+    assert.equal(generate.body.error.code, "engine_blocked");
+    assert.equal(
+      (await fx.json("POST", "/v1/engine", { engine: "api" })).body.engine,
+      "api",
+    );
   });
 });
 
@@ -229,10 +269,11 @@ describe("running a job", () => {
   it("limits input size and rejects a bad body", async () => {
     const fx = await fixture({ env: { AI_ENGINE_MAX_INPUT_BYTES: "1024" } });
     await selectAgyAndPass(fx);
-    const big = await fx
-      .json("POST", "/v1/generate", { prompt: "x".repeat(5000) })
-      .catch(() => ({ status: 413 }));
+    const big = await fx.json("POST", "/v1/generate", {
+      prompt: "x".repeat(5000),
+    });
     assert.equal(big.status, 413);
+    assert.equal(big.body.error.code, "payload_too_large");
     assert.equal(
       (await fx.json("POST", "/v1/generate", { prompt: "" })).status,
       400,

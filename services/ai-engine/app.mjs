@@ -52,8 +52,9 @@ function readBody(request, limit) {
     request.on("data", (chunk) => {
       bytes += chunk.length;
       if (bytes > limit) {
+        // Keep reading and drop the rest, so the 413 reaches the caller.
+        chunks.length = 0;
         reject(new JobError("payload_too_large"));
-        request.destroy();
         return;
       }
       chunks.push(chunk);
@@ -143,12 +144,12 @@ export function createApp(config) {
   };
 
   const server = createServer(async (request, response) => {
-    const url = new URL(request.url ?? "/", "http://localhost");
     try {
       if (!isAuthorized(request.headers.authorization, config.token)) {
         request.resume();
         return replyError(response, "unauthorized");
       }
+      const url = new URL(request.url ?? "/", "http://localhost");
       const handler = handlers[`${request.method} ${url.pathname}`];
       if (!handler) {
         request.resume();
@@ -157,7 +158,7 @@ export function createApp(config) {
       await handler(request, response, url);
     } catch (error) {
       const code = error?.code && ERRORS[error.code] ? error.code : "internal";
-      if (code === "internal") log("request.failed", { path: url.pathname });
+      if (code === "internal") log("request.failed");
       if (!response.headersSent) replyError(response, code);
       else response.end();
     }

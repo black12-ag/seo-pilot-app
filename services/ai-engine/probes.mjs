@@ -1,11 +1,30 @@
+import { createHash } from "node:crypto";
 import { constants } from "node:fs";
-import { access, realpath, stat } from "node:fs/promises";
+import { access, readdir, realpath, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { delimiter, join } from "node:path";
+import { delimiter, dirname, join } from "node:path";
 import { childEnvironment, runCli } from "./runner.mjs";
 
 const PROBE_TIMEOUT_MS = 20_000;
 const PROBE_MAX_AGE_MS = 5 * 60_000;
+const MAX_PACKAGE_FILES = 5_000;
+
+/** A script runs the rest of its package, so that has to count as the binary. */
+async function packageStamp(file) {
+  const folder = dirname(file);
+  for (const root of [folder, dirname(folder)]) {
+    const found = await stat(join(root, "package.json")).catch(() => null);
+    if (!found) continue;
+    const names = await readdir(root, { recursive: true });
+    const hash = createHash("sha256");
+    for (const name of names.toSorted().slice(0, MAX_PACKAGE_FILES)) {
+      const info = await stat(join(root, name)).catch(() => null);
+      if (info?.isFile()) hash.update(`${name}:${info.mtimeMs}:${info.size}\n`);
+    }
+    return hash.digest("hex");
+  }
+  return "";
+}
 
 /** Finds each CLI and asks it for its version, login state and models. */
 export function createProbes(config) {
@@ -23,9 +42,10 @@ export function createProbes(config) {
         await access(candidate, constants.X_OK);
         const info = await stat(candidate);
         if (!info.isFile()) continue;
+        const real = await realpath(candidate);
         return {
           path: candidate,
-          signature: `${await realpath(candidate)}:${info.mtimeMs}:${info.size}`,
+          signature: `${real}:${info.mtimeMs}:${info.size}:${await packageStamp(real)}`,
         };
       } catch {
         // Not here. The next folder may have it.

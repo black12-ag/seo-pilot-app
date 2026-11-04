@@ -126,7 +126,7 @@ function ReadySettings({
     mutationFn: () => testAiEngine({ data: { engine } }),
     onSettled: refresh,
   });
-  const changed = engine !== current || model !== status.model;
+  const changed = engine !== status.engine || model !== status.model;
   const items = ENGINE_IDS.map((value) => ({
     value,
     label: ENGINE_LABELS[value],
@@ -139,12 +139,12 @@ function ReadySettings({
         <dd>Reachable</dd>
         <dt className="text-muted-foreground">Running on</dt>
         <dd>
-          {ENGINE_LABELS[current]}
+          {isEngineId(status.engine) ? ENGINE_LABELS[current] : "Unknown"}
           {status.model ? `, ${status.model}` : ""}
         </dd>
         <dt className="text-muted-foreground">State</dt>
         <dd>
-          {current === "api"
+          {status.engine === "api"
             ? apiKeySet
               ? "Ready"
               : "Needs setup: OPENROUTER_API_KEY isn't set"
@@ -253,7 +253,7 @@ function ReadySettings({
   );
 }
 
-/** How this installation runs AI. Owners and admins only. */
+/** How this installation runs AI. Only its administrator can change it. */
 export function AiEngineSettings() {
   const query = useQuery({
     queryKey: QUERY_KEY,
@@ -279,7 +279,8 @@ export function AiEngineSettings() {
       ) : null}
       {forbidden ? (
         <p className="text-sm text-muted-foreground">
-          Only an owner or admin can see or change how AI runs.
+          Only this installation&apos;s administrator can see or change how AI
+          runs.
         </p>
       ) : query.isError ? (
         <p className="text-sm text-destructive">

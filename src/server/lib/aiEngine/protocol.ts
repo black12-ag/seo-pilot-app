@@ -34,6 +34,10 @@ class AiEngineReplyError extends Error {
 const escapeForBlock = (value: unknown) =>
   JSON.stringify(value).replaceAll("<", "\\u003c").replaceAll(">", "\\u003e");
 
+/** System text can hold stored content, so it can't open or close our blocks. */
+const neutralizeBlockTags = (text: string) =>
+  text.replace(/<(?=\/?(?:conversation|tools)\b)/gi, "\\u003c");
+
 function renderPart(part: {
   type: string;
   text?: string;
@@ -60,7 +64,7 @@ function renderConversation(prompt: CallOptions["prompt"]) {
   const turns: unknown[] = [];
   for (const message of prompt) {
     if (message.role === "system") {
-      instructions.push(message.content);
+      instructions.push(neutralizeBlockTags(message.content));
       continue;
     }
     turns.push({

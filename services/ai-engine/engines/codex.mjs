@@ -27,6 +27,13 @@ const DISABLED_FEATURES = [
   "workspace_dependencies",
   "goals",
 ];
+// These hold names the caller chose, so a property called "format" is kept.
+const NAME_MAPS = new Set([
+  "properties",
+  "patternProperties",
+  "$defs",
+  "definitions",
+]);
 const CONVERSATION_ITEMS = new Set(["agent_message", "reasoning", "todo_list"]);
 const ASSERTION_KEYWORDS = new Set([
   "minLength",
@@ -54,10 +61,18 @@ function strictSchema(schema) {
   const strict = {};
   for (const [key, value] of Object.entries(schema)) {
     if (ASSERTION_KEYWORDS.has(key)) continue;
-    strict[key] =
-      key === "enum" || key === "const" || key === "required"
-        ? value
-        : strictSchema(value);
+    if (NAME_MAPS.has(key))
+      strict[key] = Object.fromEntries(
+        Object.entries(value).map(([name, inner]) => [
+          name,
+          strictSchema(inner),
+        ]),
+      );
+    else
+      strict[key] =
+        key === "enum" || key === "const" || key === "required"
+          ? value
+          : strictSchema(value);
   }
   if (strict.type === "object" || strict.properties) {
     const names = Object.keys(strict.properties ?? {});
@@ -73,6 +88,8 @@ export const codex = {
   binaryName: "codex",
   knownGoodVersions: ["0.162.1"],
   verified: false,
+  lockEvidence:
+    "No step in the test worked, but this CLI doesn't report its tools, so the result also relies on it trying.",
   defaultModel: "gpt-6-luna",
   fallbackModels: ["gpt-6-luna", "gpt-6-sol", "gpt-5.6-luna", "gpt-5.6-sol"],
   envNames: ["CODEX_HOME"],

@@ -9,6 +9,7 @@ import { isEveryAppAuthMode } from "@/lib/auth-mode";
 import {
   fetchAiEngineStatus,
   getAiEngineConnection,
+  getAiEngineSetupProblem,
   type AiEngineConnection,
 } from "@/server/lib/aiEngine/client";
 import { createAiEngineModel } from "@/server/lib/aiEngine/model";
@@ -86,6 +87,8 @@ export function getOpenRouterAccess(env: object): OpenRouterAccess | null {
 export async function resolveAiRoute(
   env: object,
 ): Promise<{ access: AiAccess | null; message: string | null }> {
+  const setupProblem = getAiEngineSetupProblem(env);
+  if (setupProblem) return { access: null, message: setupProblem };
   const apiAccess = getOpenRouterAccess(env);
   const connection = getAiEngineConnection(env);
   if (!connection)
@@ -139,7 +142,7 @@ export function buildSamChatModel(
       getEnvValueSync(env, "OPENROUTER_MODEL"),
       reasoningEffort,
     );
-  if (!getAiEngineConnection(env)) {
+  if (!getAiEngineConnection(env) && !getAiEngineSetupProblem(env)) {
     const access = getOpenRouterAccess(env);
     if (!access) {
       throw new Error("OPENROUTER_API_KEY is required for the SAM agent");

@@ -39,6 +39,27 @@ it("uses the API key, with no service call, when the service isn't set up", asyn
   expect(fetchMock).not.toHaveBeenCalled();
 });
 
+it.each([
+  ["a URL with no token", { AI_ENGINE_URL: "http://engine.test" }],
+  ["a token with no URL", { AI_ENGINE_TOKEN: "t".repeat(40) }],
+  [
+    "a URL with no scheme",
+    { AI_ENGINE_URL: "127.0.0.1:8719", AI_ENGINE_TOKEN: "t".repeat(40) },
+  ],
+  [
+    "a URL with a login in it",
+    {
+      AI_ENGINE_URL: "http://a:b@engine.test",
+      AI_ENGINE_TOKEN: "t".repeat(40),
+    },
+  ],
+])("stops rather than spending the API key with %s", async (_name, env) => {
+  const route = await resolveAiRoute({ ...env, OPENROUTER_API_KEY: "key" });
+  expect(route.access).toBeNull();
+  expect(route.message).toContain("AI_ENGINE_URL");
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
 it("names both routes when nothing is set up", async () => {
   const route = await resolveAiRoute({});
   expect(route.access).toBeNull();

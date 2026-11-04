@@ -280,6 +280,15 @@ async function hasAnyUser() {
   return first !== undefined;
 }
 
+async function isFirstUser(userId: string) {
+  const [first] = await db
+    .select({ id: authUser.id })
+    .from(authUser)
+    .orderBy(asc(authUser.createdAt), asc(authUser.id))
+    .limit(1);
+  return first?.id === userId;
+}
+
 async function getLastActiveOrganizationId(userId: string) {
   const record = await db.query.user.findFirst({
     columns: { lastActiveOrganizationId: true },
@@ -359,6 +368,7 @@ export const AuthRepository = {
   getOrganizationOwner,
   hasPendingInvitationForEmail,
   hasAnyUser,
+  isFirstUser,
   isAnalyticsOptedOut,
   saveSignupCampaign,
 } as const;

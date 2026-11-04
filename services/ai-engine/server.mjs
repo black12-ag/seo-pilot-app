@@ -11,6 +11,10 @@ try {
 }
 
 const { server, startUp } = createApp(config);
+server.on("error", (error) => {
+  log("service.listen_failed", { code: error.code });
+  process.exit(1);
+});
 server.listen(config.port, config.host, () => {
   log("service.started", { host: config.host, port: config.port });
   if (!config.loopback)

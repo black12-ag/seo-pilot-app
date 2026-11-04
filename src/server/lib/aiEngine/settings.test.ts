@@ -1,8 +1,12 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import type * as RuntimeEnv from "@/server/lib/runtime-env";
 
-const { workerEnv } = vi.hoisted(() => ({
+const { workerEnv, isFirstUser } = vi.hoisted(() => ({
   workerEnv: { current: {} as Record<string, string> },
+  isFirstUser: vi.fn<(userId: string) => Promise<boolean>>(),
+}));
+vi.mock("@/server/auth/repositories/AuthRepository", () => ({
+  AuthRepository: { isFirstUser },
 }));
 vi.mock("@/server/lib/runtime-env", async (importOriginal) => ({
   ...(await importOriginal<typeof RuntimeEnv>()),
@@ -25,12 +29,13 @@ const status = {
   engines: {},
 };
 const fetchMock = vi.fn<typeof fetch>();
-const admin = { role: "admin" };
-const owner = { role: "owner" };
-const member = { role: "member" };
+const admin = { role: "admin", userId: "u1" };
+const owner = { role: "owner", userId: "u1" };
+const member = { role: "member", userId: "u1" };
 
 beforeEach(() => {
   fetchMock.mockReset();
+  isFirstUser.mockReset();
   vi.stubGlobal("fetch", fetchMock);
   workerEnv.current = { ...engineEnv };
 });
@@ -50,9 +55,9 @@ it.each([
 );
 
 it("refuses an unknown role", async () => {
-  await expect(AiEngineSettings.get({ role: "guest" })).rejects.toBeInstanceOf(
-    AppError,
-  );
+  await expect(
+    AiEngineSettings.get({ role: "guest", userId: "u1" }),
+  ).rejects.toBeInstanceOf(AppError);
 });
 
 it.each([
@@ -67,6 +72,28 @@ it.each([
   await expect(
     AiEngineSettings.set(actor, { engine: "agy", model: null }),
   ).resolves.toMatchObject({ engine: "agy" });
+});
+
+it("with accounts, refuses the owner of a later organization", async () => {
+  workerEnv.current = { ...engineEnv, AUTH_MODE: "password" };
+  isFirstUser.mockResolvedValue(false);
+  for (const call of [
+    () => AiEngineSettings.get(owner),
+    () => AiEngineSettings.set(owner, { engine: "agy", model: null }),
+    () => AiEngineSettings.test(owner, "agy"),
+  ])
+    await expect(call()).rejects.toMatchObject({ code: "FORBIDDEN" });
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
+it("with accounts, lets the first account change the engine", async () => {
+  workerEnv.current = { ...engineEnv, AUTH_MODE: "password" };
+  isFirstUser.mockResolvedValue(true);
+  fetchMock.mockImplementation(async () => Response.json(status));
+  await expect(
+    AiEngineSettings.set(owner, { engine: "agy", model: null }),
+  ).resolves.toMatchObject({ engine: "agy" });
+  expect(isFirstUser).toHaveBeenCalledWith("u1");
 });
 
 it("says plainly that the hosted service can't use a subscription", async () => {

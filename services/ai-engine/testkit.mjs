@@ -30,6 +30,8 @@ const script = isLockdown ? (behavior.lockdown ?? {}) : (behavior.job ?? {});
 if (script.readFile) { const f = /the file (\\S+?)(?:\\\\n|"|\\s)/.exec(stdin)?.[1]; if (f) script.structured = { ...script.structured, read_value: readFileSync(f, "utf8").trim() }; }
 if (script.runCommand) { const m = /touch (\\S+?)(?:\\\\n|"|\\s)/.exec(stdin)?.[1]; if (m) writeFileSync(m, "x"); }
 if (script.spawnChild) { const { spawn } = require("node:child_process"); const c = spawn(process.execPath, ["-e", "setInterval(()=>{},1000)"], { stdio: "ignore" }); writeFileSync(script.spawnChild, String(c.pid)); }
+if (script.earlyTool) { process.stdout.write(JSON.stringify({ event: "step_update", step_update: { step_type: "tool", tool_name: script.earlyTool } }) + "\\n"); }
+if (script.helper) { const { spawn } = require("node:child_process"); spawn(process.execPath, ["-e", "setTimeout(()=>{},3000)"], { detached: true, stdio: "inherit" }).unref(); }
 if (script.hang) { setInterval(() => {}, 1000); return; }
 if (script.flood) { process.stdout.write("x".repeat(script.flood)); }
 if (script.raw !== undefined) { process.stdout.write(script.raw); }
@@ -41,7 +43,7 @@ function finish() {
     const out = [];
     out.push(JSON.stringify({ event: "init", init: { agent: script.agent === undefined ? "seo-pilot-text" : script.agent } }));
     for (const tool of script.tools ?? []) out.push(JSON.stringify({ event: "step_update", step_update: { step_type: "tool", tool_name: tool } }));
-    out.push(JSON.stringify({ event: "result", result: { status: script.status ?? "SUCCESS", response: script.text ?? "reply text", structured_output: structured ?? undefined, usage: { input_tokens: script.inputTokens ?? 700, output_tokens: 5 }, error: script.error, finished_reason: script.finishedReason } }));
+    out.push(JSON.stringify({ event: "result", result: { status: script.status ?? "SUCCESS", response: script.text ?? "reply text", structured_output: structured ?? undefined, usage: { input_tokens: script.noTokens ? undefined : (script.inputTokens ?? 700), output_tokens: 5 }, error: script.error, finished_reason: script.finishedReason } }));
     process.stdout.write(out.join("\\n") + "\\n");
   }
   process.exit(script.exitCode ?? 0);

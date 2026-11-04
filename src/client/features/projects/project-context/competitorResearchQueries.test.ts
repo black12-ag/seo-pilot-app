@@ -125,6 +125,7 @@ it("renders a historical reviewed run without contradictory stale-acceptance gui
     state: "finished",
     outcome: "complete",
     reasons: [],
+    modelIncludedInSubscription: false,
     snapshot: {
       domain: "example.com",
       locationCode: 2840,

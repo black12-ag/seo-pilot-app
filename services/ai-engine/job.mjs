@@ -52,6 +52,7 @@ export async function runJob(
       workDir,
       privateDir,
       timeoutMs,
+      isLockdownTest: Boolean(isLockdownTest),
     });
     const run = await runCli({
       binary,
@@ -64,18 +65,23 @@ export async function runJob(
       maxOutputBytes: config.maxOutputBytes,
       signal,
     });
-    const parsed =
-      run.outcome === "exited"
-        ? engine.parse(run.stdout, {
-            wantsJson: Boolean(schema),
-            isLockdownTest: Boolean(isLockdownTest),
-          })
-        : null;
+    // A run that was cut short is still read: a tool used before a hang, a flood
+    // or a disconnect has to count.
+    const parsed = ["missing", "spawn_failed"].includes(run.outcome)
+      ? null
+      : engine.parse(run.stdout, {
+          wantsJson: Boolean(schema),
+          isLockdownTest: Boolean(isLockdownTest),
+          partial: run.outcome !== "exited",
+        });
     const failure = failureFor(run, parsed);
     return {
       failure,
       tools: parsed?.tools ?? [],
-      lockProblems: parsed?.lockProblems ?? [],
+      lockProblems: [
+        ...(parsed?.lockProblems ?? []),
+        ...(run.heldOpen ? ["a process outlived the CLI"] : []),
+      ],
       text: parsed?.text ?? "",
       structured: parsed?.structured ?? null,
       usage: parsed?.usage ?? null,

@@ -25,7 +25,7 @@ const FAILURE_MESSAGES = {
   queue_timeout: "The engine is busy. Try again soon.",
 };
 
-function lockdownOutcome(result) {
+function lockdownOutcome(result, engine) {
   const escaped = Object.entries(result.checks)
     .filter(([, value]) => value === "escaped")
     .map(([key]) => CHECK_LABELS[key]);
@@ -41,9 +41,11 @@ function lockdownOutcome(result) {
     };
   return {
     state: "passed",
-    message: "Lockdown test passed: files, commands and the web are blocked.",
+    message: `Lockdown test passed. ${engine.lockEvidence}`,
   };
 }
+
+const engineById = (id) => (Object.hasOwn(engines, id) ? engines[id] : null);
 
 export function createEngineService(config) {
   const store = createStore(config.stateFile);
@@ -62,18 +64,13 @@ export function createEngineService(config) {
     const task = (async () => {
       const probe = await getProbe(engine, { fresh: true });
       const binary = await resolveBinary(engine);
-      if (!binary) {
-        const record = {
+      // Not kept, so the engine can run its test as soon as it is installed.
+      if (!binary)
+        return {
           state: "failed",
           message: FAILURE_MESSAGES.not_installed,
-          checkedAt: Date.now(),
-          signature: null,
-          version: null,
           checks: null,
         };
-        lockdowns.set(engineId, record);
-        return record;
-      }
       const result = await queue.run(() =>
         runLockdownTest(({ prompt, schema }) =>
           runJob(
@@ -90,11 +87,12 @@ export function createEngineService(config) {
           ),
         ),
       );
-      const outcome = lockdownOutcome(result);
+      const outcome = lockdownOutcome(result, engine);
       const record = {
         ...outcome,
         checkedAt: Date.now(),
         signature: binary.signature,
+        model,
         version: probe?.version ?? null,
         checks: result.checks,
       };
@@ -125,10 +123,10 @@ export function createEngineService(config) {
     return task;
   }
 
-  /** A pass counts only for the exact binary it ran against. */
-  async function lockdownIsCurrent(engine) {
+  /** A pass counts only for the exact binary and model it ran against. */
+  async function lockdownIsCurrent(engine, model) {
     const record = lockdowns.get(engine.id);
-    if (record?.state !== "passed") return false;
+    if (record?.state !== "passed" || record.model !== model) return false;
     const binary = await resolveBinary(engine);
     return binary?.signature === record.signature;
   }
@@ -139,10 +137,10 @@ export function createEngineService(config) {
       : engines[engineId].defaultModel;
   }
 
-  async function describeEngine(engine) {
+  async function describeEngine(engine, state) {
     const probe = await getProbe(engine);
     const record = lockdowns.get(engine.id);
-    const current = await lockdownIsCurrent(engine);
+    const current = await lockdownIsCurrent(engine, modelFor(state, engine.id));
     const knownGood = probe?.version
       ? engine.knownGoodVersions.includes(probe.version)
       : false;
@@ -172,7 +170,7 @@ export function createEngineService(config) {
         message: running.has(engine.id)
           ? "The lockdown test is running."
           : record?.state === "passed" && !current
-            ? "The CLI changed since its last test, so it must pass again."
+            ? "The CLI or its model changed since the last test, so it must pass again."
             : (record?.message ?? "No lockdown test has run yet."),
       },
     };
@@ -183,7 +181,7 @@ export function createEngineService(config) {
     const entries = await Promise.all(
       Object.values(engines).map(async (engine) => [
         engine.id,
-        await describeEngine(engine),
+        await describeEngine(engine, state),
       ]),
     );
     const details = Object.fromEntries(entries);
@@ -196,17 +194,20 @@ export function createEngineService(config) {
         queue: queue.stats(),
         engines: details,
       };
-    const engine = engines[state.engine];
+    const engine = engineById(state.engine);
     if (!engine)
       return {
         engine: state.engine,
         model: state.model,
         usable: false,
-        message: "The saved engine isn't known. Choose one again.",
+        message: "The saved engine couldn't be read. Choose one again.",
         queue: queue.stats(),
         engines: details,
       };
-    const usable = await lockdownIsCurrent(engine);
+    const usable = await lockdownIsCurrent(
+      engine,
+      modelFor(state, state.engine),
+    );
     const lockdown = details[state.engine].lockdown;
     if (!usable && ["stale", "not_run"].includes(lockdown.state))
       void startLockdown(state.engine, modelFor(state, state.engine));
@@ -221,7 +222,7 @@ export function createEngineService(config) {
   }
 
   async function listModels(engineId) {
-    const engine = engines[engineId];
+    const engine = engineById(engineId);
     if (!engine) return null;
     const probe = await getProbe(engine);
     return {
@@ -276,72 +277,88 @@ export function createEngineService(config) {
     };
   }
 
-  async function generate({ prompt, schema, timeoutMs }, signal) {
-    const state = await store.read();
+  /** Runs a test first if one is due. Throws if the engine has to stay off. */
+  async function passGate(state) {
     if (state.engine === API_ENGINE) throw new JobError("engine_is_api");
-    const engine = engines[state.engine];
+    const engine = engineById(state.engine);
     if (!engine) throw new JobError("engine_blocked");
     const model = modelFor(state, state.engine);
     const binary = await resolveBinary(engine);
     if (!binary) throw new JobError("not_installed");
-    if (!(await lockdownIsCurrent(engine))) {
-      // A failed test holds until someone presses Test or the binary changes,
-      // so a blocked engine doesn't spend quota on every request.
-      const earlier = lockdowns.get(engine.id);
-      if (
-        earlier?.state === "failed" &&
-        [null, binary.signature].includes(earlier.signature)
-      )
-        throw new JobError("engine_blocked");
-      const record = await startLockdown(state.engine, model);
-      if (record.state !== "passed") throw new JobError("engine_blocked");
-    }
+    if (await lockdownIsCurrent(engine, model)) return;
+    // A failed test holds until someone presses Test or the binary changes,
+    // so a blocked engine doesn't spend quota on every request.
+    const earlier = lockdowns.get(engine.id);
+    if (
+      earlier?.state === "failed" &&
+      [null, binary.signature].includes(earlier.signature)
+    )
+      throw new JobError("engine_blocked");
+    const record = await startLockdown(state.engine, model);
+    if (record.state !== "passed") throw new JobError("engine_blocked");
+  }
+
+  async function generate({ prompt, schema, timeoutMs }, signal) {
+    await passGate(await store.read());
     const started = Date.now();
-    const job = await queue.run(
-      () =>
-        runJob(
-          {
-            engine,
-            binary: binary.path,
-            model,
-            prompt,
-            schema,
-            timeoutMs: Math.min(
-              timeoutMs ?? config.jobTimeoutMs,
-              config.jobTimeoutMs,
-            ),
-            signal,
-          },
-          config,
-        ),
-      signal,
-    );
-    log("job.finished", {
-      engine: engine.id,
-      ms: Date.now() - started,
-      failure: job.failure,
-      tools: job.tools,
-      lockProblems: job.lockProblems,
-    });
-    // A locked engine never reports a tool. If one does, nothing it wrote can
-    // be trusted and the engine stays off until a test passes.
-    if (job.tools.length || job.lockProblems.length) {
-      lockdowns.set(engine.id, {
-        state: "failed",
-        message:
-          "Blocked: this CLI used a tool during real work. It stays off until a test passes.",
-        checkedAt: Date.now(),
-        signature: binary.signature,
-        version: null,
-        checks: {
-          read: "blocked",
-          command: "blocked",
-          web: "blocked",
-          tools: "escaped",
+    const run = await queue.run(async () => {
+      // The choice, the binary and the verdict can all change during the wait,
+      // so what runs is decided here, right before the CLI starts.
+      const state = await store.read();
+      if (state.engine === API_ENGINE) throw new JobError("engine_is_api");
+      const engine = engineById(state.engine);
+      if (!engine) throw new JobError("engine_blocked");
+      const model = modelFor(state, state.engine);
+      const binary = await resolveBinary(engine);
+      if (!binary) throw new JobError("not_installed");
+      if (!(await lockdownIsCurrent(engine, model)))
+        throw new JobError("engine_blocked");
+      const job = await runJob(
+        {
+          engine,
+          binary: binary.path,
+          model,
+          prompt,
+          schema,
+          timeoutMs: Math.min(
+            timeoutMs ?? config.jobTimeoutMs,
+            config.jobTimeoutMs,
+          ),
+          signal,
         },
+        config,
+      );
+      log("job.finished", {
+        engine: engine.id,
+        ms: Date.now() - started,
+        failure: job.failure,
+        tools: job.tools,
+        lockProblems: job.lockProblems,
       });
+      // A locked engine never reports a tool. If one does, nothing it wrote can
+      // be trusted and the engine stays off until a test passes. This is set
+      // before the queue moves on, so the next job sees it.
+      if (job.tools.length || job.lockProblems.length)
+        lockdowns.set(engine.id, {
+          state: "failed",
+          message:
+            "Blocked: this CLI used a tool during real work. It stays off until a test passes.",
+          checkedAt: Date.now(),
+          signature: binary.signature,
+          model,
+          version: null,
+          checks: {
+            read: "blocked",
+            command: "blocked",
+            web: "blocked",
+            tools: "escaped",
+          },
+        });
+      return { engine, model, job };
+    }, signal);
+    const { engine, model, job } = run;
+    if (job.tools.length || job.lockProblems.length)
       throw new JobError("lockdown_violation");
-    }
     if (job.failure) throw new JobError(job.failure);
     if (schema && (typeof job.structured !== "object" || !job.structured))
       throw new JobError("malformed_output");
@@ -360,7 +377,7 @@ export function createEngineService(config) {
   /** At start, only the chosen engine is tested. A test can use real quota. */
   async function startUp() {
     const state = await store.read();
-    if (engines[state.engine])
+    if (engineById(state.engine))
       void startLockdown(state.engine, modelFor(state, state.engine));
   }
 
