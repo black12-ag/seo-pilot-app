@@ -48,7 +48,7 @@ export const agy = {
   id: "agy",
   label: "Antigravity CLI",
   binaryName: "agy",
-  knownGoodVersions: ["1.5.0"],
+  knownGoodVersions: ["1.5.0", "1.5.2"],
   verified: true,
   lockEvidence:
     "It loaded the tool-free agent and its small context, and no step in the test worked.",

@@ -140,8 +140,7 @@ export function Sidebar({
       : [connectNavGroup];
   const { pathname } = useLocation();
   const { setOpenMobile } = useSidebar();
-  // SAM is hidden from navigation: the chat route is only reachable by URL,
-  // and while it is open its chat list takes the nav's place.
+  // While SAM is open, its chat list takes the nav's place.
   const onSamRoute = pathname.includes("/sam");
 
   return (
@@ -167,10 +166,20 @@ export function Sidebar({
       <SidebarContent>
         {onSamRoute && projectId ? (
           ready ? (
-            <SamSidebarPanel
-              projectId={projectId}
-              onNavigate={() => setOpenMobile(false)}
-            />
+            <>
+              <Link
+                to="/p/$projectId"
+                params={{ projectId }}
+                onClick={() => setOpenMobile(false)}
+                className="px-4 py-1 text-xs text-muted-foreground hover:text-foreground"
+              >
+                ← Back to menu
+              </Link>
+              <SamSidebarPanel
+                projectId={projectId}
+                onNavigate={() => setOpenMobile(false)}
+              />
+            </>
           ) : (
             <div className="px-2 py-1">
               <SamChatListSkeleton />
