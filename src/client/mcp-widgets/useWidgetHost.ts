@@ -31,7 +31,7 @@ function readSnapshot(
 
 function theme(value: string | undefined) {
   document.documentElement.dataset.theme =
-    value === "dark" ? "openseo-dark" : "openseo";
+    value === "dark" ? "seo-pilot-dark" : "seo-pilot";
 }
 
 export function useWidgetHost() {

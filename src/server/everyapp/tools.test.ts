@@ -32,7 +32,7 @@ vi.mock("@/server/features/activation/mcpActivation", () => ({
 import { everyAppTools } from "./tools";
 
 // The fork's Worker, which the gateway mints every identity for.
-const AUDIENCE = "every-acme-openseo";
+const AUDIENCE = "every-acme-seo-pilot";
 const ISSUER = "https://apps.example.com";
 const ctx: ExecutionContext = {
   waitUntil: () => {},
@@ -45,7 +45,7 @@ beforeAll(async () => {
   const keys = await generateKeyPair("RS256", { extractable: true });
   privateKeyPem = await exportPKCS8(keys.privateKey);
   Object.assign(workerEnv, {
-    EVERYAPP_APP_ID: "openseo",
+    EVERYAPP_APP_ID: "seo-pilot",
     EVERYAPP_AUDIENCE: AUDIENCE,
     EVERYAPP_IDENTITY_ISSUER: ISSUER,
     EVERYAPP_IDENTITY_PUBLIC_KEYS: JSON.stringify([
@@ -59,7 +59,7 @@ function post(path: string, body: unknown, headers: Record<string, string>) {
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the test env holds only the vars the tools contract reads
   const env = workerEnv as unknown as Env;
   return everyAppTools.fetch(
-    new Request(`https://openseo.apps.example.com${path}`, {
+    new Request(`https://seo-pilot.apps.example.com${path}`, {
       method: "POST",
       headers: { "content-type": "application/json", ...headers },
       body: JSON.stringify(body),

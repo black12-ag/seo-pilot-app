@@ -110,7 +110,7 @@ export async function upsertHostedSignupContact({
     payload: {
       email,
       userId,
-      source: "openseo-signup",
+      source: "seo-pilot-signup",
       userGroup: "app-user",
       ...getContactNameParts(name),
       // Only ever adds: someone who joined the list through the website's

@@ -95,7 +95,7 @@ export default {
     },
   },
   // SEO Pilot's own, on its Workers (`pnpm everyapp secret set <NAME> --app
-  // openseo`). Without CRAWLER_ACCESS_SECRET the crawler-access form says so
+  // <id above>`). Without CRAWLER_ACCESS_SECRET the crawler-access form says so
   // (src/client/features/crawler-access/CrawlerAccessForm.tsx); without
   // OPENROUTER_MODEL the default in src/server/lib/openrouter.ts is used.
   secrets: [

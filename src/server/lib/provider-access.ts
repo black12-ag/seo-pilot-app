@@ -65,7 +65,7 @@ export async function getDataforseoFetch(): Promise<typeof fetch> {
       // thrown message is what a rank check stores and a tool answers with,
       // so it is the member's sentence; the developer's hint goes to the log.
       console.warn(
-        "[openseo] no DataForSEO key: set DATAFORSEO_API_KEY in .dev.vars for local development",
+        "[seo-pilot] no DataForSEO key: set DATAFORSEO_API_KEY in .dev.vars for local development",
       );
       throw new AppError(
         "DATAFORSEO_AUTH_FAILED",

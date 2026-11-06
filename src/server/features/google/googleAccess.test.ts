@@ -47,7 +47,7 @@ describe("Google behind an Every App gateway", () => {
     for (const integration of [GSC_INTEGRATION, GA4_INTEGRATION]) {
       const response = await handleGoogleOAuthCallbackRequest(
         new Request(
-          `https://openseo.app.everyapp.com/api/${integration.provider}/oauth/callback?code=c&state=s`,
+          `https://seo-pilot.app.everyapp.com/api/${integration.provider}/oauth/callback?code=c&state=s`,
         ),
         integration,
       );

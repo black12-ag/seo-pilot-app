@@ -57,7 +57,7 @@ const {
 });
 vi.mock("cloudflare:workers", () => ({
   env: {
-    OPENSEO_OPERATOR_SECRET: operatorSecret,
+    SEO_PILOT_OPERATOR_SECRET: operatorSecret,
     DB: { prepare: prepareQuery },
     KV: { get: async () => "active-import", put: vi.fn() },
   },
@@ -122,7 +122,7 @@ function request(inputColumns = columns, rows = [row]) {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-openseo-operator-secret": operatorSecret,
+      "x-seo-pilot-operator-secret": operatorSecret,
     },
     body: JSON.stringify({
       command: "rows",
@@ -167,7 +167,7 @@ describe("protected recurring schedule restore", () => {
   });
   it("never accepts an unauthenticated import", async () => {
     const req = request();
-    req.headers.delete("x-openseo-operator-secret");
+    req.headers.delete("x-seo-pilot-operator-secret");
     expect((await handleImport(req)).status).toBe(404);
   });
 });
@@ -182,7 +182,7 @@ describe("URL source restore", () => {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "x-openseo-operator-secret": operatorSecret,
+        "x-seo-pilot-operator-secret": operatorSecret,
       },
       body: JSON.stringify({
         command: "rows",
@@ -237,7 +237,7 @@ function importCommand(body: unknown) {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "x-openseo-operator-secret": operatorSecret,
+        "x-seo-pilot-operator-secret": operatorSecret,
       },
       body: JSON.stringify(body),
     }),

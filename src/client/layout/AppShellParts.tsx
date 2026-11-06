@@ -53,7 +53,7 @@ function SeoApiStatusBanners({
 }
 
 const DOCKER_MOVE_URL = "/help/docker-migration";
-const DOCKER_MOVE_DISMISSED_KEY = "openseo:docker-move-dismissed";
+const DOCKER_MOVE_DISMISSED_KEY = "seo-pilot:docker-move-dismissed";
 
 // The old single-container Docker image builds the app at startup with this
 // flag set (deploy/docker/Dockerfile), so only its users see the notice.
@@ -61,7 +61,7 @@ function LegacyDockerBanner() {
   const [dismissed, setDismissed] = useState(
     () => localStorage.getItem(DOCKER_MOVE_DISMISSED_KEY) === "1",
   );
-  if (import.meta.env.VITE_OPENSEO_LEGACY_DOCKER !== "true" || dismissed) {
+  if (import.meta.env.VITE_SEO_PILOT_LEGACY_DOCKER !== "true" || dismissed) {
     return null;
   }
   return (

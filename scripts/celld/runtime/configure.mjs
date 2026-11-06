@@ -12,7 +12,7 @@ try {
   secrets = Object.fromEntries(
     [
       "BETTER_AUTH_SECRET",
-      "OPENSEO_OPERATOR_SECRET",
+      "SEO_PILOT_OPERATOR_SECRET",
       "CRAWL_GATEWAY_SECRET",
     ].map((key) => [key, randomBytes(32).toString("hex")]),
   );
@@ -45,7 +45,7 @@ if (
   url.password
 )
   throw new Error("BETTER_AUTH_URL must be an origin");
-await cp("/opt/openseo", `${root}/app`, { recursive: true });
+await cp("/opt/seo-pilot", `${root}/app`, { recursive: true });
 const config = JSON.parse(await readFile(`${root}/app/wrangler.json`, "utf8"));
 const allowed = [
   "AUDIT_RECURRING_POLICY",
@@ -70,7 +70,7 @@ config.vars = {
   CRAWL_GATEWAY_URL: "http://crawl-gateway:8090",
   AUTH_MODE: authMode,
   DATABASE_PROVIDER: "d1",
-  OPENSEO_TELEMETRY_DISABLED: "true",
+  SEO_PILOT_TELEMETRY_DISABLED: "true",
   DO_NOT_TRACK: "1",
 };
 for (const key of allowed)

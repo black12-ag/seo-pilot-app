@@ -54,7 +54,7 @@ const {
 });
 vi.mock("cloudflare:workers", () => ({
   env: {
-    OPENSEO_OPERATOR_SECRET: operatorSecret,
+    SEO_PILOT_OPERATOR_SECRET: operatorSecret,
     DB: { prepare: prepareQuery },
     KV: { get: async () => "active-import", put: completeImport },
   },
@@ -76,7 +76,7 @@ function importCommand(body: unknown) {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "x-openseo-operator-secret": operatorSecret,
+        "x-seo-pilot-operator-secret": operatorSecret,
       },
       body: JSON.stringify(body),
     }),

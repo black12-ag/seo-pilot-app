@@ -5,7 +5,7 @@ export enum WidgetTool {
   Serp = "get_serp_results",
 }
 
-export const MCP_WIDGET_URI = "ui://openseo/research-v1.html";
+export const MCP_WIDGET_URI = "ui://seo-pilot/research-v1.html";
 
 export const mcpMetaOutputSchema = z.looseObject({
   url: z.string().optional(),

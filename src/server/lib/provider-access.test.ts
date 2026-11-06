@@ -66,7 +66,7 @@ describe("provider access behind an Every App gateway", () => {
   it("never uses a key on the deployment, and refuses without the gateway binding", async () => {
     Object.assign(workerEnv, {
       AUTH_MODE: "everyapp",
-      EVERYAPP_APP_ID: "openseo",
+      EVERYAPP_APP_ID: "seo-pilot",
       // Set by mistake: the gateway mode must not read it.
       DATAFORSEO_API_KEY: "encoded-credentials",
     });
@@ -90,7 +90,7 @@ describe("whose calls they are, behind the gateway", () => {
     sent.length = 0;
     Object.assign(workerEnv, {
       AUTH_MODE: "everyapp",
-      EVERYAPP_APP_ID: "openseo",
+      EVERYAPP_APP_ID: "seo-pilot",
       EVERY_APP_GATEWAY: binding,
     });
   }
@@ -100,7 +100,7 @@ describe("whose calls they are, behind the gateway", () => {
     const token = new UnsecuredJWT({ org_id: "org_a" })
       .setExpirationTime("2m")
       .encode();
-    const request = new Request("https://openseo.app.everyapp.com/", {
+    const request = new Request("https://seo-pilot.app.everyapp.com/", {
       headers: { "x-everyapp-identity": token },
     });
     const user = {

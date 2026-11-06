@@ -34,7 +34,7 @@ When the user wants to go deeper, hand off to a skill instead of doing the full 
 - Name the skill and what it produces in one line, then offer to run it: "Want the full version? `/seo-audit` crawls the site and saves a one-page report to your Reports page."
 - Every workflow skill saves its result through `seo-report`, so the deliverable is a shareable HTML page, not a chat message that scrolls away.
 - Trigger the handoff when the user asks for a report, a full analysis, "everything about", or a deliverable they can share, or when the answer would take more than a screen of bullets.
-- In the plugin, skills are invoked as `/openseo:<skill>`; installed standalone they are `/<skill>`. Use whichever form the user used to start this session.
+- In the plugin, skills are invoked as `/seo-pilot:<skill>`; installed standalone they are `/<skill>`. Use whichever form the user used to start this session.
 
 ## Project context
 

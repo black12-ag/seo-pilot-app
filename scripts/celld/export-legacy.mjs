@@ -19,7 +19,7 @@ if (!source || !destination)
   );
 const output = resolve(destination);
 await mkdir(output, { mode: 0o700 });
-const scratch = await mkdtemp(join(tmpdir(), "openseo-export-"));
+const scratch = await mkdtemp(join(tmpdir(), "seo-pilot-export-"));
 const manifest = {
   format: 1,
   source: "SEO Pilot Miniflare state/v3",

@@ -11,7 +11,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 work=$(mktemp -d)
 cp "$here/wrangler.jsonc" "$here/worker.js" "$work/"
 chmod -R a+rwX "$work"
-name="openseo-conformance-$$"
+name="seo-pilot-conformance-$$"
 trap 'docker rm -f "$name" >/dev/null 2>&1 || true; rm -rf "$work"' EXIT
 # A 10 s handler budget makes the 25-second workflows cross it.
 docker run -d --name "$name" -p 127.0.0.1::9876 -v "$work:/app" \

@@ -108,7 +108,7 @@ async function evaluateFeatureFlag(flag: FeatureFlag): Promise<boolean> {
   if (!client) return false;
 
   try {
-    const flags = await client.evaluateFlags("openseo-server", {
+    const flags = await client.evaluateFlags("seo-pilot-server", {
       flagKeys: [flag],
     });
     return flags.isEnabled(flag);

@@ -118,7 +118,7 @@ describe("loadAiTrend", () => {
 
   it.each([
     ["market", {}, { locationCode: 2826 }],
-    ["brand", { brandDomain: "openseo.com" }, {}],
+    ["brand", { brandDomain: "seopilot.com" }, {}],
   ] as const)(
     "reports a scope change when the %s changes",
     async (_, answerChange, runChange) => {

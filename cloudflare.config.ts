@@ -11,7 +11,7 @@ import manifest from "./everyapp.config.ts";
 // imports from the Workers.
 
 /** What both of SEO Pilot's Workers add to the SDK's definitions. */
-export function withOpenSeoRuntime<
+export function withSeoPilotRuntime<
   W extends { compatibilityFlags: string[]; env: object },
 >(worker: W, appWorkerName: string) {
   return {
@@ -38,5 +38,5 @@ export default defineConfig((ctx) => {
     // Due rank checks, AI visibility runs and the stale-audit reconcile.
     crons: ["*/5 * * * *"],
   });
-  return { worker: withOpenSeoRuntime(worker, worker.name) };
+  return { worker: withSeoPilotRuntime(worker, worker.name) };
 });

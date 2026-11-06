@@ -22,7 +22,7 @@ import {
 } from "@/server/mcp/server";
 
 // SEO Pilot's MCP tools, served by the Every App gateway: its one MCP
-// connector lists them as `openseo_<tool>` beside every other app's, and this
+// connector lists them as `<app id>_<tool>` beside every other app's, and this
 // app's own host serves them under their names. The gateway signs in the
 // person, applies the connection's read-only or read-write choice, and calls
 // a tool here with a verified identity; SEO Pilot never speaks MCP for it.

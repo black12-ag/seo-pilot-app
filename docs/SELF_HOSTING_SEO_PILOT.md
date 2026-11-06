@@ -20,7 +20,7 @@ image name so the source build has its own tag:
 ```dotenv
 STORAGE_ACCESS_KEY=seo-pilot
 STORAGE_SECRET_KEY=replace-with-your-own-long-random-secret
-OPENSEO_IMAGE=seo-pilot-platform:local
+SEO_PILOT_IMAGE=seo-pilot-platform:local
 AUTH_MODE=password
 BETTER_AUTH_URL=http://localhost:3001
 PORT=3001
@@ -104,4 +104,5 @@ After backing up, update the source and rerun the source-build command above:
 git pull --ff-only origin main
 ```
 
-Preserve your environment file, image tag, project name and volumes.
+Preserve your environment file, image tag, project name and volumes. An older
+`.env` that sets `OPENSEO_IMAGE` keeps working; new installs use `SEO_PILOT_IMAGE`.

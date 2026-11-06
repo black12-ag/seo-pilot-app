@@ -30,7 +30,7 @@ RUN case "$TARGETARCH" in \
     curl -fsSL "https://github.com/denoland/celld/releases/download/v${CELLD_VERSION}/celld-${triple}.gz" -o /tmp/celld.gz && \
     echo "$checksum  /tmp/celld.gz" | sha256sum -c - && \
     gunzip /tmp/celld.gz && install -m 0755 /tmp/celld /usr/local/bin/celld && rm /tmp/celld
-COPY --from=build /build/dist/celld /opt/openseo
+COPY --from=build /build/dist/celld /opt/seo-pilot
 COPY deploy/standalone/init.sh deploy/standalone/run.sh deploy/standalone/nginx.conf /opt/standalone/
 COPY scripts/celld/runtime/admin.mjs scripts/celld/runtime/configure.mjs scripts/celld/runtime/crawl-gateway.mjs scripts/celld/runtime/import.mjs /opt/standalone/
 RUN mkdir -p /config /data /web-config && chown -R node:node /config /data /web-config

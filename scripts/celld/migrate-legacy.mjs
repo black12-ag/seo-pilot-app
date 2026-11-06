@@ -22,7 +22,7 @@ function run(script, ...args) {
   });
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
-const output = join(tmpdir(), `openseo-legacy-${process.pid}`);
+const output = join(tmpdir(), `seo-pilot-legacy-${process.pid}`);
 try {
   run("scripts/celld/export-legacy.mjs", source, output);
   run("scripts/celld/runtime/import.mjs", output);

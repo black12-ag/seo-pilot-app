@@ -21,7 +21,10 @@ type SavedPrivacyChoices = Omit<PrivacyChoices, "advertising"> & {
   advertising?: boolean;
 };
 
-const PRIVACY_COOKIE = "openseo_privacy";
+const PRIVACY_COOKIE = "seo_pilot_privacy";
+// The cookie's old name, read until it has aged out. A saved choice is consent,
+// so a rename must not put someone who opted out back on the default.
+const OLD_PRIVACY_COOKIE = "openseo_privacy";
 const PRIVACY_COOKIE_MAX_AGE_SECONDS = 180 * 24 * 60 * 60;
 
 // For visitors from these countries nothing optional runs until they opt in.
@@ -58,16 +61,22 @@ export function defaultPrivacyChoices(optIn: boolean): PrivacyChoices {
   return { analytics: !optIn, referrals: !optIn, advertising: !optIn };
 }
 
+function cookieValue(cookieHeader: string | null | undefined, name: string) {
+  return cookieHeader
+    ?.split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${name}=`))
+    ?.slice(name.length + 1);
+}
+
 /** Saved choices from a Cookie header or `document.cookie`, or null when the
  *  visitor hasn't chosen yet (or the cookie is unreadable). */
 export function readPrivacyCookie(
   cookieHeader: string | null | undefined,
 ): SavedPrivacyChoices | null {
-  const raw = cookieHeader
-    ?.split(";")
-    .map((part) => part.trim())
-    .find((part) => part.startsWith(`${PRIVACY_COOKIE}=`))
-    ?.slice(PRIVACY_COOKIE.length + 1);
+  const raw =
+    cookieValue(cookieHeader, PRIVACY_COOKIE) ??
+    cookieValue(cookieHeader, OLD_PRIVACY_COOKIE);
   // Format: "a1.d0.m1" — analytics, Dub referrals, Meta advertising. Cookies
   // saved before the Meta choice existed stop after the "d" flag.
   const match = /^a([01])\.d([01])(?:\.m([01]))?$/.exec(raw ?? "");
@@ -140,6 +149,7 @@ export function savePrivacyChoices(choices: PrivacyChoices) {
     `a${flag(choices.analytics)}.d${flag(choices.referrals)}.m${flag(choices.advertising)}`,
     PRIVACY_COOKIE_MAX_AGE_SECONDS,
   );
+  writeCookie(OLD_PRIVACY_COOKIE, "", 0);
   // Withdrawing referral permission removes Dub's cookies so a later signup
   // isn't attributed to the partner. Sales of a customer attributed at signup
   // are still reported from the server.
@@ -154,4 +164,5 @@ export function savePrivacyChoices(choices: PrivacyChoices) {
   window.dispatchEvent(new Event(PRIVACY_CHOICES_CHANGED_EVENT));
 }
 
-export const PRIVACY_CHOICES_CHANGED_EVENT = "openseo:privacy-choices-changed";
+export const PRIVACY_CHOICES_CHANGED_EVENT =
+  "seo-pilot:privacy-choices-changed";

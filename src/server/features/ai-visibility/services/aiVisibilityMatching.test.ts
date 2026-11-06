@@ -85,7 +85,7 @@ describe("brand citations", () => {
   it.each([
     "seo.viral4all.com.evil.example",
     "notseo.viral4all.com",
-    "openseo.com",
+    "seopilot.com",
   ])("does not count %s", (host) => {
     expect(ownedAiDomain(host, brand.domain)).toBe(false);
     expect(matchAiBrand(answer("Other tools.", [host]), brand).cited).toBe(

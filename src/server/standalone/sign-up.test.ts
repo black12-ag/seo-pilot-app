@@ -27,7 +27,8 @@ vi.mock("cloudflare:workers", () => ({
     AUTH_MODE: "password",
     BETTER_AUTH_URL: "https://seo.example.com",
     BETTER_AUTH_SECRET: "synthetic-auth-secret-at-least-32-characters",
-    OPENSEO_OPERATOR_SECRET: "test-only-operator-secret-at-least-32-characters",
+    SEO_PILOT_OPERATOR_SECRET:
+      "test-only-operator-secret-at-least-32-characters",
   },
 }));
 vi.mock("@/db", () => ({ db: testDb }));
@@ -111,7 +112,7 @@ describe("standalone registration policy through real SQL", () => {
     await expect(
       assertStandaloneSignUpOpen(
         new Headers({
-          "x-openseo-operator-secret":
+          "x-seo-pilot-operator-secret":
             "test-only-operator-secret-at-least-32-characters",
         }),
         { email: "operator-created@example.com" },
@@ -119,7 +120,7 @@ describe("standalone registration policy through real SQL", () => {
     ).resolves.toBeUndefined();
     await expect(
       assertStandaloneSignUpOpen(
-        new Headers({ "x-openseo-operator-secret": "wrong" }),
+        new Headers({ "x-seo-pilot-operator-secret": "wrong" }),
         { email: "operator-created@example.com" },
       ),
     ).rejects.toMatchObject({ status: "FORBIDDEN" });
@@ -136,7 +137,7 @@ describe("standalone registration policy through real SQL", () => {
         headers: {
           origin: "https://seo.example.com",
           "content-type": "application/json",
-          "x-openseo-operator-secret":
+          "x-seo-pilot-operator-secret":
             "test-only-operator-secret-at-least-32-characters",
         },
         body: JSON.stringify({

@@ -1,11 +1,15 @@
+# Keep this name: an install started without --project-name keeps its volumes
+# under it, and a new name would start empty.
 name: openseo-standalone
 x-app: &app
   # The published image. To build it from this checkout instead, add
   # compose.build.yaml (see docs/SELF_HOSTING_DOCKER.md). This file
   # reads nothing else from the checkout, so it can be pasted into Coolify,
   # Portainer or Dokploy on its own.
-  image: ${OPENSEO_IMAGE:-seo-pilot-platform:local}
-x-storage: &storage
+  # OPENSEO_IMAGE is the setting's old name, still read for existing .env files.
+  image: ${SEO_PILOT_IMAGE:-${OPENSEO_IMAGE:-seo-pilot-platform:local}}
+x-storage:
+  &storage # Keep this name: it is the bucket holding the app's state in existing storage.
   CELLD_BUCKET: openseo
   S3_ENDPOINT: http://storage:9000
   AWS_REGION: us-east-1

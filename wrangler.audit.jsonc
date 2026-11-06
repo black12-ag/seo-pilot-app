@@ -71,7 +71,7 @@
   //   {
   //     "binding": "HYPERDRIVE",
   //     "id": "9d64ccfb559f44449ce52a143912f898",
-  //     "localConnectionString": "postgres://openseo:openseo@localhost:5433/openseo",
+  //     "localConnectionString": "postgres://seo_pilot:seo_pilot@localhost:5433/seo_pilot",
   //   },
   // ],
   "r2_buckets": [

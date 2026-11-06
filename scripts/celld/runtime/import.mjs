@@ -13,12 +13,16 @@ for (const entry of entries) {
   if (sha(await readFile(join(directory, entry.file))) !== entry.sha256)
     throw new Error(`Export checksum mismatch: ${entry.file}`);
 }
-const { OPENSEO_OPERATOR_SECRET } = JSON.parse(
+// OPENSEO_OPERATOR_SECRET is what an install set up before the rename still has.
+const storedSecrets = JSON.parse(
   await readFile("/config/secrets.json", "utf8"),
 );
+const operatorSecret =
+  storedSecrets.SEO_PILOT_OPERATOR_SECRET ||
+  storedSecrets.OPENSEO_OPERATOR_SECRET;
 const headers = {
   "content-type": "application/json",
-  "x-openseo-operator-secret": OPENSEO_OPERATOR_SECRET,
+  "x-seo-pilot-operator-secret": operatorSecret,
 };
 const endpoint = "http://127.0.0.1:8080/api/standalone/import";
 async function command(body) {
@@ -49,7 +53,7 @@ for (const entry of manifest.artifacts) {
   const response = await fetch(`${endpoint}?artifact=1`, {
     method: "POST",
     headers: {
-      "x-openseo-operator-secret": OPENSEO_OPERATOR_SECRET,
+      "x-seo-pilot-operator-secret": operatorSecret,
       "x-artifact-sha256": entry.sha256,
       "x-artifact-key": encodeURIComponent(entry.key),
       "x-artifact-metadata": JSON.stringify({

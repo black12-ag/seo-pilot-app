@@ -24,7 +24,7 @@ describe("themeCookieDomain", () => {
     expect(themeCookieDomain("team.example.com", gateway)).toBe(
       "team.example.com",
     );
-    expect(themeCookieDomain("openseo.team.example.com", gateway)).toBe(
+    expect(themeCookieDomain("seo-pilot.team.example.com", gateway)).toBe(
       "team.example.com",
     );
     expect(themeCookieDomain("evilteam.example.com", gateway)).toBeNull();

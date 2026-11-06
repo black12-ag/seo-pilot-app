@@ -4,8 +4,8 @@ import { runSelfhostChecks } from "./selfhost-preflight";
 const EVERY_APP = {
   AUTH_MODE: "everyapp",
   EVERYAPP_IDENTITY_PUBLIC_KEYS: "[]",
-  EVERYAPP_APP_ID: "openseo",
-  EVERYAPP_AUDIENCE: "every-everyapp-openseo",
+  EVERYAPP_APP_ID: "seo-pilot",
+  EVERYAPP_AUDIENCE: "every-everyapp-seo-pilot",
 };
 
 function check(env: Record<string, string>, key: string) {

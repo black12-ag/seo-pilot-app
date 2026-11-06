@@ -28,7 +28,7 @@ export async function resolveEveryAppContext(
   try {
     // The SDK reads the identity headers only; the URL is never used.
     user = await getEveryAppUser(
-      new Request("https://openseo.invalid/", { headers }),
+      new Request("https://seo-pilot.invalid/", { headers }),
       env,
     );
   } catch (error) {

@@ -11,7 +11,7 @@ export default defineConfig({
   build: {
     lib: {
       entry: "src/report-widgets/rank-grid.ts",
-      name: "OpenSeoReportWidgets",
+      name: "SeoPilotReportWidgets",
       formats: ["iife"],
       fileName: () => "v1.js",
     },

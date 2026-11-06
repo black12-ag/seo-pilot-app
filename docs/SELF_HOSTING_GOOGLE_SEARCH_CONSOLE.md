@@ -43,10 +43,10 @@ Under **APIs & Services → Credentials → Create credentials → OAuth client 
 2. Add an **Authorized redirect URI** that exactly matches your deployment's
    origin plus `/api/gsc/oauth/callback`:
 
-   | Deployment   | Redirect URI                                             |
-   | ------------ | -------------------------------------------------------- |
-   | Deployed     | `https://your-openseo-domain.com/api/gsc/oauth/callback` |
-   | Local Docker | `http://localhost:3001/api/gsc/oauth/callback`           |
+   | Deployment   | Redirect URI                                               |
+   | ------------ | ---------------------------------------------------------- |
+   | Deployed     | `https://your-seo-pilot-domain.com/api/gsc/oauth/callback` |
+   | Local Docker | `http://localhost:3001/api/gsc/oauth/callback`             |
 
    The scheme, host, and port must match exactly, with no trailing slash.
 

@@ -7,7 +7,7 @@ vi.mock("cloudflare:workers", () => ({ env }));
 afterEach(() => {
   delete env.AUTH_MODE;
   delete env.BETTER_AUTH_URL;
-  delete env.OPENSEO_OPERATOR_SECRET;
+  delete env.SEO_PILOT_OPERATOR_SECRET;
 });
 
 describe("getPublicOrigin", () => {
@@ -32,7 +32,7 @@ describe("getPublicOrigin", () => {
     // The old Docker image: BETTER_AUTH_URL may sit in its .env, no operator secret.
     expect(getPublicOrigin(request)).toBe("http://192.168.1.10:3001");
 
-    env.OPENSEO_OPERATOR_SECRET = "s".repeat(32);
+    env.SEO_PILOT_OPERATOR_SECRET = "s".repeat(32);
     expect(getPublicOrigin(request)).toBe("http://seo.internal:3001");
   });
 

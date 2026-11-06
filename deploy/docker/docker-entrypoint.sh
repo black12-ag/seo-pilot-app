@@ -13,7 +13,7 @@ pnpm exec tsx scripts/selfhost-preflight.ts
 
 pnpm run db:migrate:local
 
-FP_FILE="dist/.openseo-build-env"
+FP_FILE="dist/.seo-pilot-build-env"
 
 # Everything that changes build output: the envPrefix prefixes from
 # vite.config.ts (keep in sync) plus POSTHOG_SOURCEMAPS.

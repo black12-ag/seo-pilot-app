@@ -162,7 +162,7 @@ function fittedZoomRange(grid: MapArea) {
 function hmacKey(apiKey: string) {
   return crypto.subtle.importKey(
     "raw",
-    new TextEncoder().encode(`openseo:report-map:${apiKey}`),
+    new TextEncoder().encode(`seo-pilot:report-map:${apiKey}`),
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign", "verify"],

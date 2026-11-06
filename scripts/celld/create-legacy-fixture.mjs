@@ -7,7 +7,7 @@ const { Miniflare, convertV4MiniflareOptions } = require(
     paths: [dirname(require.resolve("wrangler"))],
   }),
 );
-const directory = resolve(process.argv[2] ?? "/tmp/openseo-legacy-fixture");
+const directory = resolve(process.argv[2] ?? "/tmp/seo-pilot-legacy-fixture");
 await mkdir(directory, { mode: 0o700 });
 const mf = new Miniflare(
   convertV4MiniflareOptions({

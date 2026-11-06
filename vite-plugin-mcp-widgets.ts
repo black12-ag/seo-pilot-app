@@ -2,7 +2,7 @@ import { build, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
-const moduleId = "virtual:openseo-mcp-widget";
+const moduleId = "virtual:seo-pilot-mcp-widget";
 const resolvedId = `\0${moduleId}`;
 
 // A separate browser bundle keeps React and the app's actual UI components out
@@ -10,7 +10,7 @@ const resolvedId = `\0${moduleId}`;
 // the sandbox needs no network access, session cookies, or asset allowlist.
 export function mcpWidgets(): Plugin {
   return {
-    name: "openseo-mcp-widgets",
+    name: "seo-pilot-mcp-widgets",
     resolveId(id) {
       if (id === moduleId) return resolvedId;
     },
@@ -40,7 +40,7 @@ async function buildWidget() {
       lib: {
         entry: "src/client/mcp-widgets/main.tsx",
         formats: ["iife"],
-        name: "OpenSeoWidgets",
+        name: "SeoPilotWidgets",
       },
     },
   });

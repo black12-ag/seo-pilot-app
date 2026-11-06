@@ -51,7 +51,7 @@ describe("captureMetaSignup", () => {
     captureMetaSignup(
       browserRequest({
         "cf-ipcountry": "DE",
-        cookie: "_fbp=fb.1.1.1; openseo_privacy=a0.d0.m1",
+        cookie: "_fbp=fb.1.1.1; seo_pilot_privacy=a0.d0.m1",
       }),
     );
     expect(fetchMock).toHaveBeenCalledOnce();

@@ -49,7 +49,7 @@ const {
 });
 vi.mock("cloudflare:workers", () => ({
   env: {
-    OPENSEO_OPERATOR_SECRET: "fixture-import-operator-secret-only",
+    SEO_PILOT_OPERATOR_SECRET: "fixture-import-operator-secret-only",
     DB: { prepare: prepareQuery },
     KV: { get: async () => "active-import" },
   },
@@ -67,7 +67,7 @@ const request = (
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-openseo-operator-secret": "fixture-import-operator-secret-only",
+      "x-seo-pilot-operator-secret": "fixture-import-operator-secret-only",
     },
     body: JSON.stringify({
       command: "rows",

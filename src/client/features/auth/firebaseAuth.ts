@@ -14,7 +14,7 @@ async function googleFirebaseToken() {
     import("firebase/app"),
     import("firebase/auth"),
   ]);
-  const name = `openseo-auth-${config.projectId}`;
+  const name = `seo-pilot-auth-${config.projectId}`;
   const app =
     appSDK.getApps().find((candidate) => candidate.name === name) ??
     appSDK.initializeApp(config, name);

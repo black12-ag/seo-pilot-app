@@ -62,21 +62,21 @@ export function usesBetterAuth(value: string | null | undefined) {
 // the build-time one, which is what every other deployment still relies on.
 declare global {
   // `var` is how a property of globalThis is declared.
-  var __OPENSEO_AUTH_MODE__: string | undefined;
+  var __SEO_PILOT_AUTH_MODE__: string | undefined;
 }
 
 export function setRuntimeAuthMode(value: string | undefined) {
-  globalThis.__OPENSEO_AUTH_MODE__ = value;
+  globalThis.__SEO_PILOT_AUTH_MODE__ = value;
 }
 
 export function getClientAuthMode() {
   return getAuthMode(
-    globalThis.__OPENSEO_AUTH_MODE__ ?? import.meta.env.AUTH_MODE,
+    globalThis.__SEO_PILOT_AUTH_MODE__ ?? import.meta.env.AUTH_MODE,
   );
 }
 
 export function runtimeAuthModeScript() {
-  return `globalThis.__OPENSEO_AUTH_MODE__=${JSON.stringify(getClientAuthMode())}`;
+  return `globalThis.__SEO_PILOT_AUTH_MODE__=${JSON.stringify(getClientAuthMode())}`;
 }
 
 export function isEveryAppAuthMode(value: string | null | undefined) {

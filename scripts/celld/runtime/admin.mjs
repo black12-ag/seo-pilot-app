@@ -22,17 +22,25 @@ if (password.length < 8 || password.length > 128)
 // Inside the Docker runtime container the secret sits in the config volume
 // and the app listens on 8080. A Cloudflare self-hoster runs this script from
 // the repository (`pnpm selfhost:admin`) with the secret from .env.selfhost
-// and the deployed URL in OPENSEO_URL.
+// and the deployed URL in SEO_PILOT_URL. OPENSEO_OPERATOR_SECRET and OPENSEO_URL
+// are what an install set up before the rename still has.
+async function storedOperatorSecret() {
+  const stored = JSON.parse(await readFile("/config/secrets.json", "utf8"));
+  return stored.SEO_PILOT_OPERATOR_SECRET || stored.OPENSEO_OPERATOR_SECRET;
+}
 const operatorSecret =
+  process.env.SEO_PILOT_OPERATOR_SECRET ||
   process.env.OPENSEO_OPERATOR_SECRET ||
-  JSON.parse(await readFile("/config/secrets.json", "utf8"))
-    .OPENSEO_OPERATOR_SECRET;
-const baseUrl = process.env.OPENSEO_URL || "http://127.0.0.1:8080";
+  (await storedOperatorSecret());
+const baseUrl =
+  process.env.SEO_PILOT_URL ||
+  process.env.OPENSEO_URL ||
+  "http://127.0.0.1:8080";
 const response = await fetch(`${baseUrl}/api/standalone/admin`, {
   method: "POST",
   headers: {
     "content-type": "application/json",
-    "x-openseo-operator-secret": operatorSecret,
+    "x-seo-pilot-operator-secret": operatorSecret,
   },
   body: JSON.stringify({
     command,
@@ -54,7 +62,7 @@ const result = (() => {
 if (!response.ok) {
   console.error(
     result.error ??
-      `${response.status} ${text.trim()} — is OPENSEO_OPERATOR_SECRET set on this deployment?`,
+      `${response.status} ${text.trim()} — is SEO_PILOT_OPERATOR_SECRET set on this deployment?`,
   );
   process.exit(1);
 }

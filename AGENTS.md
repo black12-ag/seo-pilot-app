@@ -18,7 +18,7 @@
 
 ## Don't rename these
 
-`OPENSEO_*` settings, `openseo-standalone`, `CELLD_BUCKET`, and worker names in `wrangler*.json*`, `deploy/` and `scripts/celld/` key live data. Renaming them can orphan an existing install.
+`openseo-standalone`, the `CELLD_BUCKET` value, the Every App `id`, and the worker names in `wrangler*.json*` (including `open-seo` and `open-seo-audit`) key live data. Renaming them can orphan an existing install. `scripts/old-name.test.ts` lists each remaining use of the old name and why it has to stay.
 
 ## Docs
 

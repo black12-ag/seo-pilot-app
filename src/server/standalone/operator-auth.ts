@@ -10,16 +10,28 @@ const MIN_OPERATOR_SECRET_LENGTH = 32;
 // whose identity comes from outside the app never set it, so everything it
 // gates stays off there. A value too short for isOperatorRequest counts as
 // unset.
+//
+// An install set up before the rename keeps the old name: its secrets.json was
+// written once, and a self-hoster's .env.selfhost is theirs. So both are read.
+function operatorSecret(): unknown {
+  return (
+    Reflect.get(env, "SEO_PILOT_OPERATOR_SECRET") ??
+    Reflect.get(env, "OPENSEO_OPERATOR_SECRET")
+  );
+}
+
 export function hasOperatorSecret(): boolean {
-  const secret: unknown = Reflect.get(env, "OPENSEO_OPERATOR_SECRET");
+  const secret = operatorSecret();
   return (
     typeof secret === "string" && secret.length >= MIN_OPERATOR_SECRET_LENGTH
   );
 }
 
 export function isOperatorRequest(headers: Headers | undefined): boolean {
-  const secret: unknown = Reflect.get(env, "OPENSEO_OPERATOR_SECRET");
-  const supplied = headers?.get("x-openseo-operator-secret");
+  const secret = operatorSecret();
+  const supplied =
+    headers?.get("x-seo-pilot-operator-secret") ??
+    headers?.get("x-openseo-operator-secret");
   if (!hasOperatorSecret() || typeof secret !== "string" || !supplied)
     return false;
   const expectedBytes = Buffer.from(secret);

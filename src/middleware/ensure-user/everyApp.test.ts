@@ -16,7 +16,7 @@ vi.mock("@/server/auth/delegated-organization", () => ({
 import { resolveEveryAppContext } from "./everyApp";
 
 // The fork's Worker, which the gateway mints every identity for.
-const AUDIENCE = "every-acme-openseo";
+const AUDIENCE = "every-acme-seo-pilot";
 const ISSUER = "https://apps.example.com";
 let privateKeyPem: string;
 
@@ -24,7 +24,7 @@ beforeAll(async () => {
   const keys = await generateKeyPair("RS256", { extractable: true });
   privateKeyPem = await exportPKCS8(keys.privateKey);
   Object.assign(workerEnv, {
-    EVERYAPP_APP_ID: "openseo",
+    EVERYAPP_APP_ID: "seo-pilot",
     EVERYAPP_AUDIENCE: AUDIENCE,
     EVERYAPP_IDENTITY_ISSUER: ISSUER,
     EVERYAPP_IDENTITY_PUBLIC_KEYS: JSON.stringify([

@@ -1,6 +1,6 @@
 import { cloudflare } from "@cloudflare/vite-plugin-cf";
 import { everyAppAuxiliaryWorker } from "@every-app/sdk/cloudflare";
-import { withOpenSeoRuntime } from "./cloudflare.config.ts";
+import { withSeoPilotRuntime } from "./cloudflare.config.ts";
 import manifest from "./everyapp.config.ts";
 
 type PluginConfig = NonNullable<Parameters<typeof cloudflare>[0]>;
@@ -33,7 +33,7 @@ export function everyAppCloudflare({ mode }: { mode: string }) {
         // the shapes agree at run time (cf validates them on deploy).
         config: ({ entryWorkerConfig }) =>
           // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- see above
-          withOpenSeoRuntime(
+          withSeoPilotRuntime(
             everyAppAuxiliaryWorker({
               manifest,
               worker: "audit",

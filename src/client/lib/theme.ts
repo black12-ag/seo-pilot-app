@@ -11,8 +11,8 @@ import { isEveryAppClientAuthMode } from "@/lib/auth-mode";
 
 export type ThemePreference = "system" | "light" | "dark";
 
-const LIGHT_THEME_NAME = "openseo";
-const DARK_THEME_NAME = "openseo-dark";
+const LIGHT_THEME_NAME = "seo-pilot";
+const DARK_THEME_NAME = "seo-pilot-dark";
 
 const THEME_STORAGE_KEY = "theme-preference";
 const THEME_CHANGE_EVENT = "theme-preference-change";

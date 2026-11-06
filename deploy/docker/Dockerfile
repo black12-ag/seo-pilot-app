@@ -17,7 +17,7 @@ EXPOSE 3001
 
 # The app's boot-time build reads this to show the notice pointing to the
 # standalone image (deploy/standalone/), which replaces this one.
-ENV VITE_OPENSEO_LEGACY_DOCKER=true
+ENV VITE_SEO_PILOT_LEGACY_DOCKER=true
 
 # Readiness probe against the unauthenticated setup/health endpoint. The long
 # start period covers migrations plus the boot-time vite build (skipped when

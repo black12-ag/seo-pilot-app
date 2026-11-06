@@ -9,7 +9,7 @@ services:
   migrate:
     # The image's build stage: it has Miniflare, the only reader of the old
     # storage format, which the runtime image deliberately leaves out.
-    image: openseo-standalone-migrate:local
+    image: seo-pilot-standalone-migrate:local
     build:
       context: ../..
       dockerfile: deploy/standalone/Dockerfile

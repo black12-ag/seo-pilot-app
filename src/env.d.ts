@@ -140,7 +140,7 @@ interface ImportMetaEnv {
   readonly TURNSTILE_SITE_KEY?: string;
   readonly VITE_E2E_DOMAIN_FIXTURES?: string;
   readonly VITE_E2E_KEYWORD_FIXTURES?: string;
-  readonly VITE_OPENSEO_LEGACY_DOCKER?: string;
+  readonly VITE_SEO_PILOT_LEGACY_DOCKER?: string;
 }
 
 interface ImportMeta {
