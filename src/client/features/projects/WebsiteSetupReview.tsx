@@ -71,7 +71,7 @@ export function WebsiteSetupReview({
             <h1 className="text-2xl font-semibold tracking-tight">
               {research.preserveCompetitors
                 ? "Complete project setup"
-                : "Edit competitors"}
+                : "Review your website research"}
             </h1>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
               You can edit your{" "}
