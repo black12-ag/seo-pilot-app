@@ -74,7 +74,15 @@ export async function getDataforseoFetch(): Promise<typeof fetch> {
     }
     return providerFetch;
   }
-  const apiKey = await getRequiredEnvValue("DATAFORSEO_API_KEY");
+  const apiKey = await getRequiredEnvValue("DATAFORSEO_API_KEY").catch(
+    () => null,
+  );
+  if (!apiKey) {
+    throw new AppError(
+      "DATAFORSEO_AUTH_FAILED",
+      "DataForSEO isn't set up. An administrator sets DATAFORSEO_API_KEY on the server.",
+    );
+  }
   return withAuthorization(`Basic ${apiKey}`);
 }
 

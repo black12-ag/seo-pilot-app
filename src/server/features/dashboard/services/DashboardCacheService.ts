@@ -67,7 +67,14 @@ async function readThrough<T>(input: {
     await DataRefreshClaimRepository.finish(key, token, 0);
     return { ...result, stale: false, refreshError: null };
   } catch (error) {
-    await DataRefreshClaimRepository.finish(key, token, 5 * 60_000);
+    // A missing or rejected key charges nothing, and pausing would hide the
+    // setup message behind "try again" and delay the fix by five minutes.
+    const code = asAppError(error)?.code;
+    await DataRefreshClaimRepository.finish(
+      key,
+      token,
+      code === "DATAFORSEO_AUTH_FAILED" ? 0 : 5 * 60_000,
+    );
     if (!cached) throw error;
     return {
       ...cached,

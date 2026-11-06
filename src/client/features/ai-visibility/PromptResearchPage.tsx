@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isHostedClientAuthMode } from "@/lib/auth-mode";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ChevronRight, Telescope } from "lucide-react";
@@ -205,7 +206,9 @@ function KeywordSearch({
           id="ai-keyword-research-cost"
           className="text-xs text-muted-foreground"
         >
-          About $0.25 in credits per keyword.
+          {isHostedClientAuthMode()
+            ? "About $0.25 in credits per keyword."
+            : "About $0.25 of DataForSEO usage per keyword."}
         </p>
       }
     >

@@ -35,6 +35,7 @@ vi.mock("@/server/lib/openrouter", async () => {
   const { MockLanguageModelV3 } = await import("ai/test");
   return {
     resolveAiAccess: async () => (() => access.value)(),
+    resolveAiRoute: async () => ({ access: access.value, message: null }),
     buildChatAgentModel: () =>
       new MockLanguageModelV3({ modelId: "test-model", doGenerate }),
   };
@@ -265,6 +266,18 @@ const cited = (text: string, quote: string) => ({
   kind: "legal",
   factual: true,
   citations: [{ source: "S1", quote }],
+});
+
+it("tells the confirm step a subscription run has no key charge", async () => {
+  await fixture();
+  access.value = { apiKey: "test" };
+  expect(
+    await ContentDraftService.getSetup(actor, { projectId: "project" }),
+  ).toMatchObject({ configured: true, includedInSubscription: false });
+  access.value = { subscription: { engine: "agy" } };
+  expect(
+    await ContentDraftService.getSetup(actor, { projectId: "project" }),
+  ).toMatchObject({ configured: true, includedInSubscription: true });
 });
 
 describe("citations that say the opposite", () => {

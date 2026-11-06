@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { getErrorCode } from "@/client/lib/error-messages";
+import {
+  getErrorCode,
+  getStandardErrorMessage,
+} from "@/client/lib/error-messages";
 import type { ErrorCode } from "@/shared/error-codes";
 
 type ResearchKind = "direct" | "ai" | "content-draft";
@@ -87,6 +90,7 @@ const REFUSAL_MESSAGES: Partial<Record<ErrorCode, string>> = {
 /** Bad-URL advice would mislead when the URL was never tried. */
 export function researchErrorMessage(error: unknown) {
   const code = getErrorCode(error);
+  if (code === "DATAFORSEO_AUTH_FAILED") return getStandardErrorMessage(error);
   return (
     (code && REFUSAL_MESSAGES[code]) ??
     "We couldn’t research this website. Check the URL and provider settings, then try again."

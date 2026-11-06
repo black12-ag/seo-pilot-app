@@ -3,11 +3,21 @@ import { billResearchSpend } from "@/server/billing/researchSpend";
 import { checkUsageCreditsDepleted } from "@/server/billing/subscription";
 import { ContentDraftRepository as drafts } from "@/server/features/content/repositories/contentDraftWrites";
 import { ContentRepository } from "@/server/features/content/repositories/ContentRepository";
-import { INCLUDED_IN_SUBSCRIPTION_LABEL } from "@/server/lib/aiEngine/billing";
+import {
+  aiAccessKind,
+  INCLUDED_IN_SUBSCRIPTION_LABEL,
+} from "@/server/lib/aiEngine/billing";
 import { sha256Hex } from "@/server/lib/audit/ids";
 import { AppError, describeError } from "@/server/lib/errors";
-import { resolveAiAccess, type AiAccess } from "@/server/lib/openrouter";
-import { isHostedServerAuthMode } from "@/server/lib/runtime-env";
+import {
+  resolveAiAccess,
+  resolveAiRoute,
+  type AiAccess,
+} from "@/server/lib/openrouter";
+import {
+  getWorkersEnv,
+  isHostedServerAuthMode,
+} from "@/server/lib/runtime-env";
 import {
   contentDraftRequestSchema,
   contentDraftSetupInputSchema,
@@ -367,8 +377,13 @@ async function getRequest(actor: ContentActor, raw: ContentDraftRequest) {
 async function getSetup(actor: ContentActor, raw: { projectId: string }) {
   const input = contentDraftSetupInputSchema.parse(raw);
   await contentAccess(actor, input.projectId);
+  const { access, message } = await resolveAiRoute(
+    (await getWorkersEnv()) ?? {},
+  );
   return {
-    configured: Boolean(await resolveAiAccess()),
+    configured: Boolean(access),
+    notConfiguredMessage: message,
+    includedInSubscription: aiAccessKind(access) === "subscription",
     usesCredits: await isHostedServerAuthMode(),
     maxOutputTokens: contentDraftLimits.maxOutputTokens,
   };

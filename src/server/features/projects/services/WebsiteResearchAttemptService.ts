@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { normalizeBacklinksTarget } from "@/server/lib/dataforseoBacklinksTarget";
 import { AppError } from "@/server/lib/errors";
+import { hasDataforseoAccess } from "@/server/lib/provider-access";
 import {
   checkUsageCreditsDepleted,
   type BillingCustomerContext,
@@ -222,7 +223,10 @@ async function start(
   )
     throw new AppError("FORBIDDEN");
   const seeded = options.runSeededTracking ?? false;
-  const { scope, snapshot } = await scopeFor(options.actor, input.projectId);
+  const { scope, snapshot, savedDomains } = await scopeFor(
+    options.actor,
+    input.projectId,
+  );
   const original = await readOriginal(scope, input, seeded, mode);
   if (original) return original;
   const legacy = await inspectLegacySetupBeforePaidStart(
@@ -242,6 +246,10 @@ async function start(
       status: "legacy_review" as const,
       review: withoutResearchReferences(legacy.review),
     };
+  // Finding competitors needs live search, and research fails without it. Say
+  // so now, before a model call or a page read is spent on a run that can't end.
+  if (!savedDomains.length && !(await hasDataforseoAccess()))
+    throw new AppError("DATAFORSEO_AUTH_FAILED");
   if (
     (await isHostedServerAuthMode()) &&
     (await checkUsageCreditsDepleted(customer)).depleted

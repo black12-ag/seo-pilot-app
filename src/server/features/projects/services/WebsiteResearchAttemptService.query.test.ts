@@ -34,7 +34,8 @@ vi.mock("@/server/lib/runtime-env", () => ({
   usesBetterAuthServer: async () => true,
   isHostedServerAuthMode: async () => false,
   getWorkersEnv: async () => ({}),
-  getOptionalEnvValue: async () => null,
+  getOptionalEnvValue: async (name: string) =>
+    name === "DATAFORSEO_API_KEY" ? "key" : null,
 }));
 vi.mock("@/server/lib/openrouter", () => ({
   resolveAiAccess: async () => (() => ({ apiKey: "test" }))(),

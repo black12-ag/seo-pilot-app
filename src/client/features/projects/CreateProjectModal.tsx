@@ -26,7 +26,7 @@ import {
 import { ProjectMarketFields } from "@/client/features/projects/ProjectMarketFields";
 import { toastInitialAudit } from "@/client/features/projects/initialAuditToast";
 import { createProject } from "@/serverFunctions/projects";
-import { isEveryAppClientAuthMode } from "@/lib/auth-mode";
+import { isHostedClientAuthMode } from "@/lib/auth-mode";
 
 const createProjectSchema = z.object({
   name: z.string().trim().min(1, "Project name is required"),
@@ -127,9 +127,9 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
             </form.AppField>
 
             <p className="text-sm text-muted-foreground">
-              {isEveryAppClientAuthMode()
-                ? "Adding your website starts a 50-page site audit."
-                : "Adding your website starts a 50-page scan with JavaScript rendering. Rendering uses your credits."}
+              {isHostedClientAuthMode()
+                ? "Adding your website starts a 50-page scan with JavaScript rendering. Rendering uses your credits."
+                : "Adding your website starts a 50-page site audit."}
             </p>
             <form.AppField name="domain">
               {(field) => (

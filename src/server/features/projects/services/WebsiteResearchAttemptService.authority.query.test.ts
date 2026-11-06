@@ -25,6 +25,9 @@ vi.mock("@/server/lib/runtime-env", () => ({
   getWorkersEnv: async () => ({}),
   getOptionalEnvValue: async () => null,
 }));
+vi.mock("@/server/lib/provider-access", () => ({
+  hasDataforseoAccess: async () => true,
+}));
 vi.mock("@/server/lib/openrouter", () => ({
   resolveAiAccess: async () => (() => ({ apiKey: "test" }))(),
   requireAiAccess: async () => ({ apiKey: "test" }),

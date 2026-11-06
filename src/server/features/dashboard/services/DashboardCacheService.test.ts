@@ -92,6 +92,17 @@ it("allows only one paid load for simultaneous cold visits and reuses the winner
   expect(load).toHaveBeenCalledTimes(1);
 });
 
+it("keeps showing a missing DataForSEO key instead of pausing behind a rate limit", async () => {
+  const load = vi.fn(async (): Promise<string[]> => {
+    throw new AppError("DATAFORSEO_AUTH_FAILED");
+  });
+  for (let visit = 0; visit < 2; visit++)
+    await expect(
+      DashboardCacheService.readThrough(input(load)),
+    ).rejects.toMatchObject({ code: "DATAFORSEO_AUTH_FAILED" });
+  expect(load).toHaveBeenCalledTimes(2);
+});
+
 it("caches empty results rather than billing again on every visit", async () => {
   const load = vi.fn(async () => [] as string[]);
   await DashboardCacheService.readThrough(input(load));

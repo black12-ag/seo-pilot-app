@@ -6,7 +6,9 @@ const { testDb, doGenerate, access, spend } = await vi.hoisted(async () => {
   return {
     testDb: await createSiteAuthorityTestDb(),
     doGenerate: vi.fn(),
-    access: { value: { apiKey: "test" } as { apiKey: string } | null },
+    access: {
+      value: { apiKey: "test" } as { apiKey: string } | null,
+    },
     spend: vi.fn(async () => ({ status: "selfhost_external" as const })),
   };
 });
@@ -37,6 +39,10 @@ vi.mock("@/server/lib/openrouter", async () => {
   const { MockLanguageModelV3 } = await import("ai/test");
   return {
     resolveAiAccess: async () => (() => access.value)(),
+    resolveAiRoute: async () => ({
+      access: access.value,
+      message: access.value ? null : "The AI engine service isn't reachable.",
+    }),
     buildChatAgentModel: () =>
       new MockLanguageModelV3({ modelId: "test-model", doGenerate }),
   };
@@ -350,7 +356,10 @@ describe("draft generation", () => {
     });
     expect(
       await ContentDraftService.getSetup(actor, { projectId: "project" }),
-    ).toMatchObject({ configured: false });
+    ).toMatchObject({
+      configured: false,
+      notConfiguredMessage: "The AI engine service isn't reachable.",
+    });
     expect(doGenerate).not.toHaveBeenCalled();
   });
 

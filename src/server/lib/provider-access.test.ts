@@ -48,6 +48,13 @@ describe("provider access with the deployment's own keys", () => {
     expect(await hasProviderAccess("context")).toBe(true);
   });
 
+  it("reports a missing DataForSEO key as a setup problem, not a crash", async () => {
+    workerEnv.AUTH_MODE = "password";
+    await expect(getDataforseoFetch()).rejects.toMatchObject({
+      code: "DATAFORSEO_AUTH_FAILED",
+    });
+  });
+
   it("has no Context.dev fetch without its key", async () => {
     workerEnv.AUTH_MODE = "local_noauth";
     expect(await getContextFetch()).toBeNull();

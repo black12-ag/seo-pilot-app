@@ -10,7 +10,10 @@ import { Field, FieldLabel } from "@/client/components/ui/field";
 import { Alert, AlertDescription } from "@/client/components/ui/alert";
 import { InsufficientCreditsError } from "@/client/features/billing/InsufficientCreditsError";
 import { getErrorCode } from "@/client/lib/error-messages";
-import { isEveryAppClientAuthMode } from "@/lib/auth-mode";
+import {
+  isEveryAppClientAuthMode,
+  isHostedClientAuthMode,
+} from "@/lib/auth-mode";
 import { projectsQueryOptions } from "@/client/features/projects/projectQueries";
 import { projectContextQueryKey } from "@/client/features/projects/project-context/shared";
 import { getProjectContext } from "@/serverFunctions/projectContext";
@@ -73,15 +76,21 @@ export function ProjectWebsiteSetup({ projectId }: { projectId: string }) {
     }
   }, [projectId]);
   const [outcome, setOutcome] = useState<ResearchOutcome | null>(null);
+  const endResearch = () => {
+    clearPendingResearchRequest("direct", projectId);
+    setPendingAttemptId(null);
+  };
   const applyResult = (result: ResearchResult) => {
     if (result.review) setResearch(result.review);
     if (result.status === "admitted" || result.status === "running") {
       setPendingAttemptId(result.attemptId);
       return;
     }
-    clearPendingResearchRequest("direct", projectId);
-    setPendingAttemptId(null);
-    if (!result.review) setOutcome(outcomeFor(result.status));
+    // A review keeps its ID until Save or Back, so a reload reads this finished
+    // run back instead of losing it and paying for another.
+    if (result.review) return;
+    endResearch();
+    setOutcome(outcomeFor(result.status));
   };
   const researchMutation = useMutation({
     mutationFn: () =>
@@ -121,6 +130,7 @@ export function ProjectWebsiteSetup({ projectId }: { projectId: string }) {
     mutationFn: (accepted: Omit<SaveProjectWebsiteSetup, "projectId">) =>
       saveProjectWebsiteSetup({ data: { ...accepted, projectId } }),
     onSuccess: async () => {
+      endResearch();
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: projectsQueryOptions().queryKey,
@@ -147,6 +157,7 @@ export function ProjectWebsiteSetup({ projectId }: { projectId: string }) {
         error={saveMutation.isError}
         onSave={(accepted) => saveMutation.mutate(accepted)}
         onBack={() => {
+          endResearch();
           setResearch(null);
           saveMutation.reset();
           researchMutation.reset();
@@ -228,7 +239,9 @@ export function ProjectWebsiteSetup({ projectId }: { projectId: string }) {
             <p className="text-xs leading-relaxed text-muted-foreground">
               {isEveryAppClientAuthMode()
                 ? "Research and a first run of your prompts use the DataForSEO and OpenRouter keys on your Every App gateway."
-                : "Research and a first run of your prompts use a small amount of usage credits."}
+                : isHostedClientAuthMode()
+                  ? "Research and a first run of your prompts use a small amount of usage credits."
+                  : "Research and a first run of your prompts use your AI setup and your DataForSEO account."}
             </p>
           </div>
         </form>

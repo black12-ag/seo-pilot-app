@@ -56,7 +56,7 @@ function messageFor(result: DraftResult) {
         ? "We couldn’t confirm what this draft cost, so it wasn’t saved. Starting again may cost more."
         : "We can’t confirm whether this draft finished. Starting again may cost more.";
     case "needs_setup":
-      return "Draft generation needs setup. An owner adds a model key to the server settings.";
+      return "Draft generation needs setup. An administrator adds a model key or chooses an AI engine in Settings.";
     case "busy":
       return "Another draft is running or this content just changed. Reload and try again.";
     case "blocked":
@@ -226,8 +226,8 @@ export function ContentDraftGenerator({
       </div>
       {setup.data?.configured === false ? (
         <p className="text-muted-foreground">
-          Draft generation needs setup. An owner adds a model key to the server
-          settings.
+          {setup.data.notConfiguredMessage ??
+            "Draft generation needs setup. An administrator adds a model key or chooses an AI engine in Settings."}
         </p>
       ) : blocked && !busy ? (
         <p className="text-muted-foreground">{blocked}</p>
@@ -256,15 +256,22 @@ export function ContentDraftGenerator({
               </li>
             ))}
           </ul>
-          <p>
-            Cost: one request, up to{" "}
-            {setup.data.maxOutputTokens.toLocaleString()} output tokens,{" "}
-            {setup.data.usesCredits
-              ? "paid from your usage credits"
-              : "charged to your configured model key"}
-            . The exact cost is only known afterwards and is recorded on the
-            revision.
-          </p>
+          {setup.data.includedInSubscription ? (
+            <p>
+              Cost: one request, included in your subscription. Your
+              provider&apos;s plan limits apply.
+            </p>
+          ) : (
+            <p>
+              Cost: one request, up to{" "}
+              {setup.data.maxOutputTokens.toLocaleString()} output tokens,{" "}
+              {setup.data.usesCredits
+                ? "paid from your usage credits"
+                : "charged to your configured model key"}
+              . The exact cost is only known afterwards and is recorded on the
+              revision.
+            </p>
+          )}
           <p>
             The result is a new revision that replaces the text in this editor.
             Earlier revisions stay in history. It is never published or approved

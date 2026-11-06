@@ -7,8 +7,14 @@ import { Card, CardContent } from "@/client/components/ui/card";
 import { Field, FieldLabel } from "@/client/components/ui/field";
 import { Textarea } from "@/client/components/ui/textarea";
 import { InsufficientCreditsError } from "@/client/features/billing/InsufficientCreditsError";
-import { getErrorCode } from "@/client/lib/error-messages";
-import { isEveryAppClientAuthMode } from "@/lib/auth-mode";
+import {
+  getErrorCode,
+  getStandardErrorMessage,
+} from "@/client/lib/error-messages";
+import {
+  isEveryAppClientAuthMode,
+  isHostedClientAuthMode,
+} from "@/lib/auth-mode";
 import { projectsQueryOptions } from "@/client/features/projects/projectQueries";
 import { WebsiteResearchProgress } from "@/client/features/projects/WebsiteResearchProgress";
 import { WebsiteSetupReview } from "@/client/features/projects/WebsiteSetupReview";
@@ -213,13 +219,15 @@ export function AiResearchSetupGate({
             failed && (
               <Alert variant="destructive">
                 <AlertDescription>
-                  {status === "unavailable"
-                    ? "AI visibility setup can’t start yet. An earlier setup needs checking first, or an administrator still has to finish an upgrade step."
-                    : unreadable
-                      ? "We couldn’t read this website. Its bot protection may be blocking us. Describe your business below and try again, or check the URL in project settings."
-                      : isEveryAppClientAuthMode()
-                        ? "We couldn’t finish setting up AI visibility. It needs DataForSEO and OpenRouter on your Every App gateway: if they aren’t set up yet, an owner or admin runs pnpm everyapp secret set DATAFORSEO_API_KEY OPENROUTER_API_KEY. Then try again."
-                        : "We couldn’t finish setting up AI visibility. Try again."}
+                  {getErrorCode(start.error) === "DATAFORSEO_AUTH_FAILED"
+                    ? getStandardErrorMessage(start.error)
+                    : status === "unavailable"
+                      ? "AI visibility setup can’t start yet. An earlier setup needs checking first, or an administrator still has to finish an upgrade step."
+                      : unreadable
+                        ? "We couldn’t read this website. Its bot protection may be blocking us. Describe your business below and try again, or check the URL in project settings."
+                        : isEveryAppClientAuthMode()
+                          ? "We couldn’t finish setting up AI visibility. It needs DataForSEO and OpenRouter on your Every App gateway: if they aren’t set up yet, an owner or admin runs pnpm everyapp secret set DATAFORSEO_API_KEY OPENROUTER_API_KEY. Then try again."
+                          : "We couldn’t finish setting up AI visibility. Try again."}
                 </AlertDescription>
               </Alert>
             )
@@ -257,7 +265,9 @@ export function AiResearchSetupGate({
             <p className="text-xs leading-relaxed text-muted-foreground">
               {isEveryAppClientAuthMode()
                 ? "Research and a first run of your prompts use the DataForSEO and OpenRouter keys on your Every App gateway."
-                : "Research and a first run of your prompts use a small amount of usage credits."}
+                : isHostedClientAuthMode()
+                  ? "Research and a first run of your prompts use a small amount of usage credits."
+                  : "Research and a first run of your prompts use your AI setup and your DataForSEO account."}
             </p>
           </div>
         </CardContent>
