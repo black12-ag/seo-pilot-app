@@ -86,12 +86,34 @@ export function WebsiteSetupReview({
             </p>
           </div>
           <fieldset disabled={saving} className="min-w-0 space-y-5">
+            {competitors.length === 0 && research.overview ? (
+              <div className="space-y-2 rounded-lg border border-border p-4 text-sm">
+                <p className="font-medium">Business overview</p>
+                <p className="line-clamp-4 text-muted-foreground">
+                  {research.overview}
+                </p>
+                {research.suggestedTopics?.length ? (
+                  <p className="text-muted-foreground">
+                    Topics:{" "}
+                    {research.suggestedTopics
+                      .map((topic) => topic.name)
+                      .join(", ")}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
             {research.preserveCompetitors ? (
               <p className="text-sm text-muted-foreground">
                 We’ll use the competitors already saved in your project context.
               </p>
             ) : (
               <div className="overflow-hidden rounded-lg border border-border">
+                {competitors.length === 0 ? (
+                  <p className="border-b border-border px-4 py-3 text-sm text-muted-foreground">
+                    Research found no competitors. Add any you know, or continue
+                    without them. Continue saves your overview and topics.
+                  </p>
+                ) : null}
                 <Table>
                   <TableHeader>
                     <TableRow>

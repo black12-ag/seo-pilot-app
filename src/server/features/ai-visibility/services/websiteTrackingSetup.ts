@@ -6,6 +6,7 @@ import { DEFAULT_LOCATION_CODE } from "@/shared/keyword-locations";
 import type { SaveProjectWebsiteSetup } from "@/types/schemas/projectWebsite";
 import { AppError } from "@/server/lib/errors";
 import type { BillingCustomerContext } from "@/server/billing/subscription";
+import { hasDataforseoAccess } from "@/server/lib/provider-access";
 import { startRun } from "./aiVisibilityRuns";
 
 /** Seeds weekly tracking from website setup's first three suggested topics. */
@@ -64,6 +65,9 @@ export async function startWebsiteTrackingRun(
   projectId: string,
   billing: BillingCustomerContext,
 ) {
+  // With no DataForSEO key there's nothing to run. The prompts stay saved for
+  // when one is added.
+  if (!(await hasDataforseoAccess())) return;
   const config = await repo.getConfiguration(projectId);
   if (!config) return;
   try {

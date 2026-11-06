@@ -24,6 +24,7 @@ const body = `
 <tr><td>OpenRouter and the AI companies it routes to, or whichever AI provider the operator connected (Google, Anthropic or OpenAI)</td><td>SAM chats, project details, page text and sources used for research and drafts, and results from tools SAM uses for you. This can include Search Console and Google Analytics data if you ask SAM about it. These companies may keep this data under their own terms</td></tr>
 <tr><td>The AI tool this workspace chooses (Antigravity from Google, Claude Code from Anthropic, or Codex from OpenAI), if it doesn't use OpenRouter</td><td>The same AI data as OpenRouter, handled under that tool's own terms and the operator's plan with that company. These companies may keep this data, and free plans may use it to improve their products</td></tr>
 <tr><td>Google</td><td>Sign-in details, your Search Console and Analytics requests, map views, and the domains whose icons we show, sent directly from your browser</td></tr>
+<tr><td>Google PageSpeed Insights</td><td>Addresses of the pages an audit samples for page speed, if you turn that on and this workspace has no DataForSEO key. Google then loads those pages itself</td></tr>
 <tr><td>Ahrefs</td><td>Domains shown in the Backlinks table, to look up their public rating</td></tr>
 <tr><td>Context.dev</td><td>URLs of pages that need rendering, if enabled</td></tr>
 <tr><td>Cloudflare</td><td>Domains we check for site verification. If this workspace runs on Cloudflare, also everything it stores and processes</td></tr>

@@ -9,7 +9,7 @@ import {
 import { GscReEngagementModal } from "@/client/features/gsc/GscReEngagementModal";
 import { Sidebar } from "@/client/components/Sidebar";
 import { BILLING_ROUTE } from "@/shared/billing";
-import { getSeoApiKeyStatus } from "@/serverFunctions/config";
+import { dataforseoStatusQueryOptions } from "@/client/features/dataforseo/useDataforseoStatus";
 import { getLastProjectId } from "@/client/lib/active-project";
 import { dataforseoHelpLinkOptions } from "@/client/navigation/items";
 import {
@@ -66,8 +66,7 @@ export function AuthenticatedAppLayout({
     location.pathname !== BILLING_ROUTE &&
     location.pathname !== dataforseoHelpLinkOptions.to;
   const seoApiKeyStatusQuery = useQuery({
-    queryKey: ["seoApiKeyStatus"],
-    queryFn: () => getSeoApiKeyStatus(),
+    ...dataforseoStatusQueryOptions(),
     enabled: ready && shouldCheckSeoApiKeyStatus,
   });
   const isSeoApiKeyConfigured = shouldCheckSeoApiKeyStatus

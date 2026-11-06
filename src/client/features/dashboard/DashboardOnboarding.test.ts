@@ -9,6 +9,9 @@ import { setupSteps } from "./dashboardSteps";
 vi.mock("@/serverFunctions/dashboard", () => ({
   setDashboardStepDismissed: vi.fn(),
 }));
+vi.mock("@/serverFunctions/config", () => ({
+  getSeoApiKeyStatus: vi.fn(),
+}));
 vi.mock("./DashboardSetupAction", () => ({
   DashboardSetupAction: () => createElement("div", null, "Connection setup"),
 }));
@@ -26,11 +29,11 @@ const fresh: DashboardActivation = {
   dismissedSteps: [],
 };
 
-function renderChecklist(activation = fresh) {
+function renderChecklist(activation = fresh, client = new QueryClient()) {
   return renderToStaticMarkup(
     createElement(
       QueryClientProvider,
-      { client: new QueryClient() },
+      { client },
       createElement(DashboardOnboarding, {
         projectId: "project-a",
         activation,
@@ -40,6 +43,27 @@ function renderChecklist(activation = fresh) {
 }
 
 describe("dashboard onboarding visibility", () => {
+  it("leaves out the research steps with no DataForSEO key", () => {
+    const client = new QueryClient();
+    client.setQueryData(["seoApiKeyStatus"], {
+      configured: false,
+      pageSpeedNeedsKey: true,
+    });
+    const markup = renderChecklist(fresh, client);
+    expect(markup).toContain("Audit your site");
+    expect(markup).not.toContain("Explore a competitor");
+    expect(markup).not.toContain("Get keyword ideas");
+  });
+
+  it("keeps the research steps with a key", () => {
+    const client = new QueryClient();
+    client.setQueryData(["seoApiKeyStatus"], {
+      configured: true,
+      pageSpeedNeedsKey: false,
+    });
+    expect(renderChecklist(fresh, client)).toContain("Explore a competitor");
+  });
+
   it("keeps skipped steps available to restore", () => {
     const markup = renderChecklist({
       ...fresh,

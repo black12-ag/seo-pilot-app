@@ -1,6 +1,7 @@
 import { groupByProp, sort } from "remeda";
 import { AiVisibilityRepository } from "@/server/features/ai-visibility/repositories/AiVisibilityRepository";
 import { loadAiPageResults } from "@/server/features/ai-visibility/services/aiVisibilityResults";
+import { hasDataforseoAccess } from "@/server/lib/provider-access";
 import { formatCount } from "@/shared/format";
 import type { Opportunity, OpportunitySeverity } from "@/shared/opportunities";
 import {
@@ -34,6 +35,13 @@ export async function readAiVisibility({
     await AiVisibilityRepository.getConfiguration(projectId);
   const hasPrompts = configuration?.prompts.some((prompt) => !prompt.archived);
   if (!hasPrompts) {
+    // Tracking can't run with no key, so it isn't a setup step to nag about.
+    if (!(await hasDataforseoAccess()))
+      return notChecked(
+        "not_checked",
+        "Optional: needs a DataForSEO key.",
+        null,
+      );
     const detail = "No AI visibility prompts are set up for this project.";
     return notChecked("needs_setup", detail, null, [
       setupNudge({

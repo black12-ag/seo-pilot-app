@@ -101,6 +101,9 @@ declare namespace Cloudflare {
 
     // DataForSEO API Basic auth value (base64 of login:password)
     DATAFORSEO_API_KEY: string;
+
+    // Google PageSpeed Insights API key, the page speed route with no DataForSEO key
+    PAGESPEED_API_KEY?: string;
     LOCAL_RANK_WORKFLOW: Workflow<
       Parameters<
         // oxlint-disable-next-line typescript-eslint/consistent-type-imports -- preserve ambient Env augmentation

@@ -4,6 +4,7 @@ import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/client/components/ui/card";
 import { WebsiteResearchProgress } from "./WebsiteResearchProgress";
+import { useDataforseoConfigured } from "@/client/features/dataforseo/useDataforseoStatus";
 import { Button } from "@/client/components/ui/button";
 import { Input } from "@/client/components/ui/input";
 import { Field, FieldLabel } from "@/client/components/ui/field";
@@ -56,9 +57,16 @@ function outcomeFor(status: ResearchResult["status"]): ResearchOutcome {
   return "blocked";
 }
 
-export function ProjectWebsiteSetup({ projectId }: { projectId: string }) {
+export function ProjectWebsiteSetup({
+  projectId,
+  defaultWebsite = "",
+}: {
+  projectId: string;
+  defaultWebsite?: string;
+}) {
   const queryClient = useQueryClient();
-  const [website, setWebsite] = useState("");
+  const needsKey = useDataforseoConfigured() === false;
+  const [website, setWebsite] = useState(defaultWebsite);
   const [research, setResearch] = useState<WebsiteResearch | null>(null);
   // Saved context decides which research steps run.
   const context = useQuery({
@@ -175,7 +183,7 @@ export function ProjectWebsiteSetup({ projectId }: { projectId: string }) {
             (section) => section.key === "business_overview",
           )
         }
-        missingCompetitors={!context.data?.competitors.length}
+        missingCompetitors={!context.data?.competitors.length && !needsKey}
       />
     );
   return (
@@ -193,11 +201,12 @@ export function ProjectWebsiteSetup({ projectId }: { projectId: string }) {
               <Sparkles className="size-5" />
             </div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              Set up AI visibility
+              {needsKey ? "Research your website" : "Set up AI visibility"}
             </h1>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              We’ll research your brand and find the most relevant topics to
-              monitor.
+              {needsKey
+                ? "We’ll read your site and draft your business overview and suggested topics."
+                : "We’ll research your brand and find the most relevant topics to monitor."}
             </p>
           </div>
           <Field>
@@ -241,7 +250,9 @@ export function ProjectWebsiteSetup({ projectId }: { projectId: string }) {
                 ? "Research and a first run of your prompts use the DataForSEO and OpenRouter keys on your Every App gateway."
                 : isHostedClientAuthMode()
                   ? "Research and a first run of your prompts use a small amount of usage credits."
-                  : "Research and a first run of your prompts use your AI setup and your DataForSEO account."}
+                  : needsKey
+                    ? "Research uses your AI setup. Finding competitors and tracking prompts are optional: they need a DataForSEO key. You can add competitors yourself."
+                    : "Research and a first run of your prompts use your AI setup and your DataForSEO account."}
             </p>
           </div>
         </form>

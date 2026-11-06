@@ -48,9 +48,22 @@ the runtime binary's checksum.
 
 ## Providers and verification
 
-The app starts without provider keys. Configure your own providers to use their
-data, models or rendering; their usage and your hosting have separate costs.
-Unavailable providers remain visible as unavailable.
+The app starts and works with no provider keys. Audits, Search Console, Analytics
+and website research on your own AI login are free. Configure your own providers
+to add their data, models or rendering; their usage and your hosting have
+separate costs.
+
+DataForSEO is optional. It adds competitor, backlink and ranking data. Without it
+those pages stay in the menu marked **Optional**, show no numbers and charge
+nothing. See [DataForSEO API key](./DATAFORSEO_API_KEY.md).
+
+Page speed in audits uses DataForSEO when it has a key, and Google PageSpeed
+Insights otherwise. Google refused calls without a key when we tried them, so
+create your own free key in the Google Cloud console, enable the PageSpeed
+Insights API for its project, and set `PAGESPEED_API_KEY`. Google sets the limits
+and shows them in the console. Each page checked sends its address to Google, and
+a lab run can't measure interaction time, so that value stays empty. If the check
+is refused, the rest of the audit still runs.
 
 Site verification is in **Settings → Integrations → Site authority**. Use the
 [site authority guide](./site-authority.md) for an

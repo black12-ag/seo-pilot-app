@@ -26,6 +26,9 @@ vi.mock("@/db/runBatch", () => ({ runBatch: testDb.runBatch }));
 vi.mock("@/server/lib/runtime-env", () => ({
   usesBetterAuthServer: async () => true,
 }));
+vi.mock("@/server/lib/provider-access", () => ({
+  hasDataforseoAccess: async () => true,
+}));
 // Search Console is the only external boundary near this feature.
 vi.mock(
   "@/server/features/gsc/services/GscService",

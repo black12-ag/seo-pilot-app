@@ -4,6 +4,8 @@ import { ConfirmDialog } from "@/client/components/ConfirmDialog";
 import { ExportMenu } from "@/client/components/ExportMenu";
 import { PageHeader } from "@/client/components/PageHeader";
 import { Button } from "@/client/components/ui/button";
+import { DATAFORSEO_OPTIONAL_LABEL } from "@/client/features/dataforseo/dataforseoPages";
+import { useDataforseoConfigured } from "@/client/features/dataforseo/useDataforseoStatus";
 
 export function SavedKeywordsHeader({
   totalCount,
@@ -22,6 +24,7 @@ export function SavedKeywordsHeader({
 }) {
   const [confirmingRefresh, setConfirmingRefresh] = useState(false);
   const disabled = totalCount === 0 || exporting != null;
+  const needsKey = useDataforseoConfigured() === false;
 
   return (
     <>
@@ -33,8 +36,12 @@ export function SavedKeywordsHeader({
             <Button
               variant="outline"
               size="sm"
-              title="Fetch new volume, difficulty, and CPC"
-              disabled={disabled || metricsRefreshing}
+              title={
+                needsKey
+                  ? DATAFORSEO_OPTIONAL_LABEL
+                  : "Fetch new volume, difficulty, and CPC"
+              }
+              disabled={disabled || metricsRefreshing || needsKey}
               onClick={() => setConfirmingRefresh(true)}
             >
               <RefreshCw

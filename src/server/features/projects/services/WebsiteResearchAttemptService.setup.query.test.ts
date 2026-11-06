@@ -59,12 +59,42 @@ import { actor } from "../repositories/websiteResearchAttemptTestDb";
 beforeEach(seed);
 afterAll(testDb.close);
 
-it("refuses before any model call or page read when competitor search can't run", async () => {
-  await expect(
-    ProjectWebsiteService.researchAttempt(directInput(), customer, { actor }),
-  ).rejects.toMatchObject({ code: "DATAFORSEO_AUTH_FAILED" });
-  expect(generateText).not.toHaveBeenCalled();
-  expect(readSite).not.toHaveBeenCalled();
+it("saves the overview and topics with no competitors when there's no DataForSEO key", async () => {
+  readSite.mockResolvedValue({
+    pages: [{ url: "https://example.com/", text: "We sell SEO software." }],
+  });
+  generateText.mockImplementation(
+    async (options: {
+      onStepFinish: (x: { providerMetadata: object }) => void;
+    }) => {
+      options.onStepFinish({ providerMetadata: {} });
+      return {
+        output: {
+          overview: "An SEO software company.",
+          suggestedTopics: topics,
+          suggestedKeywords: ["seo software"],
+        },
+      };
+    },
+  );
+
+  const result = await ProjectWebsiteService.researchAttempt(
+    directInput(),
+    customer,
+    { actor },
+  );
+
+  expect(result.status).toBe("review_ready");
+  expect(readSite).toHaveBeenCalled();
+  expect(generateText).toHaveBeenCalledWith(
+    expect.objectContaining({ tools: undefined }),
+  );
+  expect(result.review).toMatchObject({
+    overview: "An SEO software company.",
+    competitors: [],
+    preserveCompetitors: false,
+  });
+  expect(result.review?.suggestedTopics).toEqual(topics);
 });
 
 it("still researches a project whose competitors are saved", async () => {

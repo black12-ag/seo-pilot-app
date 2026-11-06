@@ -20,11 +20,11 @@ import {
   savePendingCompetitorStart,
 } from "./competitorResearchQueries";
 import { projectContextQueryKey } from "./shared";
+import { DATAFORSEO_OPTIONAL_LABEL } from "@/client/features/dataforseo/dataforseoPages";
 
 const reasons: Record<string, string> = {
   project_domain_missing: "Set this project's website first.",
-  dataforseo_not_configured:
-    "DataForSEO is not configured for this installation.",
+  dataforseo_not_configured: DATAFORSEO_OPTIONAL_LABEL,
   model_not_configured: "AI isn't set up for this installation.",
   unsupported_background_authority:
     "Background research is not available for this sign-in mode.",

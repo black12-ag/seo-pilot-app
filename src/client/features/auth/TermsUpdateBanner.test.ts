@@ -34,7 +34,7 @@ it.each(["2026-11", null])(
   (termsAcceptedVersion) => {
     session.value = { user: { termsAcceptedVersion } };
     const html = render();
-    expect(html).toContain("effective November 4, 2026");
+    expect(html).toContain("effective November 6, 2026");
     expect(html).toContain("Accept");
   },
 );

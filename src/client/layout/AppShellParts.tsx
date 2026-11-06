@@ -23,22 +23,14 @@ function SeoApiStatusBanners({
   );
   return (
     <>
-      {shouldShowSeoApiWarning ? (
+      {/* With its own server the key is optional, and the pages and sidebar say
+          so. On a gateway every app shares it, so an admin is told once. */}
+      {shouldShowSeoApiWarning && isEveryAppClientAuthMode() ? (
         <AppBanner variant="warning" icon={icon}>
-          {isEveryAppClientAuthMode() ? (
-            <>
-              DataForSEO isn&apos;t set up on your Every App gateway yet. An
-              owner or admin sets it with{" "}
-              <code>pnpm everyapp secret set DATAFORSEO_API_KEY</code>. Steps on
-              the {helpLink}.
-            </>
-          ) : (
-            <>
-              DataForSEO is not configured. Keyword, domain, backlink and rank
-              data features are unavailable until an administrator sets it up.
-              See the {helpLink}.
-            </>
-          )}
+          DataForSEO isn&apos;t set up on your Every App gateway yet. An owner
+          or admin sets it with{" "}
+          <code>pnpm everyapp secret set DATAFORSEO_API_KEY</code>. Steps on the{" "}
+          {helpLink}.
         </AppBanner>
       ) : null}
 

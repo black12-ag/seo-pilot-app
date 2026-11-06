@@ -8,6 +8,7 @@ import { DashboardSiteService } from "@/server/features/dashboard/services/Dashb
 import { GscConnectionRepository } from "@/server/features/gsc/repositories/GscConnectionRepository";
 import { isStrikingDistancePosition } from "@/server/features/gsc/searchPerformanceReport";
 import { ProjectContextRepository } from "@/server/features/project-context/repositories/ProjectContextRepository";
+import { hasDataforseoAccess } from "@/server/lib/provider-access";
 import { getIssueDescriptor, type IssueSeverity } from "@/shared/audit-issues";
 import { formatCount } from "@/shared/format";
 import type {
@@ -294,8 +295,9 @@ export async function readCompetitors({
         title: "Add your competitors",
         whyItMatters:
           "With competitors saved, AI visibility can show who is named where you aren't.",
-        nextStep:
-          "Add them yourself or run competitor research on the Context page.",
+        nextStep: (await hasDataforseoAccess())
+          ? "Add them yourself or run competitor research on the Context page."
+          : "Add them yourself on the Context page.",
         evidence: {
           source: "Project settings",
           summary: "No competitors are saved for this project.",

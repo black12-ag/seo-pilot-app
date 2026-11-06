@@ -10,6 +10,8 @@ import {
 } from "@/client/components/ui/tabs";
 import { DashboardKeywords } from "./DashboardKeywords";
 import { DashboardBacklinks } from "./DashboardBacklinks";
+import { DataforseoOptionalState } from "@/client/features/dataforseo/DataforseoOptional";
+import { useDataforseoConfigured } from "@/client/features/dataforseo/useDataforseoStatus";
 import { DashboardNewQueries } from "./DashboardNewQueries";
 import { DashboardLinkActivity } from "./DashboardLinkActivity";
 import { dashboardSiteTabSchema } from "@/types/schemas/dashboard";
@@ -60,6 +62,8 @@ export function DashboardPage({
       query.state.data?.audit?.status === "running" ? 3000 : false,
   });
 
+  const dataforseoConfigured = useDataforseoConfigured();
+
   const activation = activationQuery.data;
   const overview = overviewQuery.data;
 
@@ -95,7 +99,10 @@ export function DashboardPage({
     );
   }
 
-  const showBacklinks = activation.domain !== null;
+  // Backlinks are the one part of this page that needs DataForSEO. Its queries
+  // wait until a key is known to exist, so a page with no key makes no failing call.
+  const showBacklinks =
+    activation.domain !== null && dataforseoConfigured === true;
   const gscConnected = activation.gsc.connected;
   const ga4Connected = activation.ga4.connected;
   const agentConnected =
@@ -281,7 +288,11 @@ export function DashboardPage({
             />
           </TabsContent>
           <TabsContent value="backlinks" keepMounted={false}>
-            {activation.domain ? (
+            {dataforseoConfigured === false ? (
+              <DataforseoOptionalState gives="who links to your website, and what changed" />
+            ) : dataforseoConfigured === null ? (
+              <Skeleton className="h-44" />
+            ) : activation.domain ? (
               <DashboardBacklinks
                 key={activation.domain}
                 projectId={projectId}

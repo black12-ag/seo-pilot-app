@@ -1,6 +1,8 @@
 # DataForSEO API Key Setup
 
-SEO Pilot uses [DataForSEO](https://dataforseo.com/?aff=255379) to fetch SEO data. It's a pay-as-you-go third-party service unaffiliated with SEO Pilot. You need an API key to connect SEO Pilot to it.
+This key is optional. SEO Pilot runs without it: audits, Search Console, Analytics and AI features are all free to use.
+
+[DataForSEO](https://dataforseo.com/?aff=255379) adds competitor discovery, keyword volume and difficulty, backlinks, rank tracking, local rankings and AI answer tracking. It's a pay-as-you-go third-party service unaffiliated with SEO Pilot. With no key, those pages stay in the menu marked **Optional**, show no numbers and charge nothing.
 
 New DataForSEO accounts include $1 of free credit to test with, and the minimum top-up is $50.
 

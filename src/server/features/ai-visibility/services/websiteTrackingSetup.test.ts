@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getConfiguration, startRun } = vi.hoisted(() => ({
+const { getConfiguration, startRun, hasDataforseoAccess } = vi.hoisted(() => ({
+  hasDataforseoAccess: vi.fn(async () => true),
   getConfiguration: vi.fn(),
   startRun: vi.fn(),
 }));
@@ -8,6 +9,7 @@ vi.mock("../repositories/AiVisibilityRepository", () => ({
   AiVisibilityRepository: { getConfiguration },
 }));
 vi.mock("./aiVisibilityRuns", () => ({ startRun }));
+vi.mock("@/server/lib/provider-access", () => ({ hasDataforseoAccess }));
 
 import {
   prepareWebsiteTracking,
@@ -59,5 +61,14 @@ describe("startWebsiteTrackingRun", () => {
       startWebsiteTrackingRun("project", customer),
     ).resolves.toBeUndefined();
     expect(startRun).toHaveBeenCalledWith(config, "baseline", customer);
+  });
+
+  it("starts nothing with no DataForSEO key, and logs no failure", async () => {
+    hasDataforseoAccess.mockResolvedValueOnce(false);
+    getConfiguration.mockResolvedValue(configuration());
+
+    await startWebsiteTrackingRun("project", customer);
+
+    expect(startRun).not.toHaveBeenCalled();
   });
 });

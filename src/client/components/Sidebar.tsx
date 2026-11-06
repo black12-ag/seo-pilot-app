@@ -10,11 +10,17 @@ import {
   ChevronLeft,
   CircleHelp,
   CreditCard,
+  KeyRound,
   LogOut,
   Settings,
   User,
 } from "lucide-react";
 import { organizationContextQueryOptions } from "@/client/features/team/organizationQueries";
+import {
+  DATAFORSEO_OPTIONAL_LABEL,
+  dataforseoPageFor,
+} from "@/client/features/dataforseo/dataforseoPages";
+import { useDataforseoConfigured } from "@/client/features/dataforseo/useDataforseoStatus";
 import { switchOrganization } from "@/serverFunctions/organization";
 import { clearLastProjectId } from "@/client/lib/active-project";
 import {
@@ -67,12 +73,15 @@ function SidebarNavLink({
   label,
   linkProps,
   placeholder = false,
+  optional = false,
 }: {
   icon: ComponentType<{ className?: string }>;
   label: string;
   linkProps: LinkOptions;
   /** Show the row without its link, while its project is still unknown. */
   placeholder?: boolean;
+  /** The page needs a DataForSEO key this install doesn't have. */
+  optional?: boolean;
 }) {
   const { setOpenMobile } = useSidebar();
   const matchRoute = useMatchRoute();
@@ -93,6 +102,16 @@ function SidebarNavLink({
     >
       <Icon className="size-4" />
       <span>{label}</span>
+      {optional ? (
+        <span
+          data-needs-dataforseo
+          title={DATAFORSEO_OPTIONAL_LABEL}
+          className="ml-auto shrink-0"
+        >
+          <KeyRound className="size-3 opacity-50" aria-hidden />
+          <span className="sr-only">{DATAFORSEO_OPTIONAL_LABEL}</span>
+        </span>
+      ) : null}
     </SidebarMenuButton>
   );
   return (
@@ -142,6 +161,7 @@ export function Sidebar({
   const { setOpenMobile } = useSidebar();
   // While SAM is open, its chat list takes the nav's place.
   const onSamRoute = pathname.includes("/sam");
+  const dataforseoConfigured = useDataforseoConfigured(ready);
 
   return (
     <UiSidebar variant="inset" collapsible="offcanvas" className="md:!p-0">
@@ -206,6 +226,10 @@ export function Sidebar({
                           label={label}
                           linkProps={linkProps}
                           placeholder={navPlaceholder}
+                          optional={
+                            dataforseoConfigured === false &&
+                            dataforseoPageFor(linkProps.to) !== null
+                          }
                         />
                       );
                     })}

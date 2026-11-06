@@ -8,7 +8,9 @@ const {
   listSections,
   listCompetitors,
   listKeywords,
+  hasDataforseoAccess,
 } = vi.hoisted(() => ({
+  hasDataforseoAccess: vi.fn(async () => true),
   generateText: vi.fn(),
   readSite: vi.fn(),
   search: vi.fn(),
@@ -26,6 +28,7 @@ vi.mock("ai", async (importOriginal) => ({
 }));
 vi.mock("@/server/lib/scrape", () => ({ readSite }));
 vi.mock("@/server/lib/dataforseo/serp", () => ({ fetchLiveSerp: search }));
+vi.mock("@/server/lib/provider-access", () => ({ hasDataforseoAccess }));
 vi.mock("@/server/lib/runtime-env", () => ({
   getRequiredEnvValue: vi.fn(),
   getOptionalEnvValue: vi.fn(),
@@ -256,6 +259,40 @@ describe("researchWebsite", () => {
       expect(result.competitors).toEqual(competitors);
     },
   );
+
+  it("finds no competitors with no key, and spends nothing on search", async () => {
+    hasDataforseoAccess.mockResolvedValueOnce(false);
+    listCompetitors.mockResolvedValue([]);
+    listKeywords.mockResolvedValue([]);
+
+    const result = await researchWebsite(
+      "https://saved.com",
+      project,
+      customer,
+    );
+
+    expect(search).not.toHaveBeenCalled();
+    expect(generateText).toHaveBeenCalledWith(
+      expect.objectContaining({ tools: undefined }),
+    );
+    expect(result.competitors).toEqual([]);
+    expect(result.preserveCompetitors).toBe(false);
+    expect(result.suggestedTopics).toEqual(topics);
+  });
+
+  it("asks the model nothing with no key when only competitors are missing", async () => {
+    hasDataforseoAccess.mockResolvedValueOnce(false);
+    listCompetitors.mockResolvedValue([]);
+
+    const result = await researchWebsite(
+      "https://saved.com",
+      project,
+      customer,
+    );
+
+    expect(generateText).not.toHaveBeenCalled();
+    expect(result.competitors).toEqual([]);
+  });
 
   it("retries with fresh tool budgets when the model returns invalid JSON", async () => {
     listCompetitors.mockResolvedValue([]);

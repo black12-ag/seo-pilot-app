@@ -75,7 +75,7 @@
         "description": "Cloudflare Access Application Audience (AUD) tag for this Worker route/domain."
       },
       "DATAFORSEO_API_KEY": {
-        "description": "Base64-encoded `login:password` for DataForSEO API access."
+        "description": "Optional. Base64-encoded `login:password` for DataForSEO API access: competitor, backlink and ranking data."
       },
       "OAUTH_KV": {
         "description": "KV namespace used by the Cloudflare Workers OAuth provider for MCP client registrations, grants, and tokens."

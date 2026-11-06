@@ -1,5 +1,6 @@
 import { HELP_PATHS } from "@/shared/product-help";
 import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertTitle } from "@/client/components/ui/alert";
 import { Button } from "@/client/components/ui/button";
@@ -22,6 +23,7 @@ import {
   clampMaxPagesInput,
   MIN_PAGES,
 } from "@/client/features/audit/launch/types";
+import { dataforseoStatusQueryOptions } from "@/client/features/dataforseo/useDataforseoStatus";
 import type { useLaunchController } from "@/client/features/audit/launch/useLaunchController";
 import { getFieldError, getFormError } from "@/client/lib/forms";
 import {
@@ -166,6 +168,7 @@ function LaunchOptions({
 }
 
 function LighthouseOptions({ launchForm }: Pick<Props, "launchForm">) {
+  const status = useQuery(dataforseoStatusQueryOptions());
   return (
     <Field className="rounded-lg border border-border p-3">
       <div className="flex items-center gap-2">
@@ -192,8 +195,19 @@ function LighthouseOptions({ launchForm }: Pick<Props, "launchForm">) {
         {(runLighthouse) =>
           runLighthouse ? (
             <FieldDescription>
-              We choose a sample of 20 pages to audit, removing pages from
+              We choose a sample of up to 10 pages to audit, removing pages from
               duplicate templates.
+              {status.data?.configured === false
+                ? " Page speed comes from Google PageSpeed Insights, which gets each page's address."
+                : null}
+              {status.data?.pageSpeedNeedsKey ? (
+                <>
+                  {" "}
+                  Optional: Google refuses these checks without your own free{" "}
+                  <code>PAGESPEED_API_KEY</code>. The rest of the audit still
+                  runs.
+                </>
+              ) : null}
             </FieldDescription>
           ) : null
         }

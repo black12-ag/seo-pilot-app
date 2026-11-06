@@ -4,7 +4,7 @@
 
 - Node.js 20+
 - [Corepack](https://nodejs.org/api/corepack.html) (bundled through Node.js 24; install it separately on Node.js 25+)
-- A DataForSEO account/API credentials
+- Optional: DataForSEO API credentials, for competitor, backlink and ranking data
 
 ## Local Development Workflow
 
@@ -24,7 +24,7 @@ the repository's lockfile as incompatible.
 Configure `.env.local`:
 
 1. `cp .env.example .env.local`
-2. Add `DATAFORSEO_API_KEY` as a base64-encoded `login:password` value:
+2. Optional: add `DATAFORSEO_API_KEY` as a base64-encoded `login:password` value:
 
    `printf '%s' 'YOUR_LOGIN:YOUR_PASSWORD' | base64`
 

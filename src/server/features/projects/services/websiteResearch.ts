@@ -10,6 +10,7 @@ import { requireOpenRouterCostUsd } from "@/server/lib/chatAgent";
 import { normalizeBacklinksTarget } from "@/server/lib/dataforseoBacklinksTarget";
 import { AppError } from "@/server/lib/errors";
 import { buildChatAgentModel, requireAiAccess } from "@/server/lib/openrouter";
+import { hasDataforseoAccess } from "@/server/lib/provider-access";
 import { getOptionalEnvValue } from "@/server/lib/runtime-env";
 import { readSite } from "@/server/lib/scrape";
 import {
@@ -63,6 +64,11 @@ export type WebsiteResearchSettlement = {
   /** The model ran on the operator's own login: no price is known or owed. */
   includedInSubscription?: boolean;
 };
+function searchOutcome(state: SearchState, skipped: boolean) {
+  if (state.outage || skipped) return "unavailable" as const;
+  return state.partial ? ("partial" as const) : ("complete" as const);
+}
+
 type ResearchOptions = {
   ensureAuthorized?: () => Promise<void>;
   onSettled?: (settlement: WebsiteResearchSettlement) => void;
@@ -96,6 +102,10 @@ export async function researchWebsiteDetailed(
   const missingOverview = overview === undefined;
   const missingCompetitors = !competitors.length;
   const missingTopics = !keywords.length;
+  // Finding competitors needs live search. With no DataForSEO key the review
+  // starts with none, as it does in a provider outage, and the user can add them.
+  const findCompetitors = missingCompetitors && (await hasDataforseoAccess());
+  const searchSkipped = missingCompetitors && !findCompetitors;
   const preserved = {
     name: project.name,
     domain,
@@ -105,7 +115,7 @@ export async function researchWebsiteDetailed(
     suggestedTopics: [],
     suggestedKeywords: [],
   };
-  if (!missingOverview && !missingCompetitors && !missingTopics) {
+  if (!missingOverview && !findCompetitors && !missingTopics) {
     const review = websiteResearchSchema.parse(preserved);
     if (options.onSettled) {
       const bill = await billResearchSpend(customer, []);
@@ -118,7 +128,9 @@ export async function researchWebsiteDetailed(
     return {
       review,
       pages: new Map<string, ReadWebsitePage>(),
-      searchOutcome: "not_needed" as const,
+      searchOutcome: searchSkipped
+        ? ("unavailable" as const)
+        : ("not_needed" as const),
     };
   }
   // Each field is independent: saved context supplies the evidence, and the
@@ -142,7 +154,7 @@ export async function researchWebsiteDetailed(
     ...(missingOverview
       ? { overview: websiteResearchSchema.shape.overview.max(3500) }
       : {}),
-    ...(missingCompetitors
+    ...(findCompetitors
       ? {
           competitors: z
             .array(
@@ -206,7 +218,7 @@ export async function researchWebsiteDetailed(
           missingOverview
             ? "Summarize the business's actual offering and customers from its website."
             : "",
-          missingCompetitors
+          findCompetitors
             ? "Always call search_competitors, then read candidate websites to verify that they sell competing products/services to the same customers. Ranking sites, publishers, directories, customers, and cited domains are not competitors merely because they appear in results. Return up to five verified competitors, or fewer if evidence is insufficient. Each needs an explanation under 180 characters and sourceUrl copied exactly from a page returned by read_business_sites."
             : "",
           missingTopics
@@ -232,7 +244,7 @@ export async function researchWebsiteDetailed(
           ),
           websitePages: site?.pages,
         }),
-        tools: missingCompetitors
+        tools: findCompetitors
           ? websiteResearchTools({
               market,
               contextUsage,
@@ -299,7 +311,7 @@ export async function researchWebsiteDetailed(
         "INTERNAL_ERROR",
         "Website research returned duplicate tracking suggestions. Please try again.",
       );
-    if (missingCompetitors && !searchState.succeeded && !searchState.outage)
+    if (findCompetitors && !searchState.succeeded && !searchState.outage)
       throw new AppError(
         "INTERNAL_ERROR",
         "Website research was incomplete. Please try again.",
@@ -325,11 +337,7 @@ export async function researchWebsiteDetailed(
     return {
       review: research,
       pages: new Map(sources),
-      searchOutcome: searchState.outage
-        ? ("unavailable" as const)
-        : searchState.partial
-          ? ("partial" as const)
-          : ("complete" as const),
+      searchOutcome: searchOutcome(searchState, searchSkipped),
     };
   } finally {
     if (contextUsage.contextCredits > 0)

@@ -37,9 +37,10 @@ function DataforseoApiKeyHelpPage() {
       title="Set up your DataForSEO API key"
       intro={
         <>
-          DataForSEO is optional. Keyword, domain, backlink and rank data
-          require the <code>DATAFORSEO_API_KEY</code> secret; provider charges
-          may apply.
+          DataForSEO is optional. Audits, Search Console, Analytics and AI work
+          without it. Competitor, keyword, backlink, rank and AI answer data
+          need the <code>DATAFORSEO_API_KEY</code> secret; provider charges may
+          apply.
         </>
       }
       everyAppIntro="SEO Pilot's keyword, domain, backlink and rank data comes from DataForSEO. On Every App the gateway holds the key once, for every app."

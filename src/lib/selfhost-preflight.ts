@@ -183,9 +183,9 @@ function checkDataForSeo(env: EnvRecord, items: PreflightItem[]): void {
     items.push({
       key: "dataforseo",
       name: "DATAFORSEO_API_KEY",
-      level: "warn",
+      level: "info",
       message:
-        "Not set — all SEO data features will be unavailable until it is. It is the base64 of your DataForSEO login:password (NOT the dashboard API key). See docs/DATAFORSEO_API_KEY.md.",
+        "Not set. This is optional: audits, Search Console, Analytics and AI work without it. Add it for competitor, backlink and ranking data. It is the base64 of your DataForSEO login:password (NOT the dashboard API key). See docs/DATAFORSEO_API_KEY.md.",
     });
     return;
   }

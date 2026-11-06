@@ -1,10 +1,22 @@
 import { describe, expect, it, vi } from "vitest";
 
-const createDataforseoClientMock = vi.hoisted(() => vi.fn());
+const {
+  createDataforseoClientMock,
+  hasDataforseoAccess,
+  fetchPageSpeedReport,
+} = vi.hoisted(() => ({
+  createDataforseoClientMock: vi.fn(),
+  hasDataforseoAccess: vi.fn(async () => true),
+  fetchPageSpeedReport: vi.fn(),
+}));
 
 vi.mock("@/server/lib/dataforseo", () => ({
   createDataforseoClient: createDataforseoClientMock,
 }));
+
+vi.mock("@/server/lib/provider-access", () => ({ hasDataforseoAccess }));
+
+vi.mock("./pageSpeedInsights", () => ({ fetchPageSpeedReport }));
 
 vi.mock("@/server/lib/r2", () => ({
   putTextToR2: vi.fn(),
@@ -119,5 +131,61 @@ describe("fetchLighthouseResult", () => {
 
     expect(live).toHaveBeenCalledOnce();
     expect(fetched.result.errorMessage).toBe("temporary failure");
+  });
+
+  it("uses Google's API and never DataForSEO with no key", async () => {
+    hasDataforseoAccess.mockResolvedValueOnce(false);
+    fetchPageSpeedReport.mockResolvedValue({
+      scores: {
+        performance: 82,
+        accessibility: 90,
+        "best-practices": 100,
+        seo: 93,
+      },
+      metrics: {
+        largestContentfulPaint: { numericValue: 2900 },
+        cumulativeLayoutShift: { numericValue: 0.02 },
+        interactionToNextPaint: { numericValue: null },
+        serverResponseTime: { numericValue: 180 },
+      },
+    });
+
+    const fetched = await fetchLighthouseResult(
+      "https://example.com/",
+      "page-1",
+      "mobile",
+      billingCustomer,
+    );
+
+    expect(createDataforseoClientMock).not.toHaveBeenCalled();
+    expect(fetchPageSpeedReport).toHaveBeenCalledWith({
+      url: "https://example.com/",
+      strategy: "mobile",
+    });
+    expect(fetched.result).toMatchObject({
+      performanceScore: 82,
+      lcpMs: 2900,
+      inpMs: null,
+      ttfbMs: 180,
+    });
+    expect(fetched.payloadJson).toContain("scores");
+  });
+
+  it("records Google's refusal on the check, so the audit carries on", async () => {
+    hasDataforseoAccess.mockResolvedValueOnce(false);
+    fetchPageSpeedReport.mockRejectedValue(
+      new Error("Set PAGESPEED_API_KEY to your own free key."),
+    );
+
+    const fetched = await fetchLighthouseResult(
+      "https://example.com/",
+      "page-1",
+      "mobile",
+      billingCustomer,
+    );
+
+    expect(fetched.result.errorMessage).toContain("PAGESPEED_API_KEY");
+    expect(fetched.result.performanceScore).toBeNull();
+    expect(fetched.payloadJson).toBeNull();
   });
 });

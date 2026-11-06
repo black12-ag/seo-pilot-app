@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronRight, RotateCcw } from "lucide-react";
+import { useDataforseoConfigured } from "@/client/features/dataforseo/useDataforseoStatus";
 import { usesBetterAuthClient } from "@/lib/auth-mode";
 import { captureClientEvent } from "@/client/lib/posthog";
 import { setDashboardStepDismissed } from "@/serverFunctions/dashboard";
@@ -20,6 +21,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/client/components/ui/collapsible";
+
+const RESEARCH_STEPS = new Set<DashboardSetupStep>(["competitor", "keywords"]);
 
 export function DashboardOnboarding({
   projectId,
@@ -46,8 +49,13 @@ export function DashboardOnboarding({
       captureClientEvent("dashboard:setup_step_defer", { step, dismissed });
     },
   });
+  const dataforseoConfigured = useDataforseoConfigured();
+  // The research steps lead to pages that need a key, so they aren't steps
+  // with no key. Audit and the rest work free.
   const steps = setupSteps.filter(
-    (step) => step.id !== "team" || usesBetterAuthClient(),
+    (step) =>
+      (step.id !== "team" || usesBetterAuthClient()) &&
+      !(dataforseoConfigured === false && RESEARCH_STEPS.has(step.id)),
   );
   const remaining = steps.filter(
     (step) => getStepStatus(activation, step.id) === "todo",
@@ -69,8 +77,9 @@ export function DashboardOnboarding({
       <header className="border-b border-border px-5 py-5 sm:px-6">
         <h2 className="text-lg font-semibold">Get started</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Research competitors and keywords, audit your site, and connect your
-          tools.
+          {dataforseoConfigured === false
+            ? "Audit your site and connect your tools."
+            : "Research competitors and keywords, audit your site, and connect your tools."}
         </p>
       </header>
       <Accordion

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { LIGHTHOUSE_CATEGORIES } from "@/shared/lighthouse";
 
-export type RawLighthouseAudit = {
+type RawLighthouseAudit = {
   title?: string;
   description?: string;
   score?: number | null;
@@ -16,7 +16,7 @@ export type RawLighthouseAudit = {
   };
 };
 
-export type RawLighthouseCategory = {
+type RawLighthouseCategory = {
   score?: number | null;
   auditRefs?: Array<{
     id?: string;
@@ -56,7 +56,7 @@ const storedLighthouseIssueSchema = z.object({
 
 export const storedLighthousePayloadSchema = z.object({
   version: z.literal(2),
-  source: z.literal("dataforseo-lighthouse"),
+  source: z.enum(["dataforseo-lighthouse", "pagespeed-insights"]),
   hasIssueDetails: z.boolean(),
   metadata: z.object({
     requestedUrl: z.string(),
@@ -88,9 +88,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export function scoreToPercent(
-  score: number | null | undefined,
-): number | null {
+function scoreToPercent(score: number | null | undefined): number | null {
   if (typeof score !== "number" || Number.isNaN(score)) return null;
   return Math.round(score * 100);
 }
@@ -269,4 +267,92 @@ export function buildStoredLighthouseMetrics(input: {
     ),
     serverResponseTime: buildStoredMetric(input.audits["server-response-time"]),
   };
+}
+
+/**
+ * The part of a Lighthouse report that gets stored. Only the key map is copied,
+ * so the multi-MB category/audit bodies stay as the provider's own objects.
+ * Deep-parsing them cloned the whole report a second time and pushed the audit
+ * worker over its memory limit.
+ */
+export const lighthouseReportSchema = z.object({
+  requestedUrl: z.string().optional(),
+  finalUrl: z.string().optional(),
+  lighthouseVersion: z.string().optional(),
+  categories: z
+    .record(z.string(), z.custom<RawLighthouseCategory>())
+    .optional(),
+  audits: z.record(z.string(), z.custom<RawLighthouseAudit>()).optional(),
+});
+
+export function summarizeZodIssues(error: z.ZodError, maxIssues = 3): string {
+  return error.issues
+    .slice(0, maxIssues)
+    .map((issue) => {
+      const path = issue.path.length > 0 ? issue.path.join(".") : "<root>";
+      return `${path}: ${issue.message}`;
+    })
+    .join("; ");
+}
+
+/**
+ * Reduces a Lighthouse report straight into the compact stored payload, then
+ * validates that in full, at kilobyte size instead of multi-megabyte.
+ */
+export function buildStoredLighthouseReport(args: {
+  report: z.infer<typeof lighthouseReportSchema>;
+  input: { url: string; strategy: "mobile" | "desktop" };
+  source: StoredLighthousePayload["source"];
+  /** How error messages name the route. */
+  provider: string;
+  taskId: string | null;
+  cost: number | null;
+}): StoredLighthousePayload {
+  const { report, input, provider } = args;
+  const categories = report.categories ?? {};
+  const audits = report.audits ?? {};
+  const issueReport = buildStoredLighthouseIssues({ audits, categories });
+  const storedPayload: StoredLighthousePayload = {
+    version: 2,
+    source: args.source,
+    hasIssueDetails: issueReport.hasIssueDetails,
+    metadata: {
+      requestedUrl: report.requestedUrl ?? input.url,
+      finalUrl: report.finalUrl ?? input.url,
+      strategy: input.strategy,
+      fetchedAt: new Date().toISOString(),
+      lighthouseVersion: report.lighthouseVersion ?? null,
+      taskId: args.taskId,
+      cost: args.cost,
+    },
+    scores: {
+      performance: scoreToPercent(categories.performance?.score),
+      accessibility: scoreToPercent(categories.accessibility?.score),
+      "best-practices": scoreToPercent(categories["best-practices"]?.score),
+      seo: scoreToPercent(categories.seo?.score),
+    },
+    metrics: buildStoredLighthouseMetrics({ audits }),
+    issues: issueReport.issues,
+  };
+
+  const allScoresMissing = Object.values(storedPayload.scores).every(
+    (score) => score == null,
+  );
+  if (allScoresMissing) {
+    throw new Error(
+      `${provider} returned no category scores for ${storedPayload.metadata.finalUrl}`,
+    );
+  }
+
+  // Without this, an off-spec provider field (a numeric audit title, say) would
+  // be stored and then fail to parse on read, silently blanking the page's
+  // whole Lighthouse view instead of failing the check.
+  const validated = storedLighthousePayloadSchema.safeParse(storedPayload);
+  if (!validated.success) {
+    throw new Error(
+      `${provider} returned an invalid report: ${summarizeZodIssues(validated.error)}`,
+    );
+  }
+
+  return storedPayload;
 }

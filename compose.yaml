@@ -16,7 +16,10 @@ services:
       - ALLOWED_HOST=${ALLOWED_HOST:-}
       - AUTH_MODE=local_noauth
       - DO_NOT_TRACK=${DO_NOT_TRACK:-}
-      - DATAFORSEO_API_KEY=${DATAFORSEO_API_KEY}
+      # Optional: competitor, backlink and ranking data.
+      - DATAFORSEO_API_KEY=${DATAFORSEO_API_KEY:-}
+      # Optional: page speed in audits, with no DataForSEO key.
+      - PAGESPEED_API_KEY=${PAGESPEED_API_KEY:-}
       # Optional: AI features (the SAM agent). Without this the setup
       # gate in the app asks for the key, but nothing here would forward it.
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}

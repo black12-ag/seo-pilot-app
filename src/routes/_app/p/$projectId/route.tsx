@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { DataforseoPageGate } from "@/client/features/dataforseo/DataforseoOptional";
 import {
   clearLastProjectId,
   getLastProjectId,
@@ -83,5 +84,9 @@ function ProjectLayout() {
     setLastProjectId(projectId);
   }, [projectId, hasAccess, isSettingsPage]);
 
-  return <Outlet />;
+  return (
+    <DataforseoPageGate>
+      <Outlet />
+    </DataforseoPageGate>
+  );
 }

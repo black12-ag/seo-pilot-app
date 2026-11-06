@@ -14,6 +14,9 @@ vi.mock("@/server/lib/runtime-env", () => ({
   usesBetterAuthServer: async () => true,
   isHostedServerAuthMode: async () => false,
 }));
+vi.mock("@/server/lib/provider-access", () => ({
+  hasDataforseoAccess: async () => true,
+}));
 vi.mock("@/server/features/ai-visibility/services/aiVisibilityRuns", () => ({
   startRun: vi.fn(),
 }));

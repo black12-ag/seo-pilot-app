@@ -3,6 +3,9 @@ import { InlineConfirm } from "@/client/components/InlineConfirm";
 import { useQuery } from "@tanstack/react-query";
 import { Pencil } from "lucide-react";
 import { QueryState } from "@/client/components/QueryState";
+import { useDataforseoConfigured } from "@/client/features/dataforseo/useDataforseoStatus";
+import { projectsQueryOptions } from "@/client/features/projects/projectQueries";
+import { ProjectWebsiteSetup } from "@/client/features/projects/ProjectWebsiteSetup";
 import { getProjectContext } from "@/serverFunctions/projectContext";
 import {
   PROJECT_CONTEXT_SECTION_KEYS,
@@ -69,6 +72,10 @@ export function ProjectContextPage({ projectId }: { projectId: string }) {
             learn, so correct anything that looks wrong.
           </p>
 
+          {context.missingSections.includes("business_overview") ? (
+            <FreeWebsiteResearch projectId={projectId} />
+          ) : null}
+
           <ProseSections
             projectId={projectId}
             sections={context.sections}
@@ -94,6 +101,23 @@ export function ProjectContextPage({ projectId }: { projectId: string }) {
         </div>
       )}
     </QueryState>
+  );
+}
+
+/**
+ * With a DataForSEO key, website research starts from AI Visibility. With no
+ * key that page is optional, so this is where the free research starts.
+ */
+function FreeWebsiteResearch({ projectId }: { projectId: string }) {
+  const needsKey = useDataforseoConfigured() === false;
+  const projects = useQuery(projectsQueryOptions());
+  if (!needsKey || !projects.data) return null;
+  const domain = projects.data.find((row) => row.id === projectId)?.domain;
+  return (
+    <ProjectWebsiteSetup
+      projectId={projectId}
+      defaultWebsite={domain ? `https://${domain}` : ""}
+    />
   );
 }
 
