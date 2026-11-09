@@ -1,5 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { BacklinksPage } from "@/client/features/backlinks/BacklinksPage";
+import { FreeBacklinksPage } from "@/client/features/backlinks/FreeBacklinksPage";
+import { dataforseoStatusQueryOptions } from "@/client/features/dataforseo/useDataforseoStatus";
+import { Skeleton } from "@/client/components/ui/skeleton";
 import {
   DEFAULT_BACKLINKS_PAGE_SIZE,
   backlinksSearchSchema,
@@ -26,6 +30,26 @@ function BacklinksRoute() {
     includeSpam,
   } = Route.useSearch();
   const scope = rawScope ?? defaultScopeForInput(target);
+  // With no DataForSEO key the page shows free Common Crawl data instead. A
+  // failed check falls through to the DataForSEO page, whose calls refuse.
+  const dataforseo = useQuery(dataforseoStatusQueryOptions());
+
+  if (dataforseo.isPending)
+    return (
+      <div className="px-4 py-4 md:px-6 md:py-6" aria-busy>
+        <Skeleton className="h-8 w-52" />
+      </div>
+    );
+  if (dataforseo.data?.configured === false)
+    return (
+      <FreeBacklinksPage
+        projectId={projectId}
+        target={target}
+        onTargetChange={(next) =>
+          navigate({ search: { target: next }, replace: true })
+        }
+      />
+    );
 
   return (
     <BacklinksPage

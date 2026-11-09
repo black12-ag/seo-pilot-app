@@ -32,7 +32,7 @@ RUN case "$TARGETARCH" in \
     gunzip /tmp/celld.gz && install -m 0755 /tmp/celld /usr/local/bin/celld && rm /tmp/celld
 COPY --from=build /build/dist/celld /opt/seo-pilot
 COPY deploy/standalone/init.sh deploy/standalone/run.sh deploy/standalone/nginx.conf /opt/standalone/
-COPY scripts/celld/runtime/admin.mjs scripts/celld/runtime/configure.mjs scripts/celld/runtime/crawl-gateway.mjs scripts/celld/runtime/import.mjs /opt/standalone/
+COPY scripts/celld/runtime/admin.mjs scripts/celld/runtime/configure.mjs scripts/celld/runtime/free-backlinks.mjs scripts/celld/runtime/crawl-gateway.mjs scripts/celld/runtime/import.mjs /opt/standalone/
 RUN mkdir -p /config /data /web-config && chown -R node:node /config /data /web-config
 USER node
 # celld stops any handler that runs past CELLD_HANDLER_BUDGET_S, including a

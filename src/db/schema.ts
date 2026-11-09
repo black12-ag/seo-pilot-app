@@ -43,6 +43,8 @@ import * as pgContent from "./pg/content.schema";
 import * as pgContentEvidence from "./pg/content-evidence.schema";
 import * as sqliteWordpress from "./wordpress-publishing.schema";
 import * as pgWordpress from "./pg/wordpress-publishing.schema";
+import * as sqliteFreeBacklinks from "./free-backlinks.schema";
+import * as pgFreeBacklinks from "./pg/free-backlinks.schema";
 
 // Canonical schema barrel. Repositories import their tables from here and the
 // provider-aware `db` from "@/db", so each repository is written ONCE for both
@@ -75,7 +77,8 @@ type AppSchema = typeof sqliteApp &
   typeof sqliteCompetitorResearch &
   typeof sqliteWebsiteAttempt &
   typeof sqliteFirebaseAuth &
-  typeof sqliteWordpress;
+  typeof sqliteWordpress &
+  typeof sqliteFreeBacklinks;
 
 const runtimeSchema =
   getDatabaseProvider() === "postgres"
@@ -102,6 +105,7 @@ const runtimeSchema =
         ...pgWebsiteAttempt,
         ...pgFirebaseAuth,
         ...pgWordpress,
+        ...pgFreeBacklinks,
       }
     : {
         ...sqliteApp,
@@ -126,6 +130,7 @@ const runtimeSchema =
         ...sqliteWebsiteAttempt,
         ...sqliteFirebaseAuth,
         ...sqliteWordpress,
+        ...sqliteFreeBacklinks,
       };
 
 // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- guarded by schema-parity.test.ts
@@ -170,6 +175,7 @@ export const {
   crawlerCredentials,
   wordpressConnections,
   wordpressPublishRecords,
+  freeBacklinkProfiles,
   projectContextSections,
   projectCompetitors,
   projectCompetitorResearchRuns,

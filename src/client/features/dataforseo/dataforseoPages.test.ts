@@ -6,7 +6,6 @@ describe("dataforseoPageFor", () => {
     "/p/abc/keywords",
     "/p/abc/keyword-gap",
     "/p/abc/domain",
-    "/p/abc/backlinks",
     "/p/abc/ai-visibility",
     "/p/abc/ai-visibility/research",
     "/p/abc/ai-visibility/sources",
@@ -22,6 +21,7 @@ describe("dataforseoPageFor", () => {
   it.each([
     "/p/abc",
     "/p/abc/opportunities",
+    "/p/abc/backlinks",
     "/p/abc/keyword-clusters",
     "/p/abc/saved",
     "/p/abc/search-performance",

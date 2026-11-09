@@ -2,6 +2,7 @@ export const DATAFORSEO_OPTIONAL_LABEL = "Optional: needs a DataForSEO key";
 
 // The pages that can't do anything with no DataForSEO key, by the path segment
 // after /p/<project>. Everything under them is gated, and the sidebar marks them.
+// Backlinks isn't here: with no key it shows free Common Crawl data.
 const DATAFORSEO_PAGES: Record<string, { title: string; gives: string }> = {
   keywords: {
     title: "Keyword Research",
@@ -14,10 +15,6 @@ const DATAFORSEO_PAGES: Record<string, { title: string; gives: string }> = {
   domain: {
     title: "Domain Overview",
     gives: "any site's traffic, top keywords and pages",
-  },
-  backlinks: {
-    title: "Backlinks",
-    gives: "who links to a site, and what changed",
   },
   "ai-visibility": {
     title: "AI Visibility",

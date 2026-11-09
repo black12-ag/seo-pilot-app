@@ -49,6 +49,8 @@ import * as pgContent from "./pg/content.schema";
 import * as pgContentEvidence from "./pg/content-evidence.schema";
 import * as sqliteWordpress from "./wordpress-publishing.schema";
 import * as pgWordpress from "./pg/wordpress-publishing.schema";
+import * as sqliteFreeBacklinks from "./free-backlinks.schema";
+import * as pgFreeBacklinks from "./pg/free-backlinks.schema";
 
 // Guards the ONE structural artifact `db:generate` does not regenerate: the
 // hand-written Postgres schema. The provider-aware `db`/`@/db/schema` barrel
@@ -192,6 +194,7 @@ const sqliteAppTables = tablesFrom(
   sqliteWebsiteAttempt,
   sqliteFirebaseAuth,
   sqliteWordpress,
+  sqliteFreeBacklinks,
 );
 const pgAppTables = tablesFrom(
   pgApp,
@@ -215,6 +218,7 @@ const pgAppTables = tablesFrom(
   pgWebsiteAttempt,
   pgFirebaseAuth,
   pgWordpress,
+  pgFreeBacklinks,
 );
 const sqliteAuthTables = tablesFrom(sqliteAuth);
 const pgAuthTables = tablesFrom(pgAuth);
