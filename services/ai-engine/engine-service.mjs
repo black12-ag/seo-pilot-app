@@ -102,6 +102,8 @@ export function createEngineService(config) {
         state: record.state,
         failure: result.failure,
         checks: result.checks,
+        tools: result.tools,
+        lockProblems: result.lockProblems,
       });
       return record;
     })()
