@@ -10,23 +10,15 @@ SEO Pilot is free and open source. You run your own copy, with your own Google a
 
 **You need:** a computer or server with Docker, about 2 GB of free memory (4 GB if you also run AI on your own login), and Git.
 
-1. **Download it and add your settings.**
+1. **Install it with one command.**
 
    ```sh
-   git clone https://github.com/black12-ag/seo-pilot-app.git
-   cd seo-pilot-app
-   cp deploy/standalone/.env.example deploy/standalone/.env
+   curl -fsSL https://raw.githubusercontent.com/black12-ag/seo-pilot-app/main/scripts/install.sh | sh
    ```
 
-   In `deploy/standalone/.env`, set `STORAGE_SECRET_KEY` to a long random value (`openssl rand -hex 32`) and add `SEO_PILOT_IMAGE=seo-pilot-platform:local`.
+   It downloads SEO Pilot, creates its settings with new random secrets, downloads the ready-made image (amd64 or arm64) and starts it. Add `-s -- --with-ai` after `sh` to also run AI on your own signed-in `agy`, `claude` or `codex`, or `-s -- --url https://seo.example.com` for your own domain. Run it again with `--update` to get new versions. `sh scripts/install.sh --help` lists every option.
 
-2. **Start it.**
-
-   ```sh
-   docker compose --project-name seo-pilot --env-file deploy/standalone/.env -f deploy/standalone/compose.yaml -f deploy/standalone/compose.build.yaml up -d --build
-   ```
-
-   The first build takes a few minutes.
+2. **Or do it by hand.** Copy `deploy/standalone/.env.example` to `deploy/standalone/.env`, set `STORAGE_SECRET_KEY` to a long random value (`openssl rand -hex 32`) and `SEO_PILOT_IMAGE=ghcr.io/black12-ag/seo-pilot-app:latest`, then run `docker compose --project-name seo-pilot --env-file deploy/standalone/.env -f deploy/standalone/compose.yaml up -d`. To build the image yourself instead, use `SEO_PILOT_IMAGE=seo-pilot-platform:local` and add `-f deploy/standalone/compose.build.yaml` and `--build`.
 
 3. **Create your account.** Open `http://localhost:3001/welcome`. The first person to sign up becomes the administrator. After that, sign-ups are closed and others join by invitation.
 
