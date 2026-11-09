@@ -35,6 +35,11 @@ export const rankTrackingDetailSearchSchema = z.object({
       "volume",
       "kd",
       "cpc",
+      // Search Console trackers
+      "desktopImpressions",
+      "desktopClicks",
+      "mobileImpressions",
+      "mobileClicks",
     ])
     .optional()
     .catch(undefined),

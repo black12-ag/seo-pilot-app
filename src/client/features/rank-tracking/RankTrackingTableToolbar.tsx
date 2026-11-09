@@ -24,6 +24,7 @@ export function RankTrackingTableToolbar({
   trackedKeywordCount,
   checkBusy,
   checkDisabled,
+  gsc = false,
   hasData,
 }: {
   showFilters: boolean;
@@ -45,6 +46,8 @@ export function RankTrackingTableToolbar({
   trackedKeywordCount: number;
   checkBusy: boolean;
   checkDisabled: boolean;
+  /** Search Console tracker: a free refresh, and no paid keyword stats. */
+  gsc?: boolean;
   hasData: boolean;
 }) {
   // Once every keyword has had its first check, a running run is retrying the
@@ -143,6 +146,7 @@ export function RankTrackingTableToolbar({
           metricsRefreshing={metricsRefreshing}
           trackedKeywordCount={trackedKeywordCount}
           hasData={hasData}
+          gsc={gsc}
         />
       )}
     </div>

@@ -17,6 +17,7 @@ import {
   projectIdSchema,
 } from "@/server/mcp/schemas";
 import { domainField } from "@/types/schemas/domain";
+import { GSC_RANK_BACKFILL_DAYS } from "@/server/features/rank-tracking/services/gscRankSync";
 import { scheduleTimeSchema } from "@/types/schemas/schedule-time";
 
 const inputSchema = {
@@ -36,6 +37,19 @@ const inputSchema = {
     .optional()
     .describe(
       'Exact DataForSEO location name for local rank tracking, e.g. "Catonsville,Maryland,United States". Must come from search_serp_locations; free-form names like "Catonsville, MD" are rejected.',
+    ),
+  source: z
+    .enum(["dataforseo", "gsc"])
+    .optional()
+    .describe(
+      'Where positions come from. "gsc" is free: Google Search Console average position for the project\'s own connected property (one decimal, averaged over that day\'s impressions, only for queries the site appeared for, about 2-3 days behind), with daily history filled in automatically; domain, locationCode, languageCode, locationName and serpDepth are ignored. "dataforseo" (default) checks live Google results and needs a DataForSEO key and credits.',
+    ),
+  gscCountry: z
+    .string()
+    .regex(/^[a-zA-Z]{3}$/)
+    .optional()
+    .describe(
+      'For source "gsc": ISO 3166-1 alpha-3 country code (e.g. "usa", "gbr") to limit positions to one country. Omit for all countries.',
     ),
   devices: z
     .enum(["desktop", "mobile", "both"])
@@ -85,8 +99,9 @@ export const createRankTrackerTool = {
     },
   },
   handler: withMcpProjectAuth(async (args: Args, context) => {
-    const domain = args.domain ?? context.project.domain;
-    if (!domain) {
+    const isGsc = args.source === "gsc";
+    const domain = args.domain ?? context.project.domain ?? "";
+    if (!domain && !isGsc) {
       throw new AppError(
         "VALIDATION_ERROR",
         "Provide a domain or set the project's domain first",
@@ -102,8 +117,11 @@ export const createRankTrackerTool = {
       locationName: args.locationName,
       devices: args.devices ?? "mobile",
       serpDepth: args.serpDepth ?? 40,
-      scheduleInterval: args.scheduleInterval ?? "manual",
+      // Search Console trackers are free, so they refresh daily by default.
+      scheduleInterval: args.scheduleInterval ?? (isGsc ? "daily" : "manual"),
       scheduleTime: args.scheduleTime,
+      source: args.source,
+      gscCountry: args.gscCountry,
     });
     await markOnboardingMilestone(context.auth, "rankTrackingSetUp");
     waitUntil(
@@ -120,8 +138,13 @@ export const createRankTrackerTool = {
       }),
     );
 
+    const text = isGsc
+      ? `Created free Search Console rank tracker ${config.id} for ${config.domain} (${config.devices}, ${config.gscCountry ? config.gscCountry.toUpperCase() : "all countries"}, ${config.scheduleInterval}). Add keywords with add_rank_tracking_keywords: the last ${GSC_RANK_BACKFILL_DAYS} days of Search Console history fill in right away, then a new day is added each day. Positions are average positions over impressions, only for queries the site appeared for, about 2-3 days behind. No credits are used.`
+      : undefined;
     return mcpResponse({
-      text: `Created rank tracker ${config.id} for ${config.domain} (${config.devices}, top ${config.serpDepth}, ${config.scheduleInterval}). No keywords were added, no check was started, and no credits were used.${config.locationName ? ` Local tracking for ${config.locationName}.` : ""}${config.nextCheckAt ? ` First scheduled check: ${config.nextCheckAt}.` : ""}${config.scheduleInterval === "manual" ? "" : " Scheduled checks will spend credits after keywords are added; estimate and obtain approval before adding them."}`,
+      text:
+        text ??
+        `Created rank tracker ${config.id} for ${config.domain} (${config.devices}, top ${config.serpDepth}, ${config.scheduleInterval}). No keywords were added, no check was started, and no credits were used.${config.locationName ? ` Local tracking for ${config.locationName}.` : ""}${config.nextCheckAt ? ` First scheduled check: ${config.nextCheckAt}.` : ""}${config.scheduleInterval === "manual" ? "" : " Scheduled checks will spend credits after keywords are added; estimate and obtain approval before adding them."}`,
       meta: buildProjectMeta(
         context,
         args.projectId,

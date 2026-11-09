@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { waitUntil } from "cloudflare:workers";
 import { RankTrackingService } from "@/server/features/rank-tracking/services/RankTrackingService";
+import { AppError } from "@/server/lib/errors";
 import { captureServerEvent } from "@/server/lib/posthog";
 import { buildProjectMeta } from "@/server/mcp/context";
 import { mcpResponse } from "@/server/mcp/formatters";
@@ -18,8 +19,9 @@ const inputSchema = {
     .number()
     .int()
     .positive()
+    .optional()
     .describe(
-      "Maximum credits the user approved after seeing estimate_rank_tracker_cost. The run is rejected if its fresh estimate is higher.",
+      "Maximum credits the user approved after seeing estimate_rank_tracker_cost. The run is rejected if its fresh estimate is higher. Required for DataForSEO trackers; not needed for free Search Console (source gsc) trackers.",
     ),
 } as const;
 
@@ -30,7 +32,7 @@ export const runRankTrackerTool = {
   config: {
     title: "Run rank tracker",
     description:
-      "Start an explicit live rank check for every keyword and configured device. This spends credits: call estimate_rank_tracker_cost, show the estimate to the user, and pass the approved credit amount as maxCostCredits. A fresh estimate above that ceiling is rejected. Hosted accounts require a paid plan, while self-hosted deployments are not plan-gated. If a run is already in progress, its blocking run ID is reported without starting or charging another check. The schedule is unchanged.",
+      "For a free Search Console tracker (source gsc), fetch any Search Console days still missing; no credits. Otherwise start an explicit live rank check for every keyword and configured device. This spends credits: call estimate_rank_tracker_cost, show the estimate to the user, and pass the approved credit amount as maxCostCredits. A fresh estimate above that ceiling is rejected. Hosted accounts require a paid plan, while self-hosted deployments are not plan-gated. If a run is already in progress, its blocking run ID is reported without starting or charging another check. The schedule is unchanged.",
     inputSchema,
     outputSchema: z
       .object({
@@ -48,6 +50,15 @@ export const runRankTrackerTool = {
     },
   },
   handler: withMcpProjectAuth(async (args: Args, context) => {
+    const configs = await RankTrackingService.getConfigs(args.projectId);
+    const isGsc =
+      configs.find((config) => config.id === args.trackerId)?.source === "gsc";
+    if (!isGsc && args.maxCostCredits === undefined) {
+      throw new AppError(
+        "VALIDATION_ERROR",
+        "This tracker spends credits. Call estimate_rank_tracker_cost, ask the user to approve it, and pass maxCostCredits.",
+      );
+    }
     const result = await RankTrackingService.triggerCheck({
       configId: args.trackerId,
       projectId: args.projectId,
@@ -81,6 +92,18 @@ export const runRankTrackerTool = {
         },
       }),
     );
+
+    if (isGsc) {
+      return mcpResponse({
+        text: `Search Console history for tracker ${args.trackerId} is up to date (free). Read it with get_rank_tracker: positions are Google's average position over impressions, about 2-3 days behind.`,
+        meta: buildProjectMeta(context, args.projectId, trackerPath),
+        structuredContent: {
+          trackerId: args.trackerId,
+          started: false,
+          ...(result.runId && { runId: result.runId }),
+        },
+      });
+    }
 
     return mcpResponse({
       text: `Rank check ${result.runId} started for tracker ${args.trackerId}. It retries keywords that error or come back missing, so it can take up to an hour. Poll get_rank_tracker until lastCheckedAt advances, then read the updated positions.`,

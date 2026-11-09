@@ -64,7 +64,7 @@ beforeAll(async () => {
       is_active INTEGER NOT NULL DEFAULT 1,
       last_checked_at TEXT,
       next_check_at TEXT,
-      last_skip_reason TEXT,
+      last_skip_reason TEXT, source TEXT NOT NULL DEFAULT 'dataforseo', gsc_country TEXT NOT NULL DEFAULT '',
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
     CREATE TABLE rank_tracking_keywords (
@@ -84,7 +84,7 @@ beforeAll(async () => {
       status TEXT NOT NULL,
       keywords_total INTEGER NOT NULL DEFAULT 0,
       is_subset_run INTEGER NOT NULL DEFAULT 0,
-      started_at TEXT NOT NULL
+      started_at TEXT NOT NULL, data_date TEXT
     );
     CREATE TABLE rank_snapshots (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -92,10 +92,9 @@ beforeAll(async () => {
       tracking_keyword_id TEXT NOT NULL,
       keyword TEXT NOT NULL,
       device TEXT NOT NULL,
-      position INTEGER,
-      url TEXT,
-      serp_features TEXT,
-      checked_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      position INTEGER, url TEXT, serp_features TEXT,
+      checked_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      source TEXT NOT NULL DEFAULT 'dataforseo', average_position REAL, impressions INTEGER, clicks INTEGER
     );
     CREATE UNIQUE INDEX rank_snapshots_run_keyword_device_idx
       ON rank_snapshots (run_id, tracking_keyword_id, device);

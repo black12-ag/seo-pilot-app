@@ -96,6 +96,7 @@ async function getConfigByProjectDomainMarket(
         eq(rankTrackingConfigs.domain, domain),
         eq(rankTrackingConfigs.locationCode, locationCode),
         eq(rankTrackingConfigs.languageCode, languageCode),
+        eq(rankTrackingConfigs.source, "dataforseo"),
         // National (NULL) and per-city configs are distinct rows — mirrors
         // the partial unique indexes, so a national config and any number of
         // city configs can coexist for the same domain.
@@ -149,6 +150,8 @@ async function getDueConfigsWithOrganization(nowIso: string) {
         serpDepth: rankTrackingConfigs.serpDepth,
         scheduleInterval: rankTrackingConfigs.scheduleInterval,
         nextCheckAt: rankTrackingConfigs.nextCheckAt,
+        source: rankTrackingConfigs.source,
+        gscCountry: rankTrackingConfigs.gscCountry,
         organizationId: projects.organizationId,
       })
       .from(rankTrackingConfigs)

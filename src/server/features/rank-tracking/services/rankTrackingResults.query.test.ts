@@ -32,7 +32,8 @@ beforeAll(async () => {
       id TEXT PRIMARY KEY, project_id TEXT, domain TEXT, location_code INTEGER,
       language_code TEXT, devices TEXT, serp_depth INTEGER, schedule_interval TEXT,
       location_name TEXT, is_active INTEGER, last_checked_at TEXT, next_check_at TEXT,
-      last_skip_reason TEXT, created_at TEXT
+      last_skip_reason TEXT, created_at TEXT,
+      source TEXT NOT NULL DEFAULT 'dataforseo', gsc_country TEXT NOT NULL DEFAULT ''
     );
     CREATE TABLE rank_tracking_keywords (
       id TEXT PRIMARY KEY, config_id TEXT, keyword TEXT, match_case INTEGER,
@@ -42,11 +43,16 @@ beforeAll(async () => {
     CREATE TABLE rank_check_runs (
       id TEXT PRIMARY KEY, config_id TEXT, project_id TEXT, status TEXT,
       keywords_total INTEGER, keywords_checked INTEGER, is_subset_run INTEGER,
-      error_message TEXT, started_at TEXT, completed_at TEXT
+      error_message TEXT, started_at TEXT, completed_at TEXT,
+      data_date TEXT
     );
     CREATE TABLE rank_snapshots (
       id INTEGER PRIMARY KEY, run_id TEXT, tracking_keyword_id TEXT, keyword TEXT,
-      device TEXT, position INTEGER, url TEXT, serp_features TEXT, checked_at TEXT
+      device TEXT, position INTEGER, url TEXT, serp_features TEXT, checked_at TEXT,
+      source TEXT NOT NULL DEFAULT 'dataforseo',
+      average_position REAL,
+      impressions INTEGER,
+      clicks INTEGER
     );
     INSERT INTO rank_tracking_configs (id, project_id) VALUES ('config', 'project');
     INSERT INTO rank_tracking_keywords (id, config_id, keyword)

@@ -20,6 +20,9 @@ export type SaveConfigInput = {
   locationName: string | undefined;
   schedule: RankTrackingConfig["scheduleInterval"];
   scheduleTime: RankCheckScheduleTime | undefined;
+  source: RankTrackingConfig["source"];
+  /** Search Console trackers: alpha-3 country, "" for all countries. */
+  gscCountry: string;
 };
 
 function commonFields(input: SaveConfigInput) {
@@ -49,7 +52,14 @@ export function useSaveConfigMutations(input: {
           projectId,
           ...commonFields(fields),
           locationName:
-            fields.targetingMode === "local" ? fields.locationName : undefined,
+            fields.source === "dataforseo" && fields.targetingMode === "local"
+              ? fields.locationName
+              : undefined,
+          source: fields.source,
+          gscCountry:
+            fields.source === "gsc" && fields.gscCountry
+              ? fields.gscCountry
+              : undefined,
         },
       }),
     onSuccess: (result) => {

@@ -14,6 +14,8 @@ type DueConfigRow = {
   serpDepth: number;
   scheduleInterval: "daily" | "weekly" | "monthly" | "manual";
   nextCheckAt: string | null;
+  source: "dataforseo" | "gsc";
+  gscCountry: string;
   organizationId: string;
 };
 
@@ -48,6 +50,9 @@ const mocks = vi.hoisted(() => ({
   customerHasPaidPlan: vi.fn<(organizationId: string) => Promise<boolean>>(),
   isHostedServerAuthMode: vi.fn<() => Promise<boolean>>(),
   isFeatureFlagOn: vi.fn<(flag: FeatureFlag) => Promise<boolean>>(),
+  refreshGscTracker: vi.fn<(config: DueConfigRow) => Promise<unknown>>(),
+  updateConfig:
+    vi.fn<(id: string, projectId: string, data: object) => Promise<void>>(),
 }));
 
 vi.mock("cloudflare:workers", () => ({ env: {} }));
@@ -58,9 +63,13 @@ vi.mock(
       getDueConfigsWithOrganization: mocks.getDueConfigsWithOrganization,
       getKeywordCountsForConfigs: mocks.getKeywordCountsForConfigs,
       claimDueConfig: mocks.claimDueConfig,
+      updateConfig: mocks.updateConfig,
     },
   }),
 );
+vi.mock("@/server/features/rank-tracking/services/gscRankSync", () => ({
+  refreshGscTracker: mocks.refreshGscTracker,
+}));
 vi.mock("@/server/features/rank-tracking/services/rankCheckRunGuards", () => ({
   beginRankCheckRun: mocks.beginRankCheckRun,
 }));
@@ -89,6 +98,8 @@ function dueConfig(overrides: Partial<DueConfigRow> = {}): DueConfigRow {
     serpDepth: 20,
     scheduleInterval: "daily" as const,
     nextCheckAt: "2026-01-01T00:00:00.000Z",
+    source: "dataforseo",
+    gscCountry: "",
     organizationId: "org_1",
     ...overrides,
   };
@@ -386,5 +397,38 @@ describe("runScheduledRankChecks", () => {
 
     expect(mocks.customerHasPaidPlan).not.toHaveBeenCalled();
     expect(mocks.beginRankCheckRun).toHaveBeenCalledTimes(1);
+  });
+
+  it("syncs a Search Console tracker inline: free, no plan check or workflow", async () => {
+    mocks.getDueConfigsWithOrganization.mockResolvedValue([
+      dueConfig({ source: "gsc", gscCountry: "usa" }),
+    ]);
+    mocks.customerHasPaidPlan.mockResolvedValue(false);
+    mocks.refreshGscTracker.mockResolvedValue({});
+
+    await runScheduledRankChecks(testEnv);
+
+    expect(mocks.claimDueConfig).toHaveBeenCalledTimes(1);
+    expect(mocks.refreshGscTracker).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "config_1", source: "gsc" }),
+    );
+    expect(mocks.customerHasPaidPlan).not.toHaveBeenCalled();
+    expect(mocks.beginRankCheckRun).not.toHaveBeenCalled();
+  });
+
+  it("marks a Search Console tracker that lost its connection", async () => {
+    const { GscNotConnectedError } = await import("@/server/lib/gscErrors");
+    mocks.getDueConfigsWithOrganization.mockResolvedValue([
+      dueConfig({ source: "gsc" }),
+    ]);
+    mocks.refreshGscTracker.mockRejectedValue(
+      new GscNotConnectedError("project_1"),
+    );
+
+    await runScheduledRankChecks(testEnv);
+
+    expect(mocks.updateConfig).toHaveBeenCalledWith("config_1", "project_1", {
+      lastSkipReason: "gsc_unavailable",
+    });
   });
 });

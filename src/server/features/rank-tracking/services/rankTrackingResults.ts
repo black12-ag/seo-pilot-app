@@ -65,7 +65,7 @@ export async function getLatestResults(
   for (const snap of comparisonSnapshots) {
     previousPositions.set(
       `${snap.trackingKeywordId}:${snap.device}`,
-      snap.position,
+      shownPosition(snap),
     );
   }
 
@@ -89,7 +89,7 @@ export async function getLatestResults(
     for (const snap of earliestSnapshots) {
       const key = `${snap.trackingKeywordId}:${snap.device}`;
       if (!previousPositions.has(key)) {
-        previousPositions.set(key, snap.position);
+        previousPositions.set(key, shownPosition(snap));
       }
     }
   }
@@ -169,6 +169,11 @@ function parseSerpFeatures(raw: string | null): string[] {
   return [];
 }
 
+// Search Console rows carry Google's exact average; DataForSEO rows an integer.
+function shownPosition(snapshot: SnapshotRow): number | null {
+  return snapshot.averagePosition ?? snapshot.position;
+}
+
 function createEmptyDeviceResult(
   previousPosition: number | null,
 ): RankTrackingDeviceResult {
@@ -177,6 +182,8 @@ function createEmptyDeviceResult(
     previousPosition,
     rankingUrl: null,
     serpFeatures: [],
+    impressions: null,
+    clicks: null,
   };
 }
 
@@ -185,9 +192,11 @@ function toDeviceResult(
   previousPosition: number | null,
 ): RankTrackingDeviceResult {
   return {
-    position: snapshot.position,
+    position: shownPosition(snapshot),
     previousPosition,
     rankingUrl: snapshot.url,
     serpFeatures: parseSerpFeatures(snapshot.serpFeatures),
+    impressions: snapshot.impressions,
+    clicks: snapshot.clicks,
   };
 }

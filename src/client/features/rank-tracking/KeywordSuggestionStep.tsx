@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { getDomainKeywordSuggestions } from "@/serverFunctions/domain";
+import { getGscKeywordIdeas } from "@/serverFunctions/gscKeywordIdeas";
 import { addTrackingKeywords } from "@/serverFunctions/rank-tracking";
 import { isLabsLocationCode } from "@/client/features/keywords/locations";
 import { Spinner } from "@/client/components/Spinner";
@@ -37,8 +38,12 @@ type SuggestedKeyword = {
 };
 
 const PRE_SELECT_COUNT = 20;
+// Mirrors GSC_RANK_BACKFILL_DAYS on the server.
+const GSC_BACKFILL_DAYS = 30;
 
-const baseColumns: ColumnDef<SuggestedKeyword>[] = [
+// Search Console suggestions carry impressions and clicks in the volume and
+// traffic slots, labelled as what they are.
+const buildBaseColumns = (gsc: boolean): ColumnDef<SuggestedKeyword>[] => [
   {
     id: "keyword",
     accessorKey: "keyword",
@@ -61,8 +66,12 @@ const baseColumns: ColumnDef<SuggestedKeyword>[] = [
     header: ({ column }) => (
       <SortableHeader
         column={column}
-        label="Position"
-        title="Current Google ranking position"
+        label={gsc ? "Avg. position" : "Position"}
+        title={
+          gsc
+            ? "Average position over the last 28 days of impressions"
+            : "Current Google ranking position"
+        }
         className={RANK_TRACKING_HEADER_CLASS}
       />
     ),
@@ -86,8 +95,12 @@ const baseColumns: ColumnDef<SuggestedKeyword>[] = [
     header: ({ column }) => (
       <SortableHeader
         column={column}
-        label="Volume"
-        title="Monthly search volume"
+        label={gsc ? "Impressions" : "Volume"}
+        title={
+          gsc
+            ? "Times your site was shown for it in the last 28 days. Not search volume."
+            : "Monthly search volume"
+        }
         className={RANK_TRACKING_HEADER_CLASS}
       />
     ),
@@ -111,8 +124,12 @@ const baseColumns: ColumnDef<SuggestedKeyword>[] = [
     header: ({ column }) => (
       <SortableHeader
         column={column}
-        label="Traffic"
-        title="Estimated monthly organic traffic"
+        label={gsc ? "Clicks" : "Traffic"}
+        title={
+          gsc
+            ? "Clicks from Google in the last 28 days"
+            : "Estimated monthly organic traffic"
+        }
         className={RANK_TRACKING_HEADER_CLASS}
       />
     ),
@@ -137,6 +154,8 @@ type Props = {
   projectId: string;
   domain: string;
   locationCode: number;
+  /** "gsc" suggests the site's own Search Console queries (free). */
+  source?: "dataforseo" | "gsc";
   onDone: (configId: string) => void;
   onClose: () => void;
 };
@@ -146,9 +165,11 @@ export function KeywordSuggestionStep({
   projectId,
   domain,
   locationCode,
+  source = "dataforseo",
   onDone,
   onClose,
 }: Props) {
+  const gsc = source === "gsc";
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [hasInitialized, setHasInitialized] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([
@@ -159,9 +180,9 @@ export function KeywordSuggestionStep({
   const columns = useMemo<ColumnDef<SuggestedKeyword>[]>(
     () => [
       makeSelectionColumn<SuggestedKeyword>(selectAnchorRef),
-      ...baseColumns,
+      ...buildBaseColumns(gsc),
     ],
-    [],
+    [gsc],
   );
 
   // Ranked-keyword suggestions are Labs-backed; countries served from Google
@@ -169,13 +190,29 @@ export function KeywordSuggestionStep({
   // The tracker's language is deliberately not sent — rank tracking can pair
   // any SERP language with any country, and the server resolves a Labs-served
   // language for this country (resolveLabsMarket in serverFunctions/domain.ts).
-  const labsSupported = isLabsLocationCode(locationCode);
+  const labsSupported = gsc || isLabsLocationCode(locationCode);
   const suggestionsQuery = useQuery({
-    queryKey: ["domainKeywordSuggestions", projectId, domain, locationCode],
-    queryFn: () =>
-      getDomainKeywordSuggestions({
-        data: { projectId, domain, locationCode },
-      }),
+    queryKey: gsc
+      ? ["gscRankSuggestions", projectId]
+      : ["domainKeywordSuggestions", projectId, domain, locationCode],
+    queryFn: async (): Promise<SuggestedKeyword[]> => {
+      if (!gsc) {
+        return getDomainKeywordSuggestions({
+          data: { projectId, domain, locationCode },
+        });
+      }
+      const result = await getGscKeywordIdeas({
+        data: { projectId, dateRange: "last_28_days" },
+      });
+      return result.connected
+        ? result.ideas.slice(0, 200).map((idea) => ({
+            keyword: idea.keyword,
+            position: idea.position,
+            searchVolume: idea.impressions,
+            traffic: idea.clicks,
+          }))
+        : [];
+    },
     enabled: labsSupported,
   });
 
@@ -275,7 +312,11 @@ export function KeywordSuggestionStep({
       <>
         <StepHeader
           title="No rankings found"
-          description={`We couldn't find any keywords ${domain} currently ranks for. You can add keywords manually.`}
+          description={
+            gsc
+              ? `Search Console has no queries for ${domain} in the last 28 days. You can add keywords manually.`
+              : `We couldn't find any keywords ${domain} currently ranks for. You can add keywords manually.`
+          }
         />
         <DialogFooter>
           <Button onClick={onClose}>Skip</Button>
@@ -288,7 +329,11 @@ export function KeywordSuggestionStep({
     <>
       <StepHeader
         title="Choose keywords to track"
-        description={`We found ${data.length} keywords ${domain} ranks for.`}
+        description={
+          gsc
+            ? `${data.length} queries ${domain} got impressions for in Search Console, most impressions first. Their last ${GSC_BACKFILL_DAYS} days of positions fill in once saved.`
+            : `We found ${data.length} keywords ${domain} ranks for.`
+        }
       />
 
       <DataTable

@@ -113,3 +113,11 @@ export const searchPerformanceSearchSchema = z.object({
 export type SearchPerformanceSearch = z.infer<
   typeof searchPerformanceSearchSchema
 >;
+
+/** Free keyword ideas from the project's own Search Console queries. */
+export const gscKeywordIdeasInputSchema = z.object({
+  projectId: z.string().min(1),
+  dateRange: z.enum(SEARCH_PERFORMANCE_RANGES).default("last_28_days"),
+  device: z.enum(GSC_DEVICES).optional(),
+  country: searchPerformanceFilterShape.country,
+});

@@ -31,6 +31,7 @@ export function MoreMenu({
   metricsRefreshing,
   trackedKeywordCount,
   hasData,
+  gsc = false,
 }: {
   onCheckNow: () => void;
   checkBusy: boolean;
@@ -38,6 +39,7 @@ export function MoreMenu({
   metricsRefreshing: boolean;
   trackedKeywordCount: number;
   hasData: boolean;
+  gsc?: boolean;
 }) {
   const [confirmingRefresh, setConfirmingRefresh] = useState(false);
   return (
@@ -59,22 +61,34 @@ export function MoreMenu({
           <DropdownMenuItem onClick={onCheckNow} disabled={checkBusy}>
             <Play />
             <ItemText
-              label={checkBusy ? "Running..." : "Check rankings"}
-              description="Fetch current Google positions"
-            />
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => setConfirmingRefresh(true)}
-            disabled={metricsRefreshing || !hasData}
-          >
-            <RefreshCw className={metricsRefreshing ? "animate-spin" : ""} />
-            <ItemText
               label={
-                metricsRefreshing ? "Refreshing..." : "Update keyword stats"
+                checkBusy
+                  ? "Running..."
+                  : gsc
+                    ? "Refresh from Search Console"
+                    : "Check rankings"
               }
-              description="Volume, difficulty & CPC — not rankings"
+              description={
+                gsc
+                  ? "Free. Fetches any new Search Console days"
+                  : "Fetch current Google positions"
+              }
             />
           </DropdownMenuItem>
+          {!gsc && (
+            <DropdownMenuItem
+              onClick={() => setConfirmingRefresh(true)}
+              disabled={metricsRefreshing || !hasData}
+            >
+              <RefreshCw className={metricsRefreshing ? "animate-spin" : ""} />
+              <ItemText
+                label={
+                  metricsRefreshing ? "Refreshing..." : "Update keyword stats"
+                }
+                description="Volume, difficulty & CPC — not rankings"
+              />
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
       {confirmingRefresh ? (

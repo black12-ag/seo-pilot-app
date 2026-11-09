@@ -39,6 +39,7 @@ export function RankTrackingTable({
   languageCode,
   locationName,
   serpDepth,
+  gsc = false,
   onAddKeywords,
   onClearFilters,
 }: {
@@ -55,6 +56,7 @@ export function RankTrackingTable({
   languageCode: string;
   locationName?: string | null;
   serpDepth: number;
+  gsc?: boolean;
   onAddKeywords: () => void;
   onClearFilters: () => void;
 }) {
@@ -83,6 +85,7 @@ export function RankTrackingTable({
     onKeywordClick: handleKeywordClick,
     onSetPinned: setKeywordPinned,
     locationName,
+    gsc,
   });
 
   // The pinned column sorts first and stays out of the sorting the page owns.

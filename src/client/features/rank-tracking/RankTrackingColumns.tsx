@@ -182,6 +182,7 @@ function PinButton({
 
 function makeDeviceColumn(
   device: "desktop" | "mobile",
+  gsc: boolean,
 ): ColumnDef<RankTrackingRow> {
   const id = device === "desktop" ? "desktopPosition" : "mobilePosition";
   return {
@@ -190,14 +191,48 @@ function makeDeviceColumn(
     header: ({ column }) => (
       <SortableHeader
         column={column}
-        label="Position"
-        title={HEADER_TOOLTIPS[id]}
+        label={gsc ? "Avg. position" : "Position"}
+        title={gsc ? GSC_POSITION_TOOLTIP : HEADER_TOOLTIPS[id]}
         className={RANK_TRACKING_HEADER_CLASS}
       />
     ),
     size: 120,
     maxSize: 140,
-    cell: ({ row }) => <DeviceRankCell result={row.original[device]} />,
+    cell: ({ row }) => (
+      <DeviceRankCell result={row.original[device]} gsc={gsc} />
+    ),
+    sortUndefined: "last",
+  };
+}
+
+const GSC_POSITION_TOOLTIP =
+  "Search Console average position over the latest day's impressions. Blank or 'no impr.' means your site wasn't shown that day.";
+
+// Search Console trackers show the latest day's impressions and clicks where
+// DataForSEO trackers show volume, difficulty and CPC.
+function makeGscMetricColumn(
+  device: "desktop" | "mobile",
+  metric: "impressions" | "clicks",
+): ColumnDef<RankTrackingRow> {
+  return {
+    id: `${device}${metric === "impressions" ? "Impressions" : "Clicks"}`,
+    accessorFn: (row) => row[device][metric] ?? undefined,
+    header: ({ column }) => (
+      <SortableHeader
+        column={column}
+        label={metric === "impressions" ? "Impressions" : "Clicks"}
+        title={
+          metric === "impressions"
+            ? "Times your site was shown on the latest Search Console day. Not search volume."
+            : "Clicks on the latest Search Console day"
+        }
+        className={RANK_TRACKING_HEADER_CLASS}
+      />
+    ),
+    size: 110,
+    cell: ({ getValue }) => (
+      <VolumeCell value={getValue<number | undefined>() ?? null} />
+    ),
     sortUndefined: "last",
   };
 }
@@ -254,8 +289,11 @@ export function useRankTrackingColumns(options: {
   onKeywordClick: (row: RankTrackingRow) => void;
   onSetPinned: (vars: { trackingKeywordId: string; pinned: boolean }) => void;
   locationName?: string | null;
+  /** A Search Console tracker: average positions, impressions and clicks. */
+  gsc?: boolean;
 }): ColumnDef<RankTrackingRow>[] {
   const {
+    gsc = false,
     showDesktop,
     showMobile,
     domain,
@@ -273,13 +311,22 @@ export function useRankTrackingColumns(options: {
       makeSelectionColumn<RankTrackingRow>(selectAnchorRef),
       makeKeywordColumn(onKeywordClick, onSetPinned),
     ];
-    if (showDesktop) {
-      cols.push(makeDeviceColumn("desktop"));
-      cols.push(makeUrlColumn("desktop", domain));
+    const devices = [
+      ...(showDesktop ? (["desktop"] as const) : []),
+      ...(showMobile ? (["mobile"] as const) : []),
+    ];
+    if (gsc) {
+      for (const device of devices) {
+        cols.push(
+          makeDeviceColumn(device, true),
+          makeGscMetricColumn(device, "impressions"),
+          makeGscMetricColumn(device, "clicks"),
+        );
+      }
+      return cols;
     }
-    if (showMobile) {
-      cols.push(makeDeviceColumn("mobile"));
-      cols.push(makeUrlColumn("mobile", domain));
+    for (const device of devices) {
+      cols.push(makeDeviceColumn(device, false), makeUrlColumn(device, domain));
     }
     cols.push(makeVolumeColumn(locationLabel), kdColumn, cpcColumn);
     if (showDesktop) {
@@ -297,5 +344,6 @@ export function useRankTrackingColumns(options: {
     onKeywordClick,
     onSetPinned,
     locationLabel,
+    gsc,
   ]);
 }

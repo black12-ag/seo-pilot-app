@@ -65,7 +65,8 @@ async function addKeywords(
   let scheduledEstimate:
     | ReturnType<typeof estimateScheduledRankCheckCredits>
     | undefined;
-  if (rows.length > 0 && scheduleInterval) {
+  // Search Console trackers are free, so there is no cost to approve.
+  if (rows.length > 0 && scheduleInterval && config.source !== "gsc") {
     scheduledEstimate = estimateScheduledRankCheckCredits(
       [...existing, ...rows].map((kw) => kw.keyword),
       config.devices,
@@ -155,12 +156,15 @@ async function estimateCost(
     ...additionalKeywords,
   ].slice(0, Math.max(existingKeywordCount, MAX_KEYWORDS_PER_CONFIG));
   const keywordCount = keywords.length;
-  const { costUsd, costCredits } = estimateRankCheckCredits(
-    keywords,
-    config.devices,
-    config.serpDepth,
-    "live",
-  );
+  const isFree = config.source === "gsc";
+  const { costUsd, costCredits } = isFree
+    ? { costUsd: 0, costCredits: 0 }
+    : estimateRankCheckCredits(
+        keywords,
+        config.devices,
+        config.serpDepth,
+        "live",
+      );
   const scheduleInterval = isScheduledRankTrackingInterval(
     config.scheduleInterval,
   )
@@ -175,14 +179,15 @@ async function estimateCost(
     method: "live" as const,
     existingKeywordCount,
     additionalKeywordCount: keywordCount - existingKeywordCount,
-    scheduledEstimate: scheduleInterval
-      ? estimateScheduledRankCheckCredits(
-          keywords,
-          config.devices,
-          config.serpDepth,
-          scheduleInterval,
-        )
-      : undefined,
+    scheduledEstimate:
+      scheduleInterval && !isFree
+        ? estimateScheduledRankCheckCredits(
+            keywords,
+            config.devices,
+            config.serpDepth,
+            scheduleInterval,
+          )
+        : undefined,
   };
 }
 

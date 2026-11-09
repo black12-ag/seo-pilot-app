@@ -512,6 +512,13 @@
       "when": 1794228367128,
       "tag": "0072_free_backlinks",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "6",
+      "when": 1794235424063,
+      "tag": "0073_gsc_rank_tracking",
+      "breakpoints": true
     }
   ]
 }

@@ -5,12 +5,15 @@ import { GscConnectionRepository } from "@/server/features/gsc/repositories/GscC
 import { GscService } from "@/server/features/gsc/services/GscService";
 import { ProjectService } from "@/server/features/projects/services/ProjectService";
 import type { BillingCustomerContext } from "@/server/billing/subscription";
-import { normalizeBacklinksTarget } from "@/server/lib/dataforseoBacklinksTarget";
+import {
+  normalizeSiteDomain,
+  propertyDomain,
+  SC_DOMAIN_PREFIX,
+} from "@/server/features/gsc/propertyDomain";
 import { AppError, asAppError } from "@/server/lib/errors";
 import { buildCacheKey } from "@/server/lib/r2-cache";
 
 const UNVERIFIED_PERMISSION = "siteUnverifiedUser";
-const SC_DOMAIN_PREFIX = "sc-domain:";
 
 type ExistingProject = { id: string; name: string; archived: boolean };
 
@@ -34,34 +37,6 @@ type SiteImportResult = { siteUrl: string; domain: string } & (
   | { status: "failed"; code: string }
 );
 
-/**
- * The project domain a Search Console property stands for: a domain property
- * (`sc-domain:example.com`) is its bare domain, a URL-prefix property
- * (`https://www.example.com/blog/`) its host. Both go through the rule a
- * project's own domain is saved with, so the two compare equal.
- */
-function propertyDomain(siteUrl: string): string | null {
-  let host: string;
-  if (siteUrl.startsWith(SC_DOMAIN_PREFIX)) {
-    host = siteUrl.slice(SC_DOMAIN_PREFIX.length);
-  } else {
-    try {
-      host = new URL(siteUrl).hostname;
-    } catch {
-      return null;
-    }
-  }
-  return normalizeDomain(host);
-}
-
-function normalizeDomain(domain: string): string | null {
-  try {
-    return normalizeBacklinksTarget(domain, { scope: "domain" }).apiTarget;
-  } catch {
-    return null;
-  }
-}
-
 /** Active and archived projects by domain: an archived one still exists. */
 async function existingProjectsByDomain(organizationId: string) {
   const [active, archived] = await Promise.all([
@@ -74,7 +49,9 @@ async function existingProjectsByDomain(organizationId: string) {
     [archived, true],
   ] as const) {
     for (const project of projects) {
-      const domain = project.domain ? normalizeDomain(project.domain) : null;
+      const domain = project.domain
+        ? normalizeSiteDomain(project.domain)
+        : null;
       if (domain && !byDomain.has(domain))
         byDomain.set(domain, {
           id: project.id,

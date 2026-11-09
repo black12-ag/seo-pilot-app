@@ -7,11 +7,14 @@ export function useRankCheckTrigger({
   configId,
   isRunning,
   projectId,
+  gsc = false,
   onSuccess,
 }: {
   configId: string;
   isRunning: boolean;
   projectId: string;
+  /** Search Console trackers finish inline, so their data is ready now. */
+  gsc?: boolean;
   onSuccess: () => void;
 }) {
   const queryClient = useQueryClient();
@@ -36,6 +39,15 @@ export function useRankCheckTrigger({
       }
 
       captureClientEvent("rank_tracking:check_trigger");
+      if (gsc) {
+        for (const key of ["rankTrackingResults", "rankPositionMatrix"]) {
+          void queryClient.invalidateQueries({
+            queryKey: [key, projectId, configId],
+          });
+        }
+        toast.success("Search Console data is up to date");
+        return;
+      }
       toast.success("Rank check started");
     },
   });

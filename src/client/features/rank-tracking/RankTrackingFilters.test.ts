@@ -31,12 +31,16 @@ function makeRow(
       previousPosition: null,
       rankingUrl: null,
       serpFeatures: [],
+      impressions: null,
+      clicks: null,
     },
     mobile: {
       position: mobilePosition,
       previousPosition: null,
       rankingUrl: null,
       serpFeatures: [],
+      impressions: null,
+      clicks: null,
     },
   };
 }

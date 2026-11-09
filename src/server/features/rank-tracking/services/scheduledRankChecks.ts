@@ -10,6 +10,12 @@ import {
   isScheduledRankTrackingInterval,
 } from "@/shared/rank-tracking";
 import { describeError } from "@/server/lib/errors";
+import { refreshGscTracker } from "@/server/features/rank-tracking/services/gscRankSync";
+import {
+  GscApiError,
+  GscNotConnectedError,
+  GscTokenError,
+} from "@/server/lib/gscErrors";
 
 // Work admitted per tick, in task units (keywords × devices). Admission
 // control, not a hard rate limit: the first start of a tick is always
@@ -31,6 +37,11 @@ const SCHEDULED_TASK_UNIT_BUDGET = 1000;
 // org (worst case minutes, more when Autumn is degraded). Stopping early is
 // safe — unprocessed configs stay due and the next tick resumes oldest-first.
 const TICK_DEADLINE_MS = 3 * 60_000;
+
+// Search Console trackers sync inline (free, no workflow). A sync is a couple
+// of searchAnalytics calls, far inside Google's per-site quota, but keep a
+// tick's share bounded so a large install spreads them across ticks.
+const GSC_SYNCS_PER_TICK = 25;
 
 // Cap on the per-tick list of configs blocked by an active run. Blocked
 // configs leave no durable trace on their row, so the summary names them.
@@ -83,6 +94,9 @@ export async function runScheduledRankChecks(env: Env) {
   let planCheckErrors = 0;
   let workflowStartErrors = 0;
   let configErrors = 0;
+  let gscSynced = 0;
+  let gscSkipped = 0;
+  let gscErrors = 0;
 
   for (const config of dueConfigs) {
     if (Date.now() >= deadline) {
@@ -100,6 +114,18 @@ export async function runScheduledRankChecks(env: Env) {
       // times. Narrow rather than assert so a query change can't produce a run
       // with no schedule anchor.
       if (!interval || !config.nextCheckAt) continue;
+
+      if (config.source === "gsc") {
+        if (gscSynced + gscSkipped + gscErrors >= GSC_SYNCS_PER_TICK) continue;
+        const outcome = await runScheduledGscSync(
+          config,
+          computeNextCheckAt(interval, config.nextCheckAt),
+        );
+        if (outcome === "synced") gscSynced++;
+        else if (outcome === "skipped") gscSkipped++;
+        else if (outcome === "error") gscErrors++;
+        continue;
+      }
 
       const kwCount = keywordCounts.get(config.id) ?? 0;
       const taskUnits = kwCount * devicesCount(config.devices);
@@ -242,7 +268,7 @@ export async function runScheduledRankChecks(env: Env) {
   // fields. Error level when anything failed, so ticks that need attention
   // surface in error-filtered views.
   const logSummary =
-    planCheckErrors + workflowStartErrors + configErrors > 0
+    planCheckErrors + workflowStartErrors + configErrors + gscErrors > 0
       ? console.error
       : console.log;
   logSummary({
@@ -261,8 +287,53 @@ export async function runScheduledRankChecks(env: Env) {
     planCheckErrors,
     workflowStartErrors,
     configErrors,
+    gscSynced,
+    gscSkipped,
+    gscErrors,
     oldestDueAgeMs: oldestDue
       ? Date.now() - new Date(oldestDue).getTime()
       : null,
   });
+}
+
+type DueConfig = Awaited<
+  ReturnType<typeof RankTrackingRepository.getDueConfigsWithOrganization>
+>[number];
+
+/**
+ * Claim a due Search Console tracker, then fill in its missing days. Lost
+ * access records a skip reason the UI shows; a Google outage just logs, and
+ * the next day's sync fetches every day still missing.
+ */
+async function runScheduledGscSync(
+  config: DueConfig,
+  nextCheckAt: string,
+): Promise<"synced" | "skipped" | "error" | "not_claimed"> {
+  const claimed = await RankTrackingRepository.claimDueConfig({
+    configId: config.id,
+    projectId: config.projectId,
+    observedNextCheckAt: config.nextCheckAt ?? "",
+    nextCheckAt,
+  });
+  if (!claimed) return "not_claimed";
+  try {
+    await refreshGscTracker(config);
+    return "synced";
+  } catch (err) {
+    const lostAccess =
+      err instanceof GscNotConnectedError ||
+      err instanceof GscTokenError ||
+      (err instanceof GscApiError &&
+        (err.status === 401 || err.status === 403));
+    if (lostAccess) {
+      await RankTrackingRepository.updateConfig(config.id, config.projectId, {
+        lastSkipReason: "gsc_unavailable",
+      });
+      return "skipped";
+    }
+    console.error(
+      `[cron] Search Console rank sync failed for config ${config.id}: ${describeError(err)}`,
+    );
+    return "error";
+  }
 }

@@ -195,7 +195,7 @@ export function RankTrackingDomainList({
               variant="plain"
               icon={Globe}
               title="No tracked domains yet"
-              description="Add a domain to start monitoring keyword rankings over time."
+              description="Add a domain to start monitoring keyword rankings over time. Tracking your own site from Search Console is free."
             />
           ) : filteredSummaries.length === 0 ? (
             <EmptyState
@@ -269,10 +269,12 @@ function DomainRow({
       <div className="min-w-0 flex-1 pointer-events-none">
         <p className="font-medium truncate">{summary.domain}</p>
         <p className="text-xs text-muted-foreground">
-          {summary.locationName
-            ? formatLocationLabel(summary.locationName, 2)
-            : (LOCATIONS[summary.locationCode] ?? "US")}{" "}
-          {showLanguage && (
+          {summary.source === "gsc"
+            ? `Search Console (free) · ${summary.gscCountry ? summary.gscCountry.toUpperCase() : "All countries"}`
+            : summary.locationName
+              ? formatLocationLabel(summary.locationName, 2)
+              : (LOCATIONS[summary.locationCode] ?? "US")}{" "}
+          {showLanguage && summary.source !== "gsc" && (
             <>
               &middot;{" "}
               {SERP_LANGUAGE_OPTIONS.find(
@@ -302,6 +304,12 @@ function DomainRow({
               <GetCreditsButton />
             </span>
           </div>
+        )}
+        {summary.lastSkipReason === "gsc_unavailable" && (
+          <p className="flex items-center gap-1 text-xs text-warning">
+            <AlertTriangle className="size-3" />
+            Search Console access was lost. Reconnect it on GSC Insights.
+          </p>
         )}
         {summary.lastSkipReason === "plan_required" && (
           <p className="flex items-center gap-1 text-xs text-warning">

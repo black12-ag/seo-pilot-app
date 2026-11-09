@@ -57,7 +57,9 @@ DataForSEO is optional. It adds competitor, backlink and ranking data. Without i
 those pages stay in the menu marked **Optional**, show no numbers and charge
 nothing. See [DataForSEO API key](./DATAFORSEO_API_KEY.md). Backlinks is the
 exception: with no key it shows free domain-level data from Common Crawl once
-you run [one command](./FREE_BACKLINKS.md).
+you run [one command](./FREE_BACKLINKS.md). Rank Tracking and Keyword Research
+also work with no key, from your own Search Console. See
+[free rankings](./FREE_RANKINGS.md).
 
 Page speed in audits uses DataForSEO when it has a key, and Google PageSpeed
 Insights otherwise. Google refused calls without a key when we tried them, so

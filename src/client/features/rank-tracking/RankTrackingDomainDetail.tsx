@@ -90,7 +90,10 @@ export function RankTrackingDomainDetail({
   onSearchChange: (update: Partial<RankTrackingDetailSearch>) => void;
   onEdit: () => void;
 }) {
-  const planStatus = useHostedPlanGate();
+  const isGsc = config.source === "gsc";
+  // Search Console trackers are free on every plan.
+  const hostedPlan = useHostedPlanGate();
+  const planStatus = isGsc ? "paid" : hostedPlan;
   const queryClient = useQueryClient();
   const [showAddKeywords, setShowAddKeywords] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -163,6 +166,10 @@ export function RankTrackingDomainDetail({
     void queryClient.invalidateQueries({
       queryKey: ["rankTrackingLatestRun", projectId, config.id],
     });
+    // Search Console history for new keywords is already saved.
+    void queryClient.invalidateQueries({
+      queryKey: ["rankPositionMatrix", projectId, config.id],
+    });
     setShowAddKeywords(false);
     captureClientEvent("rank_tracking:keywords_add");
     toast.success(
@@ -186,6 +193,7 @@ export function RankTrackingDomainDetail({
     configId: config.id,
     isRunning,
     projectId,
+    gsc: isGsc,
     onSuccess: () => setPendingCheck(null),
   });
 
@@ -193,7 +201,8 @@ export function RankTrackingDomainDetail({
     useMetricsRefresh(projectId, config.id);
 
   const requestCheck = (count: number, keywordIds?: string[]) => {
-    if (count < 50) {
+    // Search Console is free, so there is no cost to confirm.
+    if (count < 50 || isGsc) {
       startCheck({ keywordIds });
       return;
     }
@@ -315,6 +324,7 @@ export function RankTrackingDomainDetail({
           trackedKeywordCount={trackedKeywordCount}
           checkBusy={isBusy}
           checkDisabled={planStatus !== "paid"}
+          gsc={isGsc}
           hasData={filtered.length > 0}
         />
 
@@ -372,6 +382,7 @@ export function RankTrackingDomainDetail({
                   languageCode={config.languageCode}
                   locationName={config.locationName}
                   serpDepth={config.serpDepth}
+                  gsc={isGsc}
                   onAddKeywords={() => setShowAddKeywords(true)}
                   onClearFilters={() => setFilters(EMPTY_FILTERS)}
                 />

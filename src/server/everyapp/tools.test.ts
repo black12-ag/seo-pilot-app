@@ -87,7 +87,7 @@ describe("SEO Pilot's tools on the Every App gateway", () => {
     expect(response.status).toBe(200);
     const catalog = await response.json<ToolsListResponseV1>();
     expect(catalog.warnings ?? []).toEqual([]);
-    expect(catalog.tools).toHaveLength(106);
+    expect(catalog.tools).toHaveLength(107);
     expect(
       catalog.tools
         .filter((tool) =>

@@ -16,6 +16,12 @@ const mocks = vi.hoisted(() => ({
   customerHasPaidPlan: vi.fn(),
 }));
 
+const gscMocks = vi.hoisted(() => ({
+  getByProjectId: vi.fn(),
+  getGscConfig: vi.fn(),
+  refreshGscTracker: vi.fn(),
+}));
+
 vi.mock("cloudflare:workers", () => ({
   env: { RANK_CHECK_WORKFLOW: { create: mocks.startWorkflow } },
 }));
@@ -32,6 +38,15 @@ vi.mock(
   "@/server/features/rank-tracking/repositories/RankTrackingRepository",
   () => ({ RankTrackingRepository: mocks }),
 );
+vi.mock("@/server/features/gsc/repositories/GscConnectionRepository", () => ({
+  GscConnectionRepository: { getByProjectId: gscMocks.getByProjectId },
+}));
+vi.mock("@/server/features/rank-tracking/repositories/gscRankQueries", () => ({
+  GscRankQueries: { getGscConfig: gscMocks.getGscConfig },
+}));
+vi.mock("@/server/features/rank-tracking/services/gscRankSync", () => ({
+  refreshGscTracker: gscMocks.refreshGscTracker,
+}));
 
 const archivedConfig = {
   id: "config_archived",
@@ -352,6 +367,76 @@ describe("RankTrackingService.triggerAutoCheck", () => {
       ok: false,
       reason: "no_keywords",
     });
+    expect(mocks.startWorkflow).not.toHaveBeenCalled();
+  });
+});
+
+describe("RankTrackingService with the Search Console source", () => {
+  beforeEach(() => {
+    gscMocks.getByProjectId.mockResolvedValue({
+      siteUrl: "sc-domain:own-site.com",
+      connectedByUserId: "user_1",
+    });
+    gscMocks.getGscConfig.mockResolvedValue(null);
+    mocks.getConfigsForProject.mockResolvedValue([]);
+    mocks.createConfig.mockResolvedValue(undefined);
+  });
+
+  it("tracks the connected property, never the domain it was given", async () => {
+    vi.stubGlobal("fetch", vi.fn());
+
+    const config = await RankTrackingService.createConfig({
+      ...baseInput,
+      domain: "competitor.com",
+      source: "gsc",
+      gscCountry: "USA",
+    });
+
+    expect(config).toMatchObject({
+      domain: "own-site.com",
+      source: "gsc",
+      gscCountry: "usa",
+    });
+    expect(mocks.createConfig).toHaveBeenCalledWith(
+      expect.objectContaining({ domain: "own-site.com", source: "gsc" }),
+    );
+    // No DataForSEO location check, so no paid call.
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("refuses a Search Console tracker when the project has no connection", async () => {
+    gscMocks.getByProjectId.mockResolvedValue(null);
+
+    await expect(
+      RankTrackingService.createConfig({ ...baseInput, source: "gsc" }),
+    ).rejects.toThrow("Connect Search Console");
+  });
+
+  it("refreshes a Search Console tracker inline on a free hosted plan, with no workflow", async () => {
+    mocks.isHosted.mockResolvedValue(true);
+    mocks.customerHasPaidPlan.mockResolvedValue(false);
+    mocks.getConfigById.mockResolvedValue({
+      ...archivedConfig,
+      id: "config_gsc",
+      isActive: true,
+      source: "gsc",
+      gscCountry: "",
+    });
+    gscMocks.refreshGscTracker.mockResolvedValue({ runId: "run_day" });
+
+    await expect(
+      RankTrackingService.triggerCheck({
+        configId: "config_gsc",
+        projectId: "project_1",
+        billingCustomer: {
+          userId: "user_1",
+          userEmail: "user@example.com",
+          organizationId: "org_1",
+          projectId: "project_1",
+        },
+      }),
+    ).resolves.toEqual({ ok: true, runId: "run_day" });
+    expect(mocks.customerHasPaidPlan).not.toHaveBeenCalled();
     expect(mocks.startWorkflow).not.toHaveBeenCalled();
   });
 });

@@ -126,6 +126,7 @@ import {
 } from "@/server/mcp/tools/report-template-tools";
 import { researchKeywordsTool } from "@/server/mcp/tools/research-keywords";
 import { saveKeywordsTool } from "@/server/mcp/tools/save-keywords";
+import { getSearchConsoleKeywordIdeasTool } from "@/server/mcp/tools/search-console-keyword-ideas";
 import {
   getSearchConsolePerformanceTool,
   inspectUrlsTool,
@@ -331,6 +332,7 @@ export function registerSeoPilotTools(
   register(listSearchConsoleSitesTool);
   register(setSearchConsoleSiteTool);
   register(getSearchConsolePerformanceTool);
+  register(getSearchConsoleKeywordIdeasTool);
   register(inspectUrlsTool);
   register(submitIndexNowUrlsTool);
   register(listGoogleAnalyticsPropertiesTool);
