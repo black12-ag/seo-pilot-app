@@ -61,6 +61,7 @@
     "seed:projects": "tsx scripts/seed-projects.ts",
     "standalone:admin": "docker compose -f deploy/standalone/compose.yaml exec -T runtime node /opt/standalone/admin.mjs",
     "selfhost:admin": "node --env-file=.env.selfhost scripts/celld/runtime/admin.mjs",
+    "selfhost:free-backlinks": "node --env-file=.env.selfhost --max-old-space-size=512 scripts/celld/runtime/free-backlinks.mjs",
     "ci:check": "prettier --check . && knip && tsc --noEmit && tsc --noEmit -p tests/badseo/tsconfig.json && tsc --noEmit -p tsconfig.report-widgets.json && oxlint . --type-aware"
   },
   "cloudflare": {

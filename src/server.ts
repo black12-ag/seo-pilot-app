@@ -38,6 +38,7 @@ import { GDPR_STORAGE_ERASURE_PATH } from "@/shared/gdpr-erasure";
 import { handleOperatorRequest } from "@/server/standalone/admin";
 import { handleImport, isLegacyImportActive } from "@/server/standalone/import";
 import { hasOperatorSecret } from "@/server/standalone/operator-auth";
+import { handleFreeBacklinksOperatorRequest } from "@/server/standalone/freeBacklinksOperator";
 
 const startHandler = createStartHandler(defaultStreamHandler);
 
@@ -193,9 +194,10 @@ async function handleAppRequest(
   const publicRequest = requestWithPublicOrigin(request);
   const pathname = new URL(publicRequest.url).pathname;
 
-  // Standalone Docker operator tooling (account commands, legacy import).
-  // Both handlers answer 404 without the operator secret; the block is also
-  // what keeps hosted from paying a KV read per request.
+  // Standalone Docker operator tooling (account commands, legacy import,
+  // free backlink data). Each handler answers 404 without the operator
+  // secret; the block is also what keeps hosted from paying a KV read per
+  // request.
   if (hasOperatorSecret()) {
     if (pathname === "/api/standalone/import")
       return handleImport(publicRequest);
@@ -204,6 +206,9 @@ async function handleAppRequest(
     }
     if (pathname === "/api/standalone/admin") {
       return handleOperatorRequest(publicRequest);
+    }
+    if (pathname === "/api/standalone/free-backlinks") {
+      return handleFreeBacklinksOperatorRequest(publicRequest);
     }
   }
 

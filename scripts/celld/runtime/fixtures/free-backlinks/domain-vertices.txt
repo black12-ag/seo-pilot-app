@@ -1,0 +1,7 @@
+0	com.alpha	3
+1	com.beta	1
+2	com.competitor	2
+3	com.gamma	7
+4	com.mysite	1
+5	org.delta	2
+6	uk.co.epsilon	4

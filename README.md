@@ -37,6 +37,7 @@ SEO Pilot is free and open source. You run your own copy, with your own Google a
    - [Add "Continue with Google"](docs/GOOGLE_SIGN_IN.md) to the sign-in page
    - [Run AI on your own `agy`, `claude` or `codex` login](docs/AI_ENGINE.md), or on an OpenRouter key
    - Page speed in audits with a free `PAGESPEED_API_KEY` (see [the self-hosting guide](docs/SELF_HOSTING_SEO_PILOT.md))
+   - [Free backlinks from Common Crawl](docs/FREE_BACKLINKS.md): which sites link to you and your competitors, refreshed monthly
 
 Backups, updates and every setting are in [the self-hosting guide](docs/SELF_HOSTING_SEO_PILOT.md).
 
@@ -48,9 +49,9 @@ You need:
 - The audit, which is SEO Pilot's own crawler and needs no account.
 - Your own AI login, such as `agy`, through [the AI engine](docs/AI_ENGINE.md).
 
-You get site audits, Search Console and Analytics reports, website research, Opportunities built from that data, content drafts, reports and the SAM assistant.
+You get site audits, Search Console and Analytics reports, website research, Opportunities built from that data, content drafts, reports and the SAM assistant. With [one monthly command](docs/FREE_BACKLINKS.md), Backlinks also shows which sites link to your site and your competitors, from Common Crawl's free public data.
 
-Free mode doesn't include competitor discovery, keyword volume and difficulty, backlinks, rank tracking, local rankings or AI answer tracking. Those pages stay in the menu marked **Optional** and never show made-up numbers. Page speed in audits comes from Google PageSpeed Insights and needs your own free `PAGESPEED_API_KEY`. See [the self-hosting guide](docs/SELF_HOSTING_SEO_PILOT.md).
+Free mode doesn't include competitor discovery, keyword volume and difficulty, link-level backlinks, rank tracking, local rankings or AI answer tracking. Those pages stay in the menu marked **Optional** and never show made-up numbers. Page speed in audits comes from Google PageSpeed Insights and needs your own free `PAGESPEED_API_KEY`. See [the self-hosting guide](docs/SELF_HOSTING_SEO_PILOT.md).
 
 **Optional: add DataForSEO for competitor, backlink and ranking data.** It's pay-as-you-go. See [DataForSEO API key](docs/DATAFORSEO_API_KEY.md).
 

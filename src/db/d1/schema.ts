@@ -24,3 +24,4 @@ export * from "../competitor-research.schema";
 export * from "../firebase-auth.schema";
 export * from "../website-research-attempt.schema";
 export * from "../wordpress-publishing.schema";
+export * from "../free-backlinks.schema";
