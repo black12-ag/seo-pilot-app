@@ -26,7 +26,7 @@ These four values are public by design: every visitor's browser receives them.
 
 ## 3. Use it
 
-- **Existing account:** sign in with your password once, open **Settings**, and press **Link Google**. After that, **Continue with Google** works.
+- **Existing account:** press **Continue with Google** with the same email address. Google has already verified that email, so it links to your account on the first sign-in. Your password keeps working too.
 - **New people:** invite their Google email address first. Sign-ups stay closed otherwise.
 
 "Sign in with Google" is separate from connecting Search Console and Analytics. Those ask for their own Google permission in the app. See [Search Console](SELF_HOSTING_GOOGLE_SEARCH_CONSOLE.md) and [Analytics](SELF_HOSTING_GOOGLE_ANALYTICS.md).

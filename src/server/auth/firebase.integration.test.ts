@@ -101,15 +101,13 @@ describe(`Firebase public auth boundaries (${testDb.provider})`, () => {
       (await request("/sign-in/firebase", { idToken: "unconfigured" })).status,
     ).toBe(404);
   });
-  it("requires explicit password linking and preserves the owner identity/workspace/password", async () => {
-    expect((await signInGoogle()).response.status).toBe(409);
+  it("links a same-email account on first Google sign-in and preserves the owner identity/workspace/password", async () => {
     const wrong = await request(
       "/link/firebase",
       { idToken: await fixture.token(), password: "incorrect" },
       ownerCookie,
     );
     expect(wrong.status).not.toBe(200);
-    await linkOwner();
     const google = await signInGoogle();
     expect(google.response.status).toBe(200);
     expect(await google.response.json()).toEqual({ status: "ok" });
@@ -202,6 +200,14 @@ describe(`Firebase public auth boundaries (${testDb.provider})`, () => {
         .object({ session: z.object({ activeOrganizationId: z.null() }) })
         .parse(await session.json()).session.activeOrganizationId,
     ).toBeNull();
+  });
+  it("never links an unverified email or a second Google identity", async () => {
+    const unverified = await signInGoogle({ email_verified: false });
+    expect(unverified.response.status).not.toBe(200);
+    expect(await repository.isBound(ownerId)).toBe(false);
+    await linkOwner();
+    const other = await signInGoogle({ sub: "firebase-other" });
+    expect([other.response.status, other.cookie]).toEqual([409, ""]);
   });
   it("resolves later changed Google emails by UID without replacing local email", async () => {
     await linkOwner();

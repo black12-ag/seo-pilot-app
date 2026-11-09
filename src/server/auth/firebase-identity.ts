@@ -22,11 +22,25 @@ export async function resolveFirebaseUser(identity: VerifiedFirebaseIdentity) {
     identity.firebaseUid,
   );
   if (existing) return existing.user;
-  if (await repository.findUserByEmail(identity.email)) {
+  const sameEmail = await repository.findUserByEmail(identity.email);
+  if (sameEmail) {
+    // The token is accepted only for a Google sign-in with a verified email,
+    // so an account with the same email links itself on first Google sign-in.
+    if (!(await repository.isBound(sameEmail.id))) {
+      try {
+        await repository.link(sameEmail.id, identity);
+      } catch {
+        // A concurrent sign-in may have linked it first; checked below.
+      }
+    }
+    const linked = await repository.findIdentity(
+      identity.firebaseProjectId,
+      identity.firebaseUid,
+    );
+    if (linked?.user.id === sameEmail.id) return linked.user;
     throw new APIError("CONFLICT", {
-      code: "FIREBASE_LINK_REQUIRED",
-      message:
-        "Sign in with your password, then link Google in personal settings.",
+      code: "FIREBASE_IDENTITY_CONFLICT",
+      message: "This account already has a different Google identity linked.",
     });
   }
   try {
