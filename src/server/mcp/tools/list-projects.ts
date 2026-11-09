@@ -39,7 +39,7 @@ export const listProjectsTool = {
     const lines =
       projects.length === 0
         ? [
-            "No projects yet. Ask the user for their website, then call create_project with its domain. Creating a project uses no credits.",
+            "No projects yet. Ask the user for their website, then call create_project with its domain. That also starts the site's first audit.",
           ]
         : projects.map(
             (p) =>

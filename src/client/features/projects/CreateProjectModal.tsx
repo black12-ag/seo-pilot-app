@@ -1,4 +1,5 @@
 import { projectsQueryOptions } from "@/client/features/projects/projectQueries";
+import * as React from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { revalidateLogic } from "@tanstack/react-form";
@@ -25,6 +26,7 @@ import {
 } from "@/client/features/keywords/locations";
 import { ProjectMarketFields } from "@/client/features/projects/ProjectMarketFields";
 import { toastInitialAudit } from "@/client/features/projects/initialAuditToast";
+import { ImportSitesDialog } from "@/client/features/projects/ImportSitesDialog";
 import { createProject } from "@/serverFunctions/projects";
 import { isHostedClientAuthMode } from "@/lib/auth-mode";
 
@@ -43,6 +45,20 @@ const SERVER_FIELD_ERRORS: Record<string, Record<string, string>> = {
 };
 
 export function CreateProjectModal({ onClose }: { onClose: () => void }) {
+  const [importing, setImporting] = React.useState(false);
+  if (importing) return <ImportSitesDialog onClose={onClose} />;
+  return (
+    <NewProjectForm onClose={onClose} onImport={() => setImporting(true)} />
+  );
+}
+
+function NewProjectForm({
+  onClose,
+  onImport,
+}: {
+  onClose: () => void;
+  onImport: () => void;
+}) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -114,6 +130,19 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
             <DialogHeader>
               <DialogTitle>New project</DialogTitle>
             </DialogHeader>
+
+            <p className="text-sm text-muted-foreground">
+              Already in Search Console?{" "}
+              <Button
+                type="button"
+                variant="link"
+                className="h-auto p-0"
+                onClick={onImport}
+                disabled={createMutation.isPending}
+              >
+                Import my sites
+              </Button>
+            </p>
 
             <form.AppField name="name">
               {(field) => (

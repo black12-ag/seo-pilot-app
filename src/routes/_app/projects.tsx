@@ -1,6 +1,6 @@
 import * as React from "react";
 import { projectsQueryOptions } from "@/client/features/projects/projectQueries";
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -14,13 +14,19 @@ import { Badge } from "@/client/components/ui/badge";
 import { Button } from "@/client/components/ui/button";
 import { getLastProjectId } from "@/client/lib/active-project";
 import { CreateProjectModal } from "@/client/features/projects/CreateProjectModal";
+import { ImportSitesDialog } from "@/client/features/projects/ImportSitesDialog";
 
 export const Route = createFileRoute("/_app/projects")({
+  // `import=sites` reopens Import my sites after Google's consent screen.
+  validateSearch: (search: Record<string, unknown>): { import?: "sites" } =>
+    search.import === "sites" ? { import: "sites" } : {},
   component: ProjectsPage,
 });
 
 function ProjectsPage() {
   const [creating, setCreating] = React.useState(false);
+  const importing = Route.useSearch().import === "sites";
+  const navigate = useNavigate();
   // Read after mount to keep SSR/first render stable.
   const [currentProjectId, setCurrentProjectId] = React.useState<string | null>(
     null,
@@ -85,6 +91,11 @@ function ProjectsPage() {
 
       {creating ? (
         <CreateProjectModal onClose={() => setCreating(false)} />
+      ) : null}
+      {importing ? (
+        <ImportSitesDialog
+          onClose={() => void navigate({ to: "/projects", search: {} })}
+        />
       ) : null}
     </div>
   );

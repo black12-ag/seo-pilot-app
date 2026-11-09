@@ -1,5 +1,6 @@
 import { requireOrgPermission } from "@/server/auth/org-gate";
 import { completeOnboardingFromAgent } from "@/server/features/activation/mcpActivation";
+import { DashboardFirstAuditService } from "@/server/features/dashboard/services/DashboardFirstAuditService";
 import { ProjectService } from "@/server/features/projects/services/ProjectService";
 import { AppError } from "@/server/lib/errors";
 import { mcpResponse } from "@/server/mcp/formatters";
@@ -44,7 +45,7 @@ export const createProjectTool = {
   config: {
     title: "Create project",
     description:
-      "Create a new project in the user's organization. Uses no credits — does not call DataForSEO. Provide a name, and optionally a domain and default market (locationCode/languageCode; a languageCode requires a locationCode). Returns the created {id, name, domain, locationCode, languageCode, url}; pass the returned `id` as `projectId` to other SEO Pilot tools. Call list_projects first to avoid creating a duplicate.",
+      "Create a new project in the user's organization. Does not call DataForSEO. Provide a name, and optionally a domain and default market (locationCode/languageCode; a languageCode requires a locationCode). With a domain it also starts the project's first 50-page site audit, as the dashboard does; on hosted plans that scan renders JavaScript, which uses credits. Returns the created {id, name, domain, locationCode, languageCode, url, initialAudit}; initialAudit is null with no domain, else its status (started, pending, or unavailable with a code). Pass the returned `id` as `projectId` to other SEO Pilot tools. Call list_projects first to avoid creating a duplicate.",
     inputSchema,
     outputSchema: z.looseObject({
       project: z
@@ -55,6 +56,10 @@ export const createProjectTool = {
           locationCode: z.number(),
           languageCode: z.string(),
           url: z.string(),
+          initialAudit: z
+            .looseObject({ status: z.string(), code: z.string().optional() })
+            .nullable()
+            .optional(),
         })
         .passthrough(),
       ...optionalMetaOutputSchema,
@@ -92,10 +97,23 @@ export const createProjectTool = {
     if (isHostedMcpClient(auth)) {
       await completeOnboardingFromAgent(auth, "agent_project");
     }
+    // The dashboard's create starts the first audit for a project with a
+    // domain; an agent's create must too. start() never throws: a refusal
+    // (limits, credits) comes back as "unavailable" with its code.
+    const initialAudit = await DashboardFirstAuditService.start(
+      project.id,
+      project.domain,
+      {
+        userId: auth.userId,
+        userEmail: auth.userEmail,
+        organizationId: auth.organizationId,
+        projectId: project.id,
+      },
+    );
     return mcpResponse({
       text: `Created project ${project.id}  ${project.name}${
         project.domain ? ` (${project.domain})` : ""
-      }  market:${project.locationCode}/${project.languageCode}`,
+      }  market:${project.locationCode}/${project.languageCode}${describeInitialAudit(initialAudit)}`,
       meta: {
         url: buildDashboardUrl(baseUrl, `/p/${project.id}`),
       },
@@ -107,8 +125,20 @@ export const createProjectTool = {
           locationCode: project.locationCode,
           languageCode: project.languageCode,
           url: buildDashboardUrl(baseUrl, `/p/${project.id}`),
+          initialAudit,
         },
       },
     });
   },
 };
+
+function describeInitialAudit(
+  initialAudit: Awaited<ReturnType<typeof DashboardFirstAuditService.start>>,
+) {
+  if (!initialAudit) return "";
+  if (initialAudit.status === "unavailable")
+    return `\nFirst site audit could not start (${initialAudit.code}); start one with run_site_audit.`;
+  return initialAudit.status === "started"
+    ? "\nFirst 50-page site audit started; poll get_audit_status."
+    : "\nFirst site audit is already starting.";
+}

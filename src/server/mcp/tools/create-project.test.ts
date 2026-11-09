@@ -1,12 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createProjectTool } from "./create-project";
-import { makeToolContext } from "./tool-test-support";
+import { makeToolContext, textContent } from "./tool-test-support";
 
 const mocks = vi.hoisted(() => ({
   createProject: vi.fn(),
   markOnboardingCompleted: vi.fn(),
   captureServerEvent: vi.fn(),
+  startFirstAudit: vi.fn(),
 }));
+
+vi.mock(
+  "@/server/features/dashboard/services/DashboardFirstAuditService",
+  () => ({
+    DashboardFirstAuditService: { start: mocks.startFirstAudit },
+  }),
+);
 
 vi.mock("@/server/features/projects/services/ProjectService", () => ({
   ProjectService: {
@@ -45,6 +53,49 @@ describe("create_project MCP tool", () => {
       languageCode: "en",
     });
     mocks.markOnboardingCompleted.mockResolvedValue(false);
+    mocks.startFirstAudit.mockResolvedValue({ status: "started" });
+  });
+
+  // Regression: projects an agent created with a domain never got the first
+  // audit the dashboard's New project dialog starts.
+  it("starts the first site audit for a project with a domain", async () => {
+    const result = await createProjectTool.handler(
+      { name: "Acme", domain: "acme.com" },
+      toolContext,
+    );
+
+    expect(mocks.startFirstAudit).toHaveBeenCalledWith(
+      "project_new",
+      "acme.com",
+      {
+        userId: "user_123",
+        userEmail: "alice@example.com",
+        organizationId: "org_123",
+        projectId: "project_new",
+      },
+    );
+    expect(result.structuredContent?.project).toMatchObject({
+      initialAudit: { status: "started" },
+    });
+    expect(textContent(result)).toContain("site audit started");
+  });
+
+  it("returns the project and the reason when the first audit is refused", async () => {
+    mocks.startFirstAudit.mockResolvedValue({
+      status: "unavailable",
+      code: "AUDIT_ALREADY_RUNNING",
+    });
+
+    const result = await createProjectTool.handler(
+      { name: "Acme", domain: "acme.com" },
+      toolContext,
+    );
+
+    expect(result.structuredContent?.project).toMatchObject({
+      id: "project_new",
+      initialAudit: { status: "unavailable", code: "AUDIT_ALREADY_RUNNING" },
+    });
+    expect(textContent(result)).toContain("AUDIT_ALREADY_RUNNING");
   });
 
   it("creates a project in the credential's organization and returns it", async () => {
