@@ -34,6 +34,7 @@ import {
 import { getLatestResults } from "./rankTrackingResults";
 import { toRankTrackingTimestamp } from "@/server/features/rank-tracking/rankTrackingTimestamps";
 import { RankTrackingKeywordService } from "./RankTrackingKeywordService";
+import { createGscTracker, refreshGscTrackerForUser } from "./gscTrackers";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -50,7 +51,10 @@ async function createConfig(input: {
   serpDepth: number;
   scheduleInterval?: RankTrackingConfig["scheduleInterval"];
   scheduleTime?: RankCheckScheduleTime;
+  source?: RankTrackingConfig["source"];
+  gscCountry?: string;
 }) {
+  if (input.source === "gsc") return createGscTracker(input);
   const normalizedDomain = normalizeDomain(input.domain);
 
   const { locationCode, languageCode } = resolveMarket(
@@ -134,6 +138,8 @@ async function createConfig(input: {
     isActive: true,
     lastCheckedAt: null,
     lastSkipReason: null,
+    source: "dataforseo",
+    gscCountry: "",
     createdAt: toRankTrackingTimestamp(new Date()),
   };
 
@@ -145,7 +151,7 @@ async function createConfig(input: {
 async function updateConfig(
   configId: string,
   projectId: string,
-  input: {
+  rawInput: {
     domain?: string;
     locationCode?: number;
     languageCode?: string;
@@ -157,9 +163,22 @@ async function updateConfig(
     isActive?: boolean;
   },
 ) {
-  const { scheduleTime, ...fields } = input;
-  const updates: typeof fields & { nextCheckAt?: string | null } = {};
   const existing = await getValidatedConfig(configId, projectId);
+  // A Search Console tracker's site comes from the connection and it has no
+  // SERP market, so only its devices and schedule can change.
+  const input: typeof rawInput =
+    existing.source === "gsc"
+      ? {
+          devices: rawInput.devices,
+          scheduleInterval: rawInput.scheduleInterval,
+          scheduleTime: rawInput.scheduleTime,
+          isActive: rawInput.isActive,
+        }
+      : rawInput;
+  const { scheduleTime } = input;
+  const updates: Omit<typeof rawInput, "scheduleTime"> & {
+    nextCheckAt?: string | null;
+  } = {};
 
   // A location name is only valid together with its market, so re-check the
   // resulting (name, language, country) whenever any of the three changes.
@@ -223,6 +242,11 @@ async function triggerCheck(input: {
   maxCostCredits?: number;
 }): Promise<RankCheckTriggerResult> {
   const config = await getValidatedConfig(input.configId, input.projectId);
+  // Free first-party data: no plan, credits or workflow.
+  if (config.source === "gsc") {
+    const { runId } = await refreshGscTrackerForUser(config);
+    return { ok: true, runId: runId ?? "" };
+  }
 
   await requireRankCheckAccess(input.billingCustomer.organizationId);
 
@@ -283,6 +307,8 @@ async function triggerAutoCheck(input: {
   | { ok: false; reason: "scheduled_soon" | "no_keywords" }
 > {
   const config = await getValidatedConfig(input.configId, input.projectId);
+  // Search Console only fills in what is missing, so it never bills twice.
+  if (config.source === "gsc") return triggerCheck(input);
   const msUntilScheduled = config.nextCheckAt
     ? new Date(config.nextCheckAt).getTime() - Date.now()
     : Infinity;
@@ -331,6 +357,8 @@ async function refreshKeywordMetrics(
   billingCustomer: BillingCustomerContext,
 ): Promise<{ updated: number }> {
   const config = await getValidatedConfig(configId, projectId);
+  // Search Console trackers show impressions, never paid volume estimates.
+  if (config.source === "gsc") return { updated: 0 };
   await requireRankCheckAccess(billingCustomer.organizationId);
   const keywords = await RankTrackingRepository.getKeywordsForConfig(configId);
   if (keywords.length === 0) return { updated: 0 };

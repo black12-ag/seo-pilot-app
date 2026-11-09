@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   addKeywords: vi.fn(),
   refreshKeywordMetrics: vi.fn(),
   triggerCheck: vi.fn(),
+  getConfigs: vi.fn(),
   captureServerEvent: vi.fn(),
   waitUntil: vi.fn(),
 }));
@@ -34,6 +35,7 @@ vi.mock("@/server/features/rank-tracking/services/RankTrackingService", () => ({
     addKeywords: mocks.addKeywords,
     refreshKeywordMetrics: mocks.refreshKeywordMetrics,
     triggerCheck: mocks.triggerCheck,
+    getConfigs: mocks.getConfigs,
   },
 }));
 vi.mock("@/server/lib/posthog", () => ({
@@ -63,6 +65,9 @@ describe("rank tracking management MCP tools", () => {
     });
     mocks.captureServerEvent.mockResolvedValue(undefined);
     mocks.refreshKeywordMetrics.mockResolvedValue({ updated: 1 });
+    mocks.getConfigs.mockResolvedValue([
+      { id: trackerId, source: "dataforseo" },
+    ]);
   });
 
   it("creates a manual tracker from project defaults without spending credits", async () => {
@@ -123,13 +128,55 @@ describe("rank tracking management MCP tools", () => {
     });
   });
 
-  it("requires maxCostCredits to run a rank tracker", () => {
-    expect(
-      z.object(runRankTrackerTool.config.inputSchema).safeParse({
-        projectId,
-        trackerId,
-      }).success,
-    ).toBe(false);
+  it("requires maxCostCredits to run a DataForSEO rank tracker", async () => {
+    await expect(
+      runRankTrackerTool.handler({ projectId, trackerId }, toolContext),
+    ).rejects.toThrow("maxCostCredits");
+    expect(mocks.triggerCheck).not.toHaveBeenCalled();
+  });
+
+  it("refreshes a Search Console tracker for free, with no credit ceiling", async () => {
+    mocks.getConfigs.mockResolvedValue([{ id: trackerId, source: "gsc" }]);
+    mocks.triggerCheck.mockResolvedValue({ ok: true, runId: "run_gsc" });
+
+    const result = await runRankTrackerTool.handler(
+      { projectId, trackerId },
+      toolContext,
+    );
+
+    expect(mocks.triggerCheck).toHaveBeenCalledWith(
+      expect.objectContaining({
+        configId: trackerId,
+        maxCostCredits: undefined,
+      }),
+    );
+    expect(result.structuredContent).toMatchObject({ started: false });
+    expect(textContent(result)).toContain("Search Console");
+  });
+
+  it("creates a free Search Console tracker that refreshes daily", async () => {
+    mocks.createConfig.mockResolvedValue({
+      ...createdConfig,
+      source: "gsc",
+      gscCountry: "usa",
+      scheduleInterval: "daily",
+    });
+    const parsed = z.object(createRankTrackerTool.config.inputSchema).parse({
+      projectId,
+      source: "gsc",
+      gscCountry: "usa",
+    });
+
+    const result = await createRankTrackerTool.handler(parsed, toolContext);
+
+    expect(mocks.createConfig).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "gsc",
+        gscCountry: "usa",
+        scheduleInterval: "daily",
+      }),
+    );
+    expect(textContent(result)).toContain("No credits are used");
   });
 
   it("adds keywords under the credit-ceiling approval and reports the confirmed count", async () => {

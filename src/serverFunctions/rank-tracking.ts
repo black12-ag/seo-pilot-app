@@ -96,6 +96,8 @@ export const createRankTrackingConfig = createServerFn({ method: "POST" })
       serpDepth: data.serpDepth,
       scheduleInterval: data.scheduleInterval,
       scheduleTime: data.scheduleTime,
+      source: data.source,
+      gscCountry: data.gscCountry,
     });
 
     // Re-adding an archived domain keeps its keywords, and the keyword step
@@ -116,6 +118,7 @@ export const createRankTrackingConfig = createServerFn({ method: "POST" })
           project_id: context.projectId,
           devices: data.devices ?? "both",
           schedule: data.scheduleInterval ?? "weekly",
+          source: data.source ?? "dataforseo",
         },
       }),
     );

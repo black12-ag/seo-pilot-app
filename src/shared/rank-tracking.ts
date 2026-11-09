@@ -158,7 +158,9 @@ type ScheduledRankTrackingInterval = Exclude<
 export type RankTrackingSkipReason =
   | "plan_required"
   | "no_keywords"
-  | "insufficient_credits";
+  | "insufficient_credits"
+  // A Search Console tracker whose project lost its Search Console access.
+  | "gsc_unavailable";
 
 export function estimateScheduledRankCheckCredits(
   keywords: readonly string[],

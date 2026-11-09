@@ -221,6 +221,14 @@ export const rankTrackingConfigs = sqliteTable(
     lastCheckedAt: text("last_checked_at"),
     nextCheckAt: text("next_check_at"),
     lastSkipReason: text("last_skip_reason"),
+    // Where positions come from: "dataforseo" (live Google results, needs a
+    // key) or "gsc" (Search Console average position for the project's own
+    // property, free). Fixed at creation so the two never mix in one history.
+    source: text("source", { enum: ["dataforseo", "gsc"] })
+      .notNull()
+      .default("dataforseo"),
+    // GSC trackers only: ISO 3166-1 alpha-3 country filter, "" = all countries.
+    gscCountry: text("gsc_country").notNull().default(""),
     createdAt: text("created_at")
       .notNull()
       .default(sql`(current_timestamp)`),
@@ -233,7 +241,9 @@ export const rankTrackingConfigs = sqliteTable(
     ),
     uniqueIndex("rank_tracking_configs_national_idx")
       .on(table.projectId, table.domain, table.locationCode, table.languageCode)
-      .where(sql`${table.locationName} IS NULL`),
+      .where(
+        sql`${table.locationName} IS NULL AND ${table.source} = 'dataforseo'`,
+      ),
     uniqueIndex("rank_tracking_configs_local_idx")
       .on(
         table.projectId,
@@ -243,6 +253,9 @@ export const rankTrackingConfigs = sqliteTable(
         table.locationName,
       )
       .where(sql`${table.locationName} IS NOT NULL`),
+    uniqueIndex("rank_tracking_configs_gsc_idx")
+      .on(table.projectId, table.domain, table.gscCountry)
+      .where(sql`${table.source} = 'gsc'`),
   ],
 );
 
@@ -310,6 +323,8 @@ export const rankCheckRuns = sqliteTable(
       .notNull()
       .default(sql`(current_timestamp)`),
     completedAt: text("completed_at"),
+    // GSC trackers only: the Search Console day (YYYY-MM-DD) this run holds.
+    dataDate: text("data_date"),
   },
   (table) => [
     index("rank_check_runs_config_idx").on(table.configId, table.startedAt),
@@ -317,6 +332,10 @@ export const rankCheckRuns = sqliteTable(
     uniqueIndex("rank_check_runs_one_active_per_config_idx")
       .on(table.configId)
       .where(sql`${table.status} IN ('pending', 'running')`),
+    uniqueIndex("rank_check_runs_config_data_date_idx").on(
+      table.configId,
+      table.dataDate,
+    ),
   ],
 );
 
@@ -337,6 +356,14 @@ export const rankSnapshots = sqliteTable(
     position: integer("position"), // null = not found in top 20
     url: text("url"),
     serpFeatures: text("serp_features"), // JSON array of feature type strings
+    // "gsc" rows hold Search Console data: `position` is the rounded average
+    // position over that day's impressions, `averagePosition` the exact one.
+    source: text("source", { enum: ["dataforseo", "gsc"] })
+      .notNull()
+      .default("dataforseo"),
+    averagePosition: real("average_position"),
+    impressions: integer("impressions"),
+    clicks: integer("clicks"),
     checkedAt: text("checked_at")
       .notNull()
       .default(sql`(current_timestamp)`),

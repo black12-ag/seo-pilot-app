@@ -55,11 +55,12 @@ export async function getKeywordHistory(
   trackingKeywordId: string,
   sinceDays: number,
 ) {
-  return db
+  const rows = await db
     .select({
       device: rankSnapshots.device,
       checkedAt: rankSnapshots.checkedAt,
       position: rankSnapshots.position,
+      averagePosition: rankSnapshots.averagePosition,
     })
     .from(rankSnapshots)
     .where(
@@ -70,6 +71,10 @@ export async function getKeywordHistory(
       ),
     )
     .orderBy(asc(rankSnapshots.checkedAt));
+  return rows.map(({ averagePosition, ...row }) => ({
+    ...row,
+    position: averagePosition ?? row.position,
+  }));
 }
 
 /**
@@ -139,12 +144,13 @@ export async function getPositionMatrix(
     .orderBy(desc(rankCheckRuns.startedAt))
     .limit(runLimit);
 
-  return db
+  const rows = await db
     .select({
       runId: rankSnapshots.runId,
       checkedAt: rankCheckRuns.startedAt,
       trackingKeywordId: rankSnapshots.trackingKeywordId,
       position: rankSnapshots.position,
+      averagePosition: rankSnapshots.averagePosition,
     })
     .from(rankSnapshots)
     .innerJoin(rankCheckRuns, eq(rankSnapshots.runId, rankCheckRuns.id))
@@ -155,6 +161,11 @@ export async function getPositionMatrix(
       ),
     )
     .orderBy(asc(rankCheckRuns.startedAt));
+  // Search Console rows show their exact average position.
+  return rows.map(({ averagePosition, ...row }) => ({
+    ...row,
+    position: averagePosition ?? row.position,
+  }));
 }
 
 /**
@@ -207,6 +218,10 @@ export async function getSnapshotsForConfig(
       url: rankSnapshots.url,
       serpFeatures: rankSnapshots.serpFeatures,
       checkedAt: rankSnapshots.checkedAt,
+      source: rankSnapshots.source,
+      averagePosition: rankSnapshots.averagePosition,
+      impressions: rankSnapshots.impressions,
+      clicks: rankSnapshots.clicks,
     })
     .from(rankSnapshots)
     .innerJoin(
@@ -283,6 +298,10 @@ export async function getEarliestSnapshotsForKeywords(
         url: rankSnapshots.url,
         serpFeatures: rankSnapshots.serpFeatures,
         checkedAt: rankSnapshots.checkedAt,
+        source: rankSnapshots.source,
+        averagePosition: rankSnapshots.averagePosition,
+        impressions: rankSnapshots.impressions,
+        clicks: rankSnapshots.clicks,
       })
       .from(rankSnapshots)
       .innerJoin(

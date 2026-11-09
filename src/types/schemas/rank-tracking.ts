@@ -29,10 +29,14 @@ export type RankCheckTriggerResult =
     };
 
 export interface RankTrackingDeviceResult {
+  /** Search Console trackers: the day's average position, one decimal. */
   position: number | null;
   previousPosition: number | null;
   rankingUrl: string | null;
   serpFeatures: string[];
+  /** Search Console trackers only; null for DataForSEO checks. */
+  impressions: number | null;
+  clicks: number | null;
 }
 
 export interface RankTrackingRow {
@@ -77,6 +81,15 @@ export const createConfigSchema = z.object({
   serpDepth: z.number().int().min(10).max(100).multipleOf(10),
   scheduleInterval: scheduleEnum.optional(),
   scheduleTime: scheduleTimeSchema.optional(),
+  // "gsc" tracks the project's own Search Console property for free; its
+  // domain comes from the connection, and locationCode/languageCode/serpDepth
+  // are not used.
+  source: z.enum(rankTrackingConfigs.source.enumValues).optional(),
+  // ISO 3166-1 alpha-3 country filter for "gsc" trackers; omit for all.
+  gscCountry: z
+    .string()
+    .regex(/^[a-zA-Z]{3}$/)
+    .optional(),
 });
 
 export const updateConfigSchema = z.object({
