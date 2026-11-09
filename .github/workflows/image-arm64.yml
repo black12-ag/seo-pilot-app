@@ -1,0 +1,38 @@
+name: Standalone image (arm64)
+
+# Builds the standalone image for arm64 servers and keeps it as a download for
+# a few days, so a server never has to build it itself.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/standalone/Dockerfile
+          platforms: linux/arm64
+          load: true
+          tags: seo-pilot-platform:${{ github.sha }}
+
+      - name: Save
+        run: docker save "seo-pilot-platform:${{ github.sha }}" | gzip > seo-pilot-arm64.tar.gz
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: seo-pilot-arm64-${{ github.sha }}
+          path: seo-pilot-arm64.tar.gz
+          retention-days: 5
