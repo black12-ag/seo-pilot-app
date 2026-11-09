@@ -44,7 +44,9 @@ You need:
 
 You get site audits, Search Console and Analytics reports, website research, Opportunities built from that data, content drafts, reports and the SAM assistant. [Rank Tracking and Keyword Research](docs/FREE_RANKINGS.md) also work, from your own Search Console: daily average positions for your keywords, and the queries your site already shows up for. With [one monthly command](docs/FREE_BACKLINKS.md), Backlinks also shows which sites link to your site and your competitors, from Common Crawl's free public data.
 
-Free mode doesn't include competitor discovery, keyword volume and difficulty, link-level backlinks, live rank checks for other sites, local rankings or AI answer tracking. Those pages stay in the menu marked **Optional** and never show made-up numbers. Page speed in audits comes from Google PageSpeed Insights and needs your own free `PAGESPEED_API_KEY`. See [the self-hosting guide](docs/SELF_HOSTING_SEO_PILOT.md).
+AI Visibility works too: Prompt Tracking, Prompt Explorer, Prompt Research and Citations ask your own AI engine. It answers from what the model knows, without a live web search, so its cited sources are links the model wrote and can be empty. Each answer says which engine and model gave it. See [AI visibility](docs/AI_ENGINE.md#ai-visibility).
+
+Free mode doesn't include competitor discovery, keyword volume and difficulty, link-level backlinks, live rank checks for other sites, local rankings, or AI answers as people see them in ChatGPT, Gemini and other apps. Those pages stay in the menu marked **Optional** and never show made-up numbers. Page speed in audits comes from Google PageSpeed Insights and needs your own free `PAGESPEED_API_KEY`. See [the self-hosting guide](docs/SELF_HOSTING_SEO_PILOT.md).
 
 **Optional: add DataForSEO for competitor, backlink and ranking data.** It's pay-as-you-go. See [DataForSEO API key](docs/DATAFORSEO_API_KEY.md).
 

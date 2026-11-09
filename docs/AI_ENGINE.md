@@ -145,6 +145,25 @@ AI stops instead of falling back to the API key if `AI_ENGINE_URL` or `AI_ENGINE
 
 With accounts (`AUTH_MODE=password`), only the first account on the installation can see or change the engine, because the choice applies to every organization.
 
+## AI visibility
+
+With no DataForSEO key, the AI visibility pages run on this engine instead. It also works next to DataForSEO as one more engine, **Your AI engine**, in tracking settings.
+
+- **Prompt Tracking** asks the engine each tracked prompt, one at a time, on **Run now** and on the schedule. It saves the answer, whether your brand and competitors are named, and the links it gives.
+- **Citations and Sources** count those links like any other answer's.
+- **Prompt Explorer** adds **Your AI engine** as a model.
+- **Prompt Research** asks the engine for the questions people likely ask about a keyword. These are guesses, not search data, so they have no sources.
+
+The answers come from what the model knows. There is no live web search, so links can be out of date or wrong, and many answers have none. The app says so next to each answer. Answers are stored as text and checked for names and links. They are never followed as instructions or shown as HTML.
+
+Each answer records the engine and model that gave it, such as `agy · Gemini 3.8 Flash (Low)`. Trends compare an answer only with earlier answers from the same model, so switching models starts a new comparison rather than mixing results. DataForSEO answers stay under their own engines.
+
+These answers use no DataForSEO data and cost no credits. A hosted service, or an install behind an Every App gateway, doesn't offer this engine.
+
+### Why there is no web mode yet
+
+Live web search would make answers closer to what people see. It needs a CLI that can search and do nothing else. On `agy` 1.5.2 it can't be locked that way yet. An agent given only `search_web` also loaded the default context, and the lockdown test saw `manage_task`, `list_resources` and other tools run, even with the deny rules. Other tool names failed to start. So the engine only answers from model knowledge. A web mode needs a CLI release where a search-only agent passes the lockdown test, including file reads, writes, commands, URL fetches and MCP.
+
 ## Cost and records
 
 Subscription runs have no per-call cost, so nothing is charged or metered. Records say "included in subscription" and name the engine and model that ran. They never show a made-up price. If you signed a tool in with an API key rather than a subscription, your provider bills that key, and the records can't tell. Other services a run uses, such as DataForSEO, still report their own cost.
