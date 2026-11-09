@@ -4,6 +4,8 @@ Connecting Google Search Console (GSC) lets SEO Pilot pull your real clicks,
 impressions, positions, and URL inspection data, straight from Google.
 
 It's **optional**: SEO Pilot runs fine without it, just without Search Console data.
+With it, Rank Tracking and Keyword Research work for free with no DataForSEO
+key. See [free rankings](FREE_RANKINGS.md).
 
 ## What you'll need
 

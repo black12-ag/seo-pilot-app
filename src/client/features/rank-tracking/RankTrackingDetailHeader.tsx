@@ -16,6 +16,7 @@ import {
 import { LOCATIONS } from "@/client/features/keywords/locations";
 import { devicesLabel, scheduleLabel } from "@/shared/rank-tracking";
 import { formatNextCheck } from "./scheduleTime";
+import { GSC_POSITION_NOTE } from "./GscSourceFields";
 import { formatLocationLabel } from "@/shared/keyword-locations";
 import type { RankTrackingConfig } from "@/types/schemas/rank-tracking";
 import {
@@ -58,9 +59,11 @@ export function RankTrackingDetailHeader({
       <div>
         <h2 className="text-lg font-semibold">{config.domain}</h2>
         <p className="text-xs text-muted-foreground">
-          {config.locationName
-            ? formatLocationLabel(config.locationName, 2)
-            : (LOCATIONS[config.locationCode] ?? "US")}{" "}
+          {config.source === "gsc"
+            ? `Search Console · ${config.gscCountry ? config.gscCountry.toUpperCase() : "All countries"}`
+            : config.locationName
+              ? formatLocationLabel(config.locationName, 2)
+              : (LOCATIONS[config.locationCode] ?? "US")}{" "}
           &middot;{" "}
           {config.devices === "desktop" ? (
             devicesLabel(config.devices)
@@ -87,13 +90,24 @@ export function RankTrackingDetailHeader({
           {run?.lastCheckedAt && (
             <>
               {" "}
-              &middot; Last: {new Date(run.lastCheckedAt).toLocaleDateString()}
+              &middot; {config.source === "gsc" ? "Latest day" : "Last"}:{" "}
+              {new Date(run.lastCheckedAt).toLocaleDateString()}
             </>
           )}
-          {costEstimate && costEstimate.keywordCount > 0 && (
-            <> &middot; up to ${costEstimate.costUsd.toFixed(2)}/check</>
+          {config.source === "gsc" ? (
+            <> &middot; Free</>
+          ) : (
+            costEstimate &&
+            costEstimate.keywordCount > 0 && (
+              <> &middot; up to ${costEstimate.costUsd.toFixed(2)}/check</>
+            )
           )}
         </p>
+        {config.source === "gsc" && (
+          <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
+            {GSC_POSITION_NOTE}
+          </p>
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {hasBothDevices && (

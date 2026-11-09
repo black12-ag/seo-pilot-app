@@ -1,5 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { KeywordResearchPage } from "@/client/features/keywords/page/KeywordResearchPage";
+import { GscKeywordIdeasPage } from "@/client/features/keywords/gsc/GscKeywordIdeasPage";
+import { useDataforseoConfigured } from "@/client/features/dataforseo/useDataforseoStatus";
 import {
   isResultLimit,
   normalizeKeywordMode,
@@ -30,6 +32,10 @@ export const Route = createFileRoute("/_app/p/$projectId/keywords")({
 function KeywordResearchPageRoute() {
   const { projectId } = Route.useParams();
   const search = Route.useSearch();
+  // With no DataForSEO key, research the site's own Search Console queries.
+  const dataforseoConfigured = useDataforseoConfigured();
+  if (dataforseoConfigured === false)
+    return <GscKeywordIdeasPage projectId={projectId} />;
   const {
     q: keywordInput = "",
     loc: locationCode,

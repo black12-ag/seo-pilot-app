@@ -3,17 +3,14 @@ import { dataforseoPageFor } from "./dataforseoPages";
 
 describe("dataforseoPageFor", () => {
   it.each([
-    "/p/abc/keywords",
     "/p/abc/keyword-gap",
     "/p/abc/domain",
     "/p/abc/ai-visibility",
     "/p/abc/ai-visibility/research",
     "/p/abc/ai-visibility/sources",
     "/p/abc/prompt-explorer",
-    "/p/abc/rank-tracking",
-    "/p/abc/rank-tracking/some-config",
     "/p/abc/local-seo",
-    "/p/$projectId/keywords",
+    "/p/$projectId/domain",
   ])("gates %s", (path) => {
     expect(dataforseoPageFor(path)).not.toBeNull();
   });
@@ -22,6 +19,10 @@ describe("dataforseoPageFor", () => {
     "/p/abc",
     "/p/abc/opportunities",
     "/p/abc/backlinks",
+    "/p/abc/keywords",
+    "/p/$projectId/keywords",
+    "/p/abc/rank-tracking",
+    "/p/abc/rank-tracking/some-config",
     "/p/abc/keyword-clusters",
     "/p/abc/saved",
     "/p/abc/search-performance",

@@ -56,8 +56,11 @@ export function SerpFeatureTags({ features }: { features: string[] }) {
 
 export function DeviceRankCell({
   result,
+  gsc = false,
 }: {
   result: RankTrackingDeviceResult;
+  /** Search Console: a missing position means no impressions that day. */
+  gsc?: boolean;
 }) {
   const { position, previousPosition } = result;
 
@@ -75,7 +78,7 @@ export function DeviceRankCell({
         </span>
         <span className="text-muted-foreground/60">→</span>
         <span className="font-mono rounded px-1.5 py-0.5 text-xs font-semibold bg-destructive/15 text-destructive">
-          lost
+          {gsc ? "no impr." : "lost"}
         </span>
       </span>
     );
