@@ -116,24 +116,29 @@ function FreeAlternatives({
 
 /**
  * Stops a page that needs DataForSEO from rendering with no key, so none of its
- * queries run. A failed check lets the page through: its own calls still refuse.
+ * queries run. AI visibility pages pass when the own AI engine is set up. A
+ * failed check lets the page through: its own calls still refuse.
  */
 export function DataforseoPageGate({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
-  const page = dataforseoPageFor(pathname);
   const projectId = /^\/p\/([^/]+)/.exec(pathname)?.[1];
+  const gated = dataforseoPageFor(pathname) !== null;
   const status = useQuery({
     ...dataforseoStatusQueryOptions(),
-    enabled: page !== null,
+    enabled: gated,
   });
-  if (!page) return children;
+  const page = dataforseoPageFor(
+    pathname,
+    status.data?.ownAiEngine.available ?? false,
+  );
+  if (!gated) return children;
   if (status.isPending)
     return (
       <div className="px-4 py-4 md:px-6 md:py-6" aria-busy>
         <Skeleton className="h-8 w-52" />
       </div>
     );
-  if (status.data?.configured !== false) return children;
+  if (status.data?.configured !== false || !page) return children;
   return (
     <div className="mx-auto max-w-3xl px-4 py-4 md:px-6 md:py-6">
       <h1 className="mb-4 text-2xl font-semibold">{page.title}</h1>

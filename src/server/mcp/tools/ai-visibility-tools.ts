@@ -216,7 +216,7 @@ export const getAiVisibilityTrackerTool = defineAiTool({
   output: aiTrackerOutput,
   readOnly: true,
   description:
-    "Read AI tracking setup, topics, exact prompts, the project-context brand and competitors that answers are matched against, engine/country capabilities, and recent runs. Returns configured=false when absent. Uses no collection credits; never starts or polls a provider task.",
+    "Read AI tracking setup, topics, exact prompts, the project-context brand and competitors that answers are matched against, engine/country capabilities, and recent runs. Engine own_ai is this installation's own AI engine (ownEngine names its engine and model): it answers from model knowledge without live web search, uses no data credits, and its cited sources are links the model wrote. Returns configured=false when absent. Uses no collection credits; never starts or polls a provider task.",
   execute: (s, a) => s.getTracker(a),
   summarize: (d) =>
     d.configured

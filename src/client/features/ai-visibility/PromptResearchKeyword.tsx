@@ -98,6 +98,13 @@ export function PromptResearchKeyword({
         toolbar={
           <div className="border-b px-4 py-3 border-border">
             <h2 className="font-medium">Prompts about “{keyword}”</h2>
+            {research.data?.suggestedBy && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Suggested by {research.data.suggestedBy}, from what the model
+                knows. These are likely questions, not search data, so there are
+                no sources.
+              </p>
+            )}
           </div>
         }
       />

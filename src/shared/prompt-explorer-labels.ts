@@ -8,6 +8,7 @@ const MODEL_LABELS: Record<PromptExplorerModel, string> = {
   claude: "Claude",
   gemini: "Gemini",
   perplexity: "Perplexity",
+  own_ai: "Your AI engine",
 };
 
 export function formatModelLabel(model: PromptExplorerModel): string {

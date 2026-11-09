@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   post: vi.fn(),
   live: vi.fn(),
   model: vi.fn(),
+  own: vi.fn(),
   collect: vi.fn(),
   late: vi.fn(),
   settle: vi.fn(),
@@ -30,6 +31,10 @@ vi.mock(
     collectAiRound: mocks.collect,
     collectLateAiAnswers: mocks.late,
   }),
+);
+vi.mock(
+  "@/server/features/ai-visibility/services/aiVisibilityOwnCollection",
+  () => ({ collectAiOwnBatch: mocks.own }),
 );
 vi.mock(
   "@/server/features/ai-visibility/services/aiVisibilityRunOutcome",
@@ -119,6 +124,32 @@ describe("AI visibility workflow", () => {
     await execute();
     expect(mocks.collect).toHaveBeenCalledWith("run", [task, task], true);
     expect(mocks.settle).not.toHaveBeenCalled();
+  });
+
+  it("asks the own AI engine in its own retryable steps, never through DataForSEO", async () => {
+    const own = [{ tag: "own", prompt: "Which SEO tools?" }];
+    mocks.prepare.mockResolvedValue({
+      market: { locationCode: 2840, languageCode: "en" },
+      modelBatches: [],
+      ownBatches: [own, own],
+      live: true,
+      batches: [],
+    });
+    await execute();
+    expect(mocks.own).toHaveBeenCalledTimes(2);
+    expect(mocks.own).toHaveBeenCalledWith(
+      "run",
+      { locationCode: 2840, languageCode: "en" },
+      own,
+    );
+    expect(mocks.steps).toHaveBeenCalledWith("own-1", {
+      retries: { limit: 1, delay: "30 seconds" },
+      timeout: "15 minutes",
+    });
+    expect(mocks.post).not.toHaveBeenCalled();
+    expect(mocks.live).not.toHaveBeenCalled();
+    expect(mocks.settle).not.toHaveBeenCalled();
+    expect(mocks.finalize).toHaveBeenCalledExactlyOnceWith("run");
   });
 
   it("asks the model API for Claude and Perplexity, then reads queued answers before sleeping", async () => {

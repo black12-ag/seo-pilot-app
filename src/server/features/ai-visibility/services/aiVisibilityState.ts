@@ -2,11 +2,11 @@ import { AiVisibilityRepository as repo } from "../repositories/AiVisibilityRepo
 import {
   aiEngineUsesModelApi,
   AI_ENGINE_LABELS,
+  AI_MODEL_KNOWLEDGE_NOTE,
   AI_UNSUPPORTED_LOCATIONS,
   type AiEngine,
   type AiTrackerState,
 } from "@/shared/ai-visibility";
-import { aiEngineSchema } from "@/types/schemas/ai-visibility";
 import { aiPromptIsBranded } from "./aiVisibilityMatching";
 import {
   aiBrands,
@@ -15,7 +15,7 @@ import {
 } from "./aiVisibilityConfiguration";
 import { aiRunView } from "./aiVisibilityResults";
 import { reconcileAiRun } from "./aiVisibilityRuns";
-import { hasDataforseoAccess } from "@/server/lib/provider-access";
+import { loadAiProviders, offeredAiEngines } from "./aiVisibilityProviders";
 
 const CONSUMER_NOTE =
   "One consumer-site answer. Collects in any project market country except unsupportedLocationCodes.";
@@ -28,20 +28,19 @@ const AI_ENGINE_NOTES: Record<AiEngine, string> = {
     "The AI Overview on one Google results page. A page without an AI Overview is a no-answer result, not a missing brand.",
   claude: LIVE_NOTE,
   perplexity: LIVE_NOTE,
+  own_ai: `One answer from this installation's own AI engine, at no data cost. ${AI_MODEL_KNOWLEDGE_NOTE}`,
 };
 
 export async function getTracker(input: {
   projectId: string;
 }): Promise<AiTrackerState> {
-  const [config, competitors, recent, providerKey, project] = await Promise.all(
-    [
-      repo.getConfiguration(input.projectId),
-      repo.listCompetitors(input.projectId),
-      repo.listRuns(input.projectId, 10),
-      hasDataforseoAccess(),
-      repo.getProject(input.projectId),
-    ],
-  );
+  const [config, competitors, recent, providers, project] = await Promise.all([
+    repo.getConfiguration(input.projectId),
+    repo.listCompetitors(input.projectId),
+    repo.listRuns(input.projectId, 10),
+    loadAiProviders(),
+    repo.getProject(input.projectId),
+  ]);
   // A run whose workflow stopped is failed here, so it never looks stuck.
   const runs = await Promise.all(recent.map((run) => reconcileAiRun(run)));
   const [observations, answered] = await Promise.all([
@@ -52,15 +51,22 @@ export async function getTracker(input: {
   ]);
   const brands = project ? aiBrands(project, competitors) : [];
   const own = brands.find((b) => b.own);
-  const capabilities = aiEngineSchema.options.map((engine) => ({
+  const capabilities = offeredAiEngines(providers).map((engine) => ({
     engine,
-    label: AI_ENGINE_LABELS[engine],
+    label:
+      engine === "own_ai" && providers.ownEngine.label
+        ? `${AI_ENGINE_LABELS[engine]} (${providers.ownEngine.label})`
+        : AI_ENGINE_LABELS[engine],
     unsupportedLocationCodes: [...AI_UNSUPPORTED_LOCATIONS[engine]],
     maxPromptLength: 2000,
     note: AI_ENGINE_NOTES[engine],
     modelApi: aiEngineUsesModelApi(engine),
   }));
-  const providerConfigured = !!providerKey;
+  const providerState = {
+    providerConfigured: providers.dataforseo || providers.ownEngine.available,
+    dataforseoConfigured: providers.dataforseo,
+    ownEngine: providers.ownEngine,
+  };
   if (!config)
     return {
       configured: false,
@@ -71,7 +77,7 @@ export async function getTracker(input: {
       engines: [],
       capabilities,
       recentRuns: [],
-      providerConfigured,
+      ...providerState,
     };
   const { tracker } = config;
   return {
@@ -106,6 +112,6 @@ export async function getTracker(input: {
         observations.filter((o) => o.runId === r.id),
       ),
     ),
-    providerConfigured,
+    ...providerState,
   };
 }

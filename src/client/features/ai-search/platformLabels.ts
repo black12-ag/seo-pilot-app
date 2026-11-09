@@ -32,6 +32,10 @@ const MODEL_ACCENTS: Record<PromptExplorerModel, ModelAccent> = {
     border: "border-l-violet-500",
     dot: "bg-violet-500",
   },
+  own_ai: {
+    border: "border-l-slate-500",
+    dot: "bg-slate-500",
+  },
 };
 
 export function formatPlatformLabel(platform: "chat_gpt" | "google"): string {

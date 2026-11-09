@@ -1,3 +1,4 @@
+import { AI_MODEL_KNOWLEDGE_NOTE } from "@/shared/ai-visibility";
 import {
   AlertCircle,
   CheckCircle2,
@@ -90,9 +91,11 @@ function ModelResultCard({
       />
 
       <p className="px-5 pt-3 text-xs text-muted-foreground">
-        {modelResult.webSearchCountryCode
-          ? `Country hint sent: ${formatCountryLabel(modelResult.webSearchCountryCode)}. This is not a verified search location.`
-          : "No country hint sent. Any search uses the provider’s default location."}
+        {modelResult.model === "own_ai"
+          ? AI_MODEL_KNOWLEDGE_NOTE
+          : modelResult.webSearchCountryCode
+            ? `Country hint sent: ${formatCountryLabel(modelResult.webSearchCountryCode)}. This is not a verified search location.`
+            : "No country hint sent. Any search uses the provider’s default location."}
       </p>
       <div className="px-5 py-5">
         <MarkdownAnswer text={modelResult.text} />

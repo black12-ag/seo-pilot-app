@@ -8,6 +8,14 @@ const { testDb } = await vi.hoisted(async () => {
 vi.mock("cloudflare:workers", () => ({
   env: { DATABASE_PROVIDER: testDb.provider },
 }));
+// Seeded tracking uses DataForSEO's default engine here.
+vi.mock(
+  "@/server/features/ai-visibility/services/aiVisibilityProviders",
+  async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    defaultAiEngine: async () => "chatgpt",
+  }),
+);
 vi.mock("@/db", () => ({ db: testDb.db }));
 vi.mock("@/db/runBatch", () => ({ runBatch: testDb.runBatch }));
 vi.mock("@/server/lib/runtime-env", () => ({

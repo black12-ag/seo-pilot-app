@@ -9,6 +9,7 @@ import {
 } from "@/client/components/ui/tooltip";
 import { ProjectMarketFields } from "@/client/features/projects/ProjectMarketFields";
 import {
+  AI_MODEL_KNOWLEDGE_NOTE,
   AI_UNSUPPORTED_LOCATIONS,
   aiCountryLabel,
   type AiCapability,
@@ -115,15 +116,36 @@ export function TrackerTrackingFields({
   );
   return (
     <section className="space-y-5">
-      {engineGroup(
-        "Scraped responses",
-        "Answers as users see them in each AI app.",
-        state.capabilities.filter((capability) => !capability.modelApi),
-      )}
-      {engineGroup(
-        "API responses",
-        "Answers from each model's API, with web search.",
-        state.capabilities.filter((capability) => capability.modelApi),
+      {[
+        {
+          title: "Scraped responses",
+          help: "Answers as users see them in each AI app, through DataForSEO.",
+          engines: state.capabilities.filter(
+            (capability) =>
+              !capability.modelApi && capability.engine !== "own_ai",
+          ),
+        },
+        {
+          title: "API responses",
+          help: "Answers from each model's API, with web search, through DataForSEO.",
+          engines: state.capabilities.filter(
+            (capability) => capability.modelApi,
+          ),
+        },
+        {
+          title: "Your AI engine",
+          help: `Free answers from the AI engine set up in Settings. ${AI_MODEL_KNOWLEDGE_NOTE}`,
+          engines: state.capabilities.filter(
+            (capability) => capability.engine === "own_ai",
+          ),
+        },
+      ].map(
+        (group) =>
+          group.engines.length > 0 && (
+            <div key={group.title}>
+              {engineGroup(group.title, group.help, group.engines)}
+            </div>
+          ),
       )}
       <ProjectMarketFields
         value={value}

@@ -76,6 +76,8 @@ function rowsFor(
           : "no_answer",
     collectedAt: o.collectedAt,
     error: publicAiAnswerError(o.error),
+    answeredBy: o.answeredBy,
+    answerMode: o.answerMode,
     citationCount: sources[o.id]?.length ?? 0,
     brands: (matches[o.id] ?? []).map((m) => ({
       name: m.name,

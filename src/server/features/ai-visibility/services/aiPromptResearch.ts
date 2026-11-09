@@ -37,6 +37,10 @@ import type { ResearchAiPromptsInput } from "@/types/schemas/aiPromptResearch";
 import { aiPromptIsBranded, ownedAiDomain } from "./aiVisibilityMatching";
 import { AiVisibilityRepository as repo } from "../repositories/AiVisibilityRepository";
 import { getTracker } from "./aiVisibilityState";
+import {
+  resolveOwnAiEngine,
+  suggestPromptsWithOwnAiEngine,
+} from "../providers/aiEngineEvidence";
 
 /** The provider refreshes prompt data monthly; one paid call per day is enough. */
 const RESEARCH_TTL_SECONDS = 24 * 60 * 60;
@@ -65,6 +69,10 @@ const cachedResearchSchema = z.object({
   prompts: z.array(cachedPromptSchema),
 });
 type CachedResearch = z.infer<typeof cachedResearchSchema>;
+const suggestionsCacheSchema = z.object({
+  questions: z.array(z.string()),
+  answeredBy: z.string(),
+});
 const relevanceOutputSchema = z.object({
   relevant: z.array(z.number().int()),
 });
@@ -100,9 +108,11 @@ export async function researchAiPrompts(
       "INSUFFICIENT_CREDITS",
       "You need usage credits to research prompts.",
     );
-  const openRouter = await requireAiAccess();
   const state = await getTracker({ projectId: input.projectId });
   const keyword = normalizeAiSuggestion(input.keyword);
+  if (!state.dataforseoConfigured)
+    return suggestAiPrompts(input, state, customer);
+  const openRouter = await requireAiAccess();
   // DataForSEO has ChatGPT prompt data only in US English.
   const loaded = await loadPrompts(
     {
@@ -149,7 +159,82 @@ export async function researchAiPrompts(
       ),
     };
   });
-  return { keyword: input.keyword, prompts };
+  return { keyword: input.keyword, suggestedBy: null, prompts };
+}
+
+/**
+ * With no DataForSEO key, the own AI engine suggests likely questions. There
+ * is no search data, so there are no sources, answers or ordering by volume.
+ */
+async function suggestAiPrompts(
+  input: ResearchAiPromptsInput,
+  state: Awaited<ReturnType<typeof getTracker>>,
+  customer: BillingCustomerContext,
+): Promise<AiPromptResearchResult> {
+  const engine = await resolveOwnAiEngine();
+  if (!engine.available)
+    throw new AppError(
+      "VALIDATION_ERROR",
+      `Prompt Research needs a DataForSEO key or your own AI engine. ${engine.reason}`,
+    );
+  // Kept for a day, so tracking some of them doesn't reshuffle the list.
+  const cacheKey = await buildCacheKey("ai-visibility:prompt-suggestions", {
+    organizationId: customer.organizationId,
+    projectId: input.projectId,
+    keyword: normalizeAiSuggestion(input.keyword),
+  });
+  const cached = suggestionsCacheSchema.safeParse(await getCached(cacheKey));
+  let suggested: z.infer<typeof suggestionsCacheSchema>;
+  if (cached.success) suggested = cached.data;
+  else {
+    const [project, sections] = await Promise.all([
+      ProjectRepository.getProjectForOrganization(
+        input.projectId,
+        customer.organizationId,
+      ),
+      ProjectContextRepository.listSections(input.projectId),
+    ]);
+    suggested = await suggestPromptsWithOwnAiEngine(engine.access, {
+      keyword: input.keyword,
+      business: {
+        name: project?.name,
+        domain: project?.domain,
+        overview: sections
+          .find((section) => section.key === "business_overview")
+          ?.content.slice(0, 3500),
+      },
+    });
+    waitUntil(
+      setCached(cacheKey, suggested, RESEARCH_TTL_SECONDS).catch((error) => {
+        console.error(
+          "ai-visibility.prompt-suggestions.cache-write-failed",
+          error,
+        );
+      }),
+    );
+  }
+  const tracked = new Set(
+    state.prompts
+      .filter((prompt) => !prompt.archived)
+      .map((prompt) => normalizeAiSuggestion(prompt.text)),
+  );
+  const seen = new Set<string>();
+  const prompts = suggested.questions.flatMap((question) => {
+    const key = normalizeAiSuggestion(question);
+    if (seen.has(key)) return [];
+    seen.add(key);
+    return [
+      {
+        text: capitalize(question),
+        variants: [],
+        sources: [],
+        ownDomainCited: false,
+        brandMentioned: false,
+        tracked: tracked.has(key),
+      },
+    ];
+  });
+  return { keyword: input.keyword, suggestedBy: suggested.answeredBy, prompts };
 }
 
 async function loadPrompts(

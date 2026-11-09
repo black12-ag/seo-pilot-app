@@ -48,6 +48,8 @@ const state = {
   capabilities: [],
   recentRuns: [],
   providerConfigured: true,
+  dataforseoConfigured: true,
+  ownEngine: { available: false, label: null, reason: "No AI is set up." },
 };
 const run = {
   id: runId,

@@ -98,6 +98,8 @@ const observationColumns = {
   collectedAt: aiObservations.collectedAt,
   answerMarkdown: aiObservations.answerMarkdown,
   error: aiObservations.error,
+  answeredBy: aiObservations.answeredBy,
+  answerMode: aiObservations.answerMode,
   prompt: aiPrompts.text,
   topic: aiPrompts.topic,
 };

@@ -45,7 +45,8 @@ export function OpenRouterKeyGate({
               AI visibility uses AI to research your brand and suggest the
               prompts worth tracking, so you don&apos;t have to write them
               yourself. The tracking results, what ChatGPT and other AI engines
-              actually answer, come from your DataForSEO account.
+              actually answer, come from your DataForSEO account. With no
+              DataForSEO key, your own AI engine answers instead, for free.
             </p>
             <p>
               Use an OpenRouter API key, or your own logged-in subscription on

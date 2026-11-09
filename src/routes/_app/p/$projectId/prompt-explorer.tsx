@@ -5,6 +5,10 @@ import { AiResearchSetupGate } from "@/client/features/ai-visibility/AiResearchS
 import { aiResearchSetupQueryOptions } from "@/client/features/ai-visibility/shared";
 import { OpenRouterKeyGate } from "@/client/features/ai-visibility/OpenRouterKeyGate";
 import { ProjectWebsiteGate } from "@/client/features/projects/ProjectWebsiteGate";
+import {
+  useDataforseoConfigured,
+  useOwnAiEngineAvailable,
+} from "@/client/features/dataforseo/useDataforseoStatus";
 import { queryClient } from "@/client/tanstack-db/queryClient";
 import {
   promptExplorerSearchSchema,
@@ -26,6 +30,10 @@ function PromptExplorerRoute() {
   const { projectId } = Route.useParams();
   const navigate = useNavigate({ from: Route.fullPath });
   const search = Route.useSearch();
+  // With no DataForSEO key, the own AI engine is the default model.
+  const dataforseo = useDataforseoConfigured();
+  const ownAiEngine = useOwnAiEngineAvailable();
+  const ownOnly = dataforseo === false && ownAiEngine;
   // One object per URL, so the page's search tabs only react to real changes.
   const urlState = useMemo(
     () => ({
@@ -34,11 +42,11 @@ function PromptExplorerRoute() {
       models:
         search.models && search.models.length > 0
           ? search.models
-          : (["chat_gpt"] satisfies PromptExplorerModel[]),
+          : ([ownOnly ? "own_ai" : "chat_gpt"] satisfies PromptExplorerModel[]),
       webSearch: search.web ?? true,
       webSearchCountryCode: search.cc,
     }),
-    [search],
+    [search, ownOnly],
   );
 
   return (

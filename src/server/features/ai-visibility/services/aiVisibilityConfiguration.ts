@@ -24,6 +24,7 @@ export function trackerEngines(tracker: TrackerRow): AiEngine[] {
     ...(tracker.googleAiOverview ? (["google_ai_overview"] as const) : []),
     ...(tracker.claude ? (["claude"] as const) : []),
     ...(tracker.perplexity ? (["perplexity"] as const) : []),
+    ...(tracker.ownAi ? (["own_ai"] as const) : []),
   ];
 }
 
@@ -34,6 +35,7 @@ function engineColumns(engines: AiEngine[]) {
     googleAiOverview: engines.includes("google_ai_overview"),
     claude: engines.includes("claude"),
     perplexity: engines.includes("perplexity"),
+    ownAi: engines.includes("own_ai"),
   };
 }
 

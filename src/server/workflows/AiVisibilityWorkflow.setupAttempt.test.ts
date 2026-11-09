@@ -36,6 +36,10 @@ vi.mock(
   () => ({ prepareAiRun: legacy }),
 );
 vi.mock(
+  "@/server/features/ai-visibility/services/aiVisibilityOwnCollection",
+  () => ({ collectAiOwnBatch: legacy }),
+);
+vi.mock(
   "@/server/features/ai-visibility/services/aiVisibilityRunOutcome",
   () => ({ finalizeAiRun: legacy, markAiRunFailed: legacy }),
 );

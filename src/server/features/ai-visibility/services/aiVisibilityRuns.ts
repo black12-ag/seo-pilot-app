@@ -20,7 +20,7 @@ import { requireConfiguration } from "./aiVisibilityMutation";
 import { aiPromptIsBranded } from "./aiVisibilityMatching";
 import { aiRunView } from "./aiVisibilityResults";
 import { aiCostForAnswers } from "./aiVisibilityCost";
-import { hasDataforseoAccess } from "@/server/lib/provider-access";
+import { requireReadyAiEngines } from "./aiVisibilityProviders";
 import {
   startWorkflow,
   STUCK_RUN_AFTER_MS,
@@ -85,11 +85,6 @@ export async function startRun(
   billing: BillingCustomerContext,
   promptIds?: string[],
 ): Promise<AiRun> {
-  if (!(await hasDataforseoAccess()))
-    throw new AiVisibilityError(
-      "PROVIDER_NOT_CONFIGURED",
-      "An operator must configure DATAFORSEO_API_KEY before collection. Your saved tracker remains available.",
-    );
   const project = await repo.getProject(config.tracker.projectId);
   if (
     !project?.domain ||
@@ -106,11 +101,13 @@ export async function startRun(
       "NO_ACTIVE_PROMPTS",
       "Add or unpause prompts before starting a check.",
     );
+  // Only engines whose provider is set up now: DataForSEO or the own engine.
+  const engines = await requireReadyAiEngines(scope.engines);
   // Hosted checks need credits for every answer before they start, like rank
   // checks. The tracker says why no check ran, whichever path started it.
   if (await isHostedServerAuthMode()) {
     const required = aiCostForAnswers(
-      scope.prompts.flatMap(() => scope.engines),
+      scope.prompts.flatMap(() => engines),
       true,
       trigger === "scheduled" ? "queued" : "live",
     ).costCredits;
@@ -149,7 +146,7 @@ export async function startRun(
           createdAt: new Date().toISOString(),
         },
         scope.prompts.flatMap((prompt) =>
-          scope.engines.map((engine) => ({
+          engines.map((engine) => ({
             id: crypto.randomUUID(),
             runId: id,
             promptId: prompt.id,
@@ -206,9 +203,10 @@ export async function runCheck(
 ): Promise<AiRun> {
   const config = await requireConfiguration(input.projectId);
   const scope = aiScope(config, input.promptIds);
+  const engines = await requireReadyAiEngines(scope.engines);
   // Price the check now and refuse it above what the user approved.
   const { costUsd } = aiCostForAnswers(
-    scope.prompts.flatMap(() => scope.engines),
+    scope.prompts.flatMap(() => engines),
     await isHostedServerAuthMode(),
     "live",
   );

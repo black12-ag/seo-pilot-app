@@ -115,7 +115,7 @@ export function parseLlmResponseAnswer(
 }
 
 /** Postgres text columns reject NUL, which scraped answers and titles can carry. */
-function withoutNul(text: string): string {
+export function withoutNul(text: string): string {
   return text.replaceAll("\0", "");
 }
 
@@ -157,7 +157,7 @@ function citationPill(label: string, url: string): boolean {
 }
 
 /** Safe, de-duplicated cited URLs with tracking parameters removed. */
-function citationsFrom(list: unknown[]): AiCitation[] {
+export function citationsFrom(list: unknown[]): AiCitation[] {
   const citations = new Map<string, AiCitation>();
   for (const item of list) {
     const source = sourceSchema.safeParse(item);

@@ -86,6 +86,7 @@ export function PromptResearchPage({
             key={`search:${keyword ?? ""}`}
             projectId={projectId}
             keyword={keyword}
+            dataforseo={state.dataforseoConfigured}
           />
           {keyword ? (
             <PromptResearchKeyword
@@ -178,9 +179,12 @@ function KeywordList({ projectId }: { projectId: string }) {
 function KeywordSearch({
   projectId,
   keyword,
+  dataforseo,
 }: {
   projectId: string;
   keyword: string | undefined;
+  /** Without it, the own AI engine suggests questions for free. */
+  dataforseo: boolean;
 }) {
   const navigate = useNavigate();
   const [draft, setDraft] = useState(keyword ?? "");
@@ -206,9 +210,11 @@ function KeywordSearch({
           id="ai-keyword-research-cost"
           className="text-xs text-muted-foreground"
         >
-          {isHostedClientAuthMode()
-            ? "About $0.25 in credits per keyword."
-            : "About $0.25 of DataForSEO usage per keyword."}
+          {!dataforseo
+            ? "Free: your AI engine suggests likely questions. There is no search data."
+            : isHostedClientAuthMode()
+              ? "About $0.25 in credits per keyword."
+              : "About $0.25 of DataForSEO usage per keyword."}
         </p>
       }
     >

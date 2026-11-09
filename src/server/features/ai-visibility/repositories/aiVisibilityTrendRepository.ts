@@ -30,6 +30,8 @@ export async function getTrendObservations(runIds: string[]) {
           runId: aiObservations.runId,
           promptId: aiObservations.promptId,
           engine: aiObservations.engine,
+          answeredBy: aiObservations.answeredBy,
+          answerMode: aiObservations.answerMode,
           branded: aiObservations.branded,
           status: aiObservations.status,
           // Not the answer itself: trend reads hundreds of runs.

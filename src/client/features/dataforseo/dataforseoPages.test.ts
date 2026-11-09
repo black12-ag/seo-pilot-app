@@ -39,4 +39,22 @@ describe("dataforseoPageFor", () => {
   ])("leaves %s free", (path) => {
     expect(dataforseoPageFor(path)).toBeNull();
   });
+
+  it.each([
+    "/p/abc/ai-visibility",
+    "/p/abc/ai-visibility/research",
+    "/p/abc/ai-visibility/sources",
+    "/p/abc/ai-visibility/prompts/p1",
+    "/p/abc/prompt-explorer",
+  ])("unlocks %s when the own AI engine is set up", (path) => {
+    expect(dataforseoPageFor(path, true)).toBeNull();
+    expect(dataforseoPageFor(path, false)).not.toBeNull();
+  });
+
+  it.each(["/p/abc/keywords", "/p/abc/brand-lookup", "/p/abc/rank-tracking"])(
+    "keeps %s gated with only the own AI engine",
+    (path) => {
+      expect(dataforseoPageFor(path, true)).not.toBeNull();
+    },
+  );
 });

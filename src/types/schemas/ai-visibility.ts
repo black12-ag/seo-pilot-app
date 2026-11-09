@@ -7,6 +7,7 @@ export const aiEngineSchema = z.enum([
   "google_ai_overview",
   "claude",
   "perplexity",
+  "own_ai",
 ]);
 export const aiProjectSchema = z.object({ projectId: z.string().uuid() });
 const topicSchema = z.string().trim().min(1).max(100);

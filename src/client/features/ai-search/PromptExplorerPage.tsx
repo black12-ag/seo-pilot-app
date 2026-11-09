@@ -4,6 +4,10 @@ import { Link } from "@tanstack/react-router";
 import { identity, sortBy } from "remeda";
 import { Columns3, MessageSquare, SearchCheck, Sparkles } from "lucide-react";
 import { useHostedPlanGate } from "@/client/features/billing/HostedPlanGate";
+import {
+  useDataforseoConfigured,
+  useOwnAiEngineAvailable,
+} from "@/client/features/dataforseo/useDataforseoStatus";
 import { ResearchPageShell } from "@/client/features/ai-search/ResearchPageShell";
 import { PromptTrackingWithoutUpgradeButton } from "@/client/features/ai-visibility/shared";
 import { PromptExplorerForm } from "@/client/features/ai-search/components/PromptExplorerForm";
@@ -28,6 +32,7 @@ import { usePromptExplorerSearchHistory } from "@/client/hooks/usePromptExplorer
 import {
   BRAND_LOOKUP_MAX_INPUT_LENGTH,
   PROMPT_EXPLORER_MAX_PROMPT_LENGTH,
+  PROMPT_EXPLORER_MODELS,
 } from "@/types/schemas/ai-search";
 
 type PromptExplorerFormValues = PromptExplorerSearch;
@@ -73,6 +78,12 @@ export function PromptExplorerPage({
   onClear,
 }: Props) {
   const planStatus = useHostedPlanGate();
+  const dataforseo = useDataforseoConfigured();
+  const ownAiEngine = useOwnAiEngineAvailable();
+  // DataForSEO's models need its key; the own AI engine needs to be set up.
+  const models = PROMPT_EXPLORER_MODELS.filter((model) =>
+    model === "own_ai" ? ownAiEngine : dataforseo !== false,
+  );
   const [form, setForm] = useState<PromptExplorerFormValues>(urlState);
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -195,6 +206,7 @@ export function PromptExplorerPage({
       form={
         <PromptExplorerForm
           form={form}
+          models={models}
           onPromptChange={(value) => updateForm("prompt", value)}
           onHighlightBrandChange={(value) =>
             updateForm("highlightBrand", value)

@@ -155,12 +155,16 @@ export type BrandLookupResult = z.infer<typeof brandLookupResultSchema>;
 
 export const PROMPT_EXPLORER_MAX_PROMPT_LENGTH = 500;
 
-/** Stable identifiers for the four LLM models we expose. */
+/**
+ * Stable identifiers for the models we expose: four through DataForSEO, and
+ * this installation's own AI engine.
+ */
 export const PROMPT_EXPLORER_MODELS = [
   "chat_gpt",
   "claude",
   "gemini",
   "perplexity",
+  "own_ai",
 ] as const;
 
 export const promptExplorerModelSchema = z.enum(PROMPT_EXPLORER_MODELS);
@@ -183,7 +187,7 @@ export const promptExplorerInputSchema = z.object({
   models: z
     .array(promptExplorerModelSchema)
     .min(1)
-    .max(4)
+    .max(PROMPT_EXPLORER_MODELS.length)
     .default(["chat_gpt"]),
   highlightBrand: z
     .string()

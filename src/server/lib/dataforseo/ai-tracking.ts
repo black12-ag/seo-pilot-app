@@ -22,7 +22,7 @@ import {
 // https://docs.dataforseo.com/v3/ai_optimization/chat_gpt/llm_scraper/overview/
 // https://docs.dataforseo.com/v3/serp/google/organic/overview/
 const AI_TRACKING_ENDPOINTS: Record<
-  Exclude<AiEngine, AiModelApiEngine>,
+  Exclude<AiEngine, AiModelApiEngine | "own_ai">,
   string
 > = {
   chatgpt: "/v3/ai_optimization/chat_gpt/llm_scraper",
@@ -32,7 +32,7 @@ const AI_TRACKING_ENDPOINTS: Record<
 
 /** Live engines have no LLM Scraper: their answers come from the live API. */
 function trackingEndpoint(engine: AiEngine): string {
-  if (aiEngineUsesModelApi(engine))
+  if (aiEngineUsesModelApi(engine) || engine === "own_ai")
     throw new AppError("INTERNAL_ERROR", `${engine} answers cannot be queued`);
   return AI_TRACKING_ENDPOINTS[engine];
 }

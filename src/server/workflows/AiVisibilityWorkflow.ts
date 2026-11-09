@@ -14,6 +14,7 @@ import {
   prepareAiRun,
   type AiPendingTask,
 } from "@/server/features/ai-visibility/services/aiVisibilityCollection";
+import { collectAiOwnBatch } from "@/server/features/ai-visibility/services/aiVisibilityOwnCollection";
 import {
   finalizeAiRun,
   markAiRunFailed,
@@ -60,6 +61,12 @@ const COLLECT_STEP = {
 // up to 6 answers, each up to 120 seconds, and asks a failed answer up to 3
 // times.
 const LIVE_STEP = { ...SINGLE_ATTEMPT, timeout: "10 minutes" as const };
+// Own AI engine answers are free, and a retry skips answers already saved. A
+// step asks up to 3 prompts one at a time, each up to 4 minutes.
+const OWN_STEP = {
+  retries: { limit: 1, delay: "30 seconds" as const },
+  timeout: "15 minutes" as const,
+};
 // Standard-queue answers usually arrive within minutes. Cumulative waits are
 // 2 / 4 / 7 / 10 / 14 / 18 / 22 / 26 / 30 minutes; anything still missing then
 // fails as not collected, until a late read finds it. Each sleep stays under 5
@@ -239,6 +246,19 @@ export class AiVisibilityWorkflow extends WorkflowEntrypoint<
             `[ai-visibility] ${runId} post-${index}: ${describeError(error)}`,
           );
         }
+    // The own AI engine answers next, while queued answers process. A run in
+    // flight across the deploy that added it has no own batches.
+    for (const [index, tasks] of (plan.ownBatches ?? []).entries())
+      try {
+        await pgStep(step, `own-${index}`, OWN_STEP, () =>
+          collectAiOwnBatch(runId, plan.market, tasks),
+        );
+      } catch (error) {
+        // Its unsaved answers fail at finalize; the other batches continue.
+        console.warn(
+          `[ai-visibility] ${runId} own-${index}: ${describeError(error)}`,
+        );
+      }
     // Claude and Perplexity answers come from the model API on every run.
     // Queued answers process meanwhile, and each model batch is followed by
     // one free read of them.

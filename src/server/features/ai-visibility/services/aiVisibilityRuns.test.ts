@@ -19,6 +19,14 @@ const { testDb, workflow, hosted, credits } = await vi.hoisted(async () => {
 vi.mock("cloudflare:workers", () => ({
   env: { DATABASE_PROVIDER: "d1", AI_VISIBILITY_WORKFLOW: workflow },
 }));
+// No own AI engine here: these checks use DataForSEO's engines.
+vi.mock("@/server/features/ai-visibility/providers/aiEngineEvidence", () => ({
+  ownAiEngineView: async () => ({
+    available: false,
+    label: null,
+    reason: "No AI engine is set up.",
+  }),
+}));
 vi.mock("@/db", () => ({ db: testDb.db }));
 vi.mock("@/db/runBatch", () => ({ runBatch: testDb.runBatch }));
 vi.mock("@/server/lib/runtime-env", () => ({

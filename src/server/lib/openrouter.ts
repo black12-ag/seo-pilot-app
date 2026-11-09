@@ -166,7 +166,7 @@ export function buildSamChatModel(
 
 // OpenRouter model slug used for the SAM in-app chat agent. Override with
 // OPENROUTER_MODEL to swap models without a code change.
-const DEFAULT_CHAT_AGENT_MODEL = "openai/gpt-5.6-luna";
+export const DEFAULT_CHAT_AGENT_MODEL = "openai/gpt-5.6-luna";
 
 // Previous default; kept reachable via OPENROUTER_MODEL for rollback, and the
 // fallback where OpenAI is blocked. Its routing needs the ZDR/provider tuning

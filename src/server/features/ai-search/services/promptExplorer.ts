@@ -16,6 +16,11 @@ import {
   formatModelLabel,
 } from "@/shared/prompt-explorer-labels";
 import { supportsWebSearchCountry } from "@/shared/prompt-search-countries";
+import {
+  askOwnAiEngine,
+  parseAiEngineAnswer,
+  resolveOwnAiEngine,
+} from "@/server/features/ai-visibility/providers/aiEngineEvidence";
 import { safeHostname, safeHttpUrl } from "@/shared/safe-url";
 import {
   promptExplorerModelResultSchema,
@@ -93,8 +98,8 @@ export async function explorePrompt(
   };
 }
 
-type RunModelArgs = {
-  model: PromptExplorerModel;
+type RunModelArgs<Model extends PromptExplorerModel = PromptExplorerModel> = {
+  model: Model;
   input: PromptExplorerInput;
   highlightBrand: string | null;
   billingCustomer: BillingCustomerContext;
@@ -102,8 +107,11 @@ type RunModelArgs = {
 };
 
 async function runModel(
-  args: RunModelArgs,
+  allArgs: RunModelArgs,
 ): Promise<PromptExplorerModelResult> {
+  const { model } = allArgs;
+  if (model === "own_ai") return runOwnModel(allArgs);
+  const args = { ...allArgs, model };
   const country = args.input.webSearch
     ? args.input.webSearchCountryCode
     : undefined;
@@ -181,8 +189,51 @@ async function runModel(
   return reapplyHighlightBrand(shaped, args.highlightBrand);
 }
 
-function fetchModelResponse(
+/**
+ * This installation's own AI engine, which answers from model knowledge with
+ * no web search, so the country doesn't apply. Not cached: it costs nothing
+ * per call, and a cached answer could name a model no longer in use.
+ */
+async function runOwnModel(
   args: RunModelArgs,
+): Promise<PromptExplorerModelResult> {
+  const engine = await resolveOwnAiEngine();
+  if (!engine.available)
+    return {
+      status: "error",
+      model: "own_ai",
+      errorCode: "UPSTREAM_ERROR",
+      message: `Your AI engine isn't ready. ${engine.reason}`,
+    };
+  const reply = await askOwnAiEngine(engine.access, {
+    prompt: args.input.prompt,
+    market: null,
+  });
+  const answer = parseAiEngineAnswer(reply.text);
+  return reapplyHighlightBrand(
+    {
+      status: "success",
+      model: "own_ai",
+      modelName: reply.answeredBy,
+      text: answer.answerMarkdown ?? "",
+      citations: answer.citations.slice(0, 25).map((citation) => ({
+        url: citation.url,
+        domain: citation.domain,
+        title: citation.title,
+        matchedBrand: false,
+      })),
+      fanOutQueries: [],
+      brandMentioned: null,
+      outputTokens: null,
+      webSearch: false,
+      webSearchCountryCode: null,
+    },
+    args.highlightBrand,
+  );
+}
+
+function fetchModelResponse(
+  args: RunModelArgs<Exclude<PromptExplorerModel, "own_ai">>,
   modelName: string,
 ): Promise<LlmResponseResult> {
   return args.dataforseo.aiSearch.llmResponse({

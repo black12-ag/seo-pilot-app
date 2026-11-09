@@ -13,6 +13,17 @@ vi.mock("@/server/lib/dataforseo", () => ({
 vi.mock("@/server/lib/dataforseo/llm-models", () => ({
   resolveLatestLlmModelName: vi.fn(async () => "gpt-5.5"),
 }));
+const { ownEngine } = vi.hoisted(() => ({
+  ownEngine: { resolve: vi.fn(), ask: vi.fn() },
+}));
+vi.mock(
+  "@/server/features/ai-visibility/providers/aiEngineEvidence",
+  async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    resolveOwnAiEngine: ownEngine.resolve,
+    askOwnAiEngine: ownEngine.ask,
+  }),
+);
 vi.mock("@/server/lib/r2-cache", () => ({
   AI_SEARCH_PROMPT_CACHE_NAMESPACE: "ai-search-prompt",
   buildCacheKey: vi.fn(async () => "cache-key"),
@@ -233,5 +244,75 @@ describe("Prompt Explorer countries", () => {
       status: "success",
       webSearchCountryCode: "BG",
     });
+  });
+});
+
+describe("explorePrompt with the own AI engine", () => {
+  const billing = {
+    organizationId: "org_1",
+    userId: "user_1",
+    userEmail: "user@example.com",
+    projectId: "project_1",
+  };
+  const input = promptExplorerInputSchema.parse({
+    projectId: "project_1",
+    prompt: "Best rank tracker?",
+    models: ["own_ai"],
+    highlightBrand: "PilotAI",
+    webSearchCountryCode: "DE",
+  });
+
+  beforeEach(() => {
+    llmResponse.mockReset();
+    ownEngine.resolve.mockReset();
+    ownEngine.ask.mockReset();
+  });
+
+  it("answers from the engine, names the model, and never calls DataForSEO", async () => {
+    ownEngine.resolve.mockResolvedValue({
+      available: true,
+      access: { apiKey: "k" },
+      label: "agy · m",
+    });
+    ownEngine.ask.mockResolvedValue({
+      text: "PilotAI is good: https://pilotai.so/rank-tracker",
+      answeredBy: "agy · Gemini 3.8 Flash (Low)",
+    });
+
+    const result = await explorePrompt(input, billing);
+
+    expect(llmResponse).not.toHaveBeenCalled();
+    // No web search, so the country never reaches the engine.
+    expect(ownEngine.ask).toHaveBeenCalledWith(
+      { apiKey: "k" },
+      { prompt: "Best rank tracker?", market: null },
+    );
+    expect(result.results).toEqual([
+      expect.objectContaining({
+        status: "success",
+        model: "own_ai",
+        modelName: "agy · Gemini 3.8 Flash (Low)",
+        webSearch: false,
+        brandMentioned: true,
+        citations: [
+          expect.objectContaining({
+            url: "https://pilotai.so/rank-tracker",
+            matchedBrand: true,
+          }),
+        ],
+      }),
+    ]);
+  });
+
+  it("says why when the engine isn't ready", async () => {
+    ownEngine.resolve.mockResolvedValue({
+      available: false,
+      reason: "No AI is set up yet.",
+    });
+
+    const [result] = (await explorePrompt(input, billing)).results;
+
+    expect(result).toMatchObject({ status: "error", model: "own_ai" });
+    expect(ownEngine.ask).not.toHaveBeenCalled();
   });
 });

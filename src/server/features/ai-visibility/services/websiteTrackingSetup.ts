@@ -1,13 +1,16 @@
 import { AiVisibilityRepository as repo } from "../repositories/AiVisibilityRepository";
-import { projectAiConfiguration } from "./aiVisibilityConfiguration";
+import {
+  projectAiConfiguration,
+  trackerEngines,
+} from "./aiVisibilityConfiguration";
 import { normalizeAiSuggestion } from "@/shared/ai-prompt-suggestions";
 import { aiEnginesWithoutLocation } from "@/shared/ai-visibility";
 import { DEFAULT_LOCATION_CODE } from "@/shared/keyword-locations";
 import type { SaveProjectWebsiteSetup } from "@/types/schemas/projectWebsite";
 import { AppError } from "@/server/lib/errors";
 import type { BillingCustomerContext } from "@/server/billing/subscription";
-import { hasDataforseoAccess } from "@/server/lib/provider-access";
 import { startRun } from "./aiVisibilityRuns";
+import { defaultAiEngine, splitReadyAiEngines } from "./aiVisibilityProviders";
 
 /** Seeds weekly tracking from website setup's first three suggested topics. */
 export async function prepareWebsiteTracking(
@@ -23,6 +26,8 @@ export async function prepareWebsiteTracking(
     return null;
   const names = new Set<string>();
   const texts = new Set<string>();
+  // ChatGPT with a DataForSEO key, else the own AI engine when it's set up.
+  const engine = await defaultAiEngine();
   // The first three topics seed tracking; the rest stay research keywords.
   const prompts = input.suggestedTopics.slice(0, 3).flatMap((topic) => {
     const name = normalizeAiSuggestion(topic.name);
@@ -46,11 +51,11 @@ export async function prepareWebsiteTracking(
   return projectAiConfiguration({
     previous: null,
     projectId: input.projectId,
-    projectMarket: aiEnginesWithoutLocation(["chatgpt"], market.locationCode)
+    projectMarket: aiEnginesWithoutLocation([engine], market.locationCode)
       .length
       ? { locationCode: DEFAULT_LOCATION_CODE, languageCode: "en" }
       : market,
-    patch: { engines: ["chatgpt"], prompts },
+    patch: { engines: [engine], prompts },
     now: new Date().toISOString(),
   }).rows;
 }
@@ -65,11 +70,12 @@ export async function startWebsiteTrackingRun(
   projectId: string,
   billing: BillingCustomerContext,
 ) {
-  // With no DataForSEO key there's nothing to run. The prompts stay saved for
-  // when one is added.
-  if (!(await hasDataforseoAccess())) return;
   const config = await repo.getConfiguration(projectId);
   if (!config) return;
+  // With no provider for its engines there's nothing to run. The prompts stay
+  // saved for when one is set up.
+  const { ready } = await splitReadyAiEngines(trackerEngines(config.tracker));
+  if (!ready.length) return;
   try {
     await startRun(config, "baseline", billing);
   } catch (error) {

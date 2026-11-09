@@ -37,7 +37,6 @@ import {
 } from "@/shared/prompt-explorer-labels";
 import {
   PROMPT_EXPLORER_MAX_PROMPT_LENGTH,
-  PROMPT_EXPLORER_MODELS,
   type PromptExplorerModel,
   type WebSearchCountrySelection,
 } from "@/types/schemas/ai-search";
@@ -52,6 +51,8 @@ type FormValues = {
 
 type Props = {
   form: FormValues;
+  /** The models this installation can ask. */
+  models: readonly PromptExplorerModel[];
   onPromptChange: (value: string) => void;
   onHighlightBrandChange: (value: string) => void;
   onModelsChange: (value: PromptExplorerModel[]) => void;
@@ -75,8 +76,13 @@ const COUNTRY_ITEMS: Array<{
   ),
 ];
 
+/** The own AI engine doesn't search the web, so a country never skips it. */
+const searchesCountry = (model: PromptExplorerModel, country: string) =>
+  model === "own_ai" || supportsWebSearchCountry(model, country);
+
 export function PromptExplorerForm({
   form,
+  models,
   onPromptChange,
   onHighlightBrandChange,
   onModelsChange,
@@ -97,13 +103,14 @@ export function PromptExplorerForm({
     (item) =>
       item.value === "default" ||
       item.value === form.webSearchCountryCode ||
-      form.models.some((model) => supportsWebSearchCountry(model, item.value)),
+      form.models.some(
+        (model) => model !== "own_ai" && searchesCountry(model, item.value),
+      ),
   );
   const unsupportedModels =
     form.webSearch && form.webSearchCountryCode !== "default"
       ? form.models.filter(
-          (model) =>
-            !supportsWebSearchCountry(model, form.webSearchCountryCode),
+          (model) => !searchesCountry(model, form.webSearchCountryCode),
         )
       : [];
   const supportedModels = form.models.filter(
@@ -162,7 +169,7 @@ export function PromptExplorerForm({
             <Field>
               <FieldTitle>Models</FieldTitle>
               <div className="flex flex-wrap items-start gap-x-5 gap-y-2 pt-1.5">
-                {PROMPT_EXPLORER_MODELS.map((model) => (
+                {models.map((model) => (
                   <Label key={model} className="font-normal">
                     <Checkbox
                       checked={form.models.includes(model)}
@@ -170,6 +177,11 @@ export function PromptExplorerForm({
                     />
                     <span>
                       {formatModelLabel(model)}
+                      {model === "own_ai" ? (
+                        <span className="block text-xs text-muted-foreground">
+                          Model knowledge, no web search
+                        </span>
+                      ) : null}
                       {unsupportedModels.includes(model) &&
                       form.webSearchCountryCode !== "default" ? (
                         <span className="block text-xs text-muted-foreground">

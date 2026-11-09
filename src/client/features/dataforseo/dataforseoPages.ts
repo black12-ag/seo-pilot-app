@@ -13,7 +13,13 @@ export type FreeAlternative =
 // Research and Rank Tracking (the site's own Search Console data).
 const DATAFORSEO_PAGES: Record<
   string,
-  { title: string; gives: string; alternatives?: FreeAlternative[] }
+  {
+    title: string;
+    gives: string;
+    alternatives?: FreeAlternative[];
+    /** The installation's own AI engine can run this page with no key. */
+    ownAiEngine?: boolean;
+  }
 > = {
   "keyword-gap": {
     title: "Keyword Gap",
@@ -28,10 +34,12 @@ const DATAFORSEO_PAGES: Record<
   "ai-visibility": {
     title: "AI Visibility",
     gives: "what AI engines answer for your prompts, and who they cite",
+    ownAiEngine: true,
   },
   "prompt-explorer": {
     title: "Prompt Explorer",
     gives: "AI answers and sources for any prompt",
+    ownAiEngine: true,
   },
   "brand-lookup": {
     title: "Brand Lookup",
@@ -44,10 +52,14 @@ const DATAFORSEO_PAGES: Record<
   },
 };
 
-/** The page's entry for a path such as /p/abc/keywords or /p/$projectId/domain. */
-export function dataforseoPageFor(path: string) {
+/**
+ * The page's entry for a path such as /p/abc/keywords or /p/$projectId/domain,
+ * or null when the page works here. With the own AI engine set up, AI
+ * visibility pages work with no key.
+ */
+export function dataforseoPageFor(path: string, ownAiEngine = false) {
   const segment = /^\/p\/[^/]+\/([^/]+)/.exec(path)?.[1];
-  return segment && Object.hasOwn(DATAFORSEO_PAGES, segment)
-    ? DATAFORSEO_PAGES[segment]
-    : null;
+  if (!segment || !Object.hasOwn(DATAFORSEO_PAGES, segment)) return null;
+  const page = DATAFORSEO_PAGES[segment];
+  return ownAiEngine && page.ownAiEngine ? null : page;
 }

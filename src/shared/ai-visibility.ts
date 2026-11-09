@@ -10,14 +10,26 @@ export type AiEngine =
   | "gemini"
   | "google_ai_overview"
   | "claude"
-  | "perplexity";
+  | "perplexity"
+  | "own_ai";
 export const AI_ENGINE_LABELS: Record<AiEngine, string> = {
   chatgpt: "ChatGPT",
   gemini: "Gemini",
   google_ai_overview: "Google AI Overviews",
   claude: "Claude",
   perplexity: "Perplexity",
+  own_ai: "Your AI engine",
 };
+/**
+ * The installation's own AI engine (a subscription CLI or an OpenRouter key)
+ * answers this engine. Every other engine is collected through DataForSEO.
+ */
+export function aiEngineIsOwn(engine: AiEngine): engine is "own_ai" {
+  return engine === "own_ai";
+}
+/** Own AI engine answers come from what the model knows, with no live search. */
+export const AI_MODEL_KNOWLEDGE_NOTE =
+  "Answered from the model's own knowledge, without a live web search. Sources are links the model wrote, not checked pages, and may be empty.";
 /**
  * Engines DataForSEO has no LLM Scraper for. Their answers come from the live
  * LLM Responses API, at live API pricing. Each name is also its API model slug.
@@ -78,6 +90,14 @@ export interface AiCapability {
   /** Every run asks the model's API, at live API pricing. */
   modelApi: boolean;
 }
+/** This installation's own AI engine, as AI visibility can use it. */
+export interface AiOwnEngine {
+  available: boolean;
+  /** Which engine and model answer, such as "agy · Gemini 3.8 Flash (Low)". */
+  label: string | null;
+  /** Why it can't be used, when it can't. */
+  reason: string | null;
+}
 export interface AiRun {
   id: string;
   status: "queued" | "running" | "completed" | "partial" | "failed";
@@ -100,7 +120,10 @@ export interface AiTrackerState {
   engines: AiEngine[];
   capabilities: AiCapability[];
   recentRuns: AiRun[];
+  /** Answers can be collected: DataForSEO or the own AI engine is set up. */
   providerConfigured: boolean;
+  dataforseoConfigured: boolean;
+  ownEngine: AiOwnEngine;
 }
 export interface AiResearchedPrompt {
   text: string;
@@ -118,6 +141,11 @@ export interface AiResearchedPrompt {
 }
 export interface AiPromptResearchResult {
   keyword: string;
+  /**
+   * Null for DataForSEO's data on real questions. Otherwise the engine and
+   * model that suggested these questions, with no search data or sources.
+   */
+  suggestedBy: string | null;
   /** Most common questions first. */
   prompts: AiResearchedPrompt[];
 }
@@ -160,6 +188,10 @@ export interface AiObservationRow {
   citationCount: number;
   collectedAt: string | null;
   error: string | null;
+  /** The engine and model behind an own AI engine answer, else null. */
+  answeredBy: string | null;
+  /** "model_knowledge" for an own AI engine answer, else null. */
+  answerMode: "model_knowledge" | null;
 }
 export interface AiBrandSummary {
   name: string;
@@ -377,6 +409,8 @@ export const AI_UNSUPPORTED_LOCATIONS: Record<AiEngine, readonly number[]> = {
   google_ai_overview: [],
   claude: liveUnsupportedLocations("claude"),
   perplexity: liveUnsupportedLocations("perplexity"),
+  // The model is told the country, so every market works.
+  own_ai: [],
 };
 
 /** Countries a live engine's web search does not accept. */
@@ -392,6 +426,7 @@ function liveUnsupportedLocations(engine: AiModelApiEngine): number[] {
 
 /** How an engine's answer is collected. */
 export function aiCollectionMethodLabel(engine: AiEngine): string {
+  if (aiEngineIsOwn(engine)) return "Your AI engine, from model knowledge";
   if (aiEngineUsesModelApi(engine)) return "Model API with web search";
   return engine === "google_ai_overview"
     ? "Google results page"

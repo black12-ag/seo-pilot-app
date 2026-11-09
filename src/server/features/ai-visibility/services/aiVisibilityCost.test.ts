@@ -38,4 +38,17 @@ describe("AI collection estimates", () => {
         aiCostForAnswers(["claude", "perplexity"], false, mode).providerCostUsd,
       ).toBe(0.22);
   });
+  it("meters nothing for the own AI engine, hosted or not", () => {
+    for (const hosted of [true, false])
+      for (const mode of ["queued", "live"] as const)
+        expect(aiCostForAnswers(["own_ai", "own_ai"], hosted, mode)).toEqual({
+          providerCostUsd: 0,
+          costCredits: 0,
+          costUsd: 0,
+        });
+    expect(
+      aiCostForAnswers(["own_ai", ...chatgpt(3)], false, "queued")
+        .providerCostUsd,
+    ).toBe(0.0036);
+  });
 });

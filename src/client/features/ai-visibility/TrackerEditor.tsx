@@ -182,8 +182,8 @@ export function TrackerEditor({
         {!adding && !review && schedule}
         {!state.providerConfigured && (
           <p className="rounded-lg bg-muted px-4 py-3 text-sm">
-            An administrator needs to configure the DataForSEO API key before we
-            can collect data.
+            An administrator needs to configure the DataForSEO API key, or set
+            up the AI engine in Settings, before we can collect data.
           </p>
         )}
         {review ? (

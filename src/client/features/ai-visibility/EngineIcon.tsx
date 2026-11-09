@@ -1,4 +1,5 @@
 import type { SVGProps } from "react";
+import { Cpu } from "lucide-react";
 import { ClaudeIcon, OpenAIIcon } from "@/client/features/ai-mcp/AgentIcons";
 import type { AiEngine } from "@/shared/ai-visibility";
 
@@ -45,5 +46,6 @@ export function EngineIcon({
   if (engine === "gemini") return <Mark paths={GEMINI} {...props} />;
   if (engine === "claude") return <ClaudeIcon {...props} />;
   if (engine === "perplexity") return <Mark paths={PERPLEXITY} {...props} />;
+  if (engine === "own_ai") return <Cpu {...props} />;
   return <Mark paths={GOOGLE} {...props} />;
 }

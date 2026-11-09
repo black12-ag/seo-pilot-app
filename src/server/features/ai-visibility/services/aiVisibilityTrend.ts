@@ -67,8 +67,10 @@ const citationRate: Rate = (c) =>
   c.answers ? (c.citations / c.answers) * 100 : null;
 
 /**
- * A cell is one prompt, engine, collection market and own-brand identity.
- * New prompts, engines, markets or brand edits start new cells.
+ * A cell is one prompt, engine, collection market and own-brand identity. For
+ * the own AI engine it is also the model and answer mode, so switching models
+ * never compares one model's answers with another's. New prompts, engines,
+ * models, markets or brand edits start new cells.
  */
 function cellKey(
   row: TrendRow,
@@ -77,6 +79,8 @@ function cellKey(
   return [
     row.promptId,
     row.engine,
+    row.answeredBy ?? "",
+    row.answerMode ?? "",
     run.locationCode,
     run.languageCode,
     row.brandName,

@@ -3,9 +3,11 @@ import { AiVisibilityError } from "./aiVisibilityErrors";
 import { aiScope } from "./aiVisibilityConfiguration";
 import { isHostedServerAuthMode } from "@/server/lib/runtime-env";
 import {
+  aiEngineIsOwn,
   aiEngineUsesModelApi,
   AI_ENGINE_LABELS,
   AI_LIVE_RECORD_COST_USD,
+  AI_MODEL_KNOWLEDGE_NOTE,
   AI_RECORD_COST_USD,
   type AiCostEstimate,
   type AiEngine,
@@ -18,13 +20,15 @@ import {
 import { scheduledChecksPerMonth } from "@/shared/rank-tracking";
 import type { EstimateAiCostInput } from "@/types/schemas/ai-visibility";
 import { projectPatch } from "./aiVisibilityMutation";
-import { hasDataforseoAccess } from "@/server/lib/provider-access";
+import { splitReadyAiEngines } from "./aiVisibilityProviders";
 
 /**
  * Raw DataForSEO USD for one answer. Claude and Perplexity always use the
- * model API. The other engines are live on Run now and queued otherwise.
+ * model API. The other engines are live on Run now and queued otherwise. The
+ * own AI engine uses no DataForSEO data, so nothing is metered for it.
  */
 function aiAnswerUsd(engine: AiEngine, mode: "live" | "queued") {
+  if (aiEngineIsOwn(engine)) return 0;
   if (aiEngineUsesModelApi(engine)) return llmResponseUsd(engine, true);
   return mode === "live" ? AI_LIVE_RECORD_COST_USD : AI_RECORD_COST_USD;
 }
@@ -68,17 +72,19 @@ export async function estimateCost(
       "Set your project's website and pass proposed prompts, or save tracking before estimating.",
     );
   const scope = aiScope(config, input.promptIds);
-  const answers = scope.prompts.flatMap(() => scope.engines);
+  // A check collects only engines whose provider is set up now.
+  const { ready, skipped } = await splitReadyAiEngines(scope.engines);
+  const answers = scope.prompts.flatMap(() => ready);
   const hosted = await isHostedServerAuthMode();
   const cost = aiCostForAnswers(answers, hosted, "queued");
   const runNow = aiCostForAnswers(answers, hosted, "live");
-  const liveEngines = scope.engines.filter(aiEngineUsesModelApi);
+  const liveEngines = ready.filter(aiEngineUsesModelApi);
   const scheduleInterval =
     input.scheduleInterval ?? current?.tracker.scheduleInterval ?? "weekly";
   const checksPerMonth = scheduledChecksPerMonth(scheduleInterval);
   return {
     promptCount: scope.prompts.length,
-    engineCount: scope.engines.length,
+    engineCount: ready.length,
     observations: answers.length,
     ...cost,
     runNowCostUsd: runNow.costUsd,
@@ -97,9 +103,14 @@ export async function estimateCost(
             `${liveEngines.map((e) => AI_ENGINE_LABELS[e]).join(" and ")} ${liveEngines.length === 1 ? "uses" : "use"} live API pricing, which costs more per answer.`,
           ]
         : []),
-      ...(!(await hasDataforseoAccess())
+      ...(ready.some(aiEngineIsOwn)
         ? [
-            "DataForSEO is not configured on this server. Setup is available; collection needs an operator to add its API key.",
+            `Your AI engine answers at no data cost: subscription runs are included in your plan, and an OpenRouter key bills its own account. ${AI_MODEL_KNOWLEDGE_NOTE}`,
+          ]
+        : []),
+      ...(skipped.length
+        ? [
+            `${skipped.map((e) => AI_ENGINE_LABELS[e]).join(" and ")} ${skipped.length === 1 ? "is" : "are"} skipped: ${skipped.some(aiEngineIsOwn) ? "your AI engine isn't ready" : "DataForSEO is not configured on this server"}. Setup is available.`,
           ]
         : []),
     ],

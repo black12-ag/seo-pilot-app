@@ -16,11 +16,8 @@ import {
   User,
 } from "lucide-react";
 import { organizationContextQueryOptions } from "@/client/features/team/organizationQueries";
-import {
-  DATAFORSEO_OPTIONAL_LABEL,
-  dataforseoPageFor,
-} from "@/client/features/dataforseo/dataforseoPages";
-import { useDataforseoConfigured } from "@/client/features/dataforseo/useDataforseoStatus";
+import { DATAFORSEO_OPTIONAL_LABEL } from "@/client/features/dataforseo/dataforseoPages";
+import { useNeedsDataforseoKey } from "@/client/features/dataforseo/useDataforseoStatus";
 import { switchOrganization } from "@/serverFunctions/organization";
 import { clearLastProjectId } from "@/client/lib/active-project";
 import {
@@ -161,7 +158,7 @@ export function Sidebar({
   const { setOpenMobile } = useSidebar();
   // While SAM is open, its chat list takes the nav's place.
   const onSamRoute = pathname.includes("/sam");
-  const dataforseoConfigured = useDataforseoConfigured(ready);
+  const needsDataforseoKey = useNeedsDataforseoKey(ready);
 
   return (
     <UiSidebar variant="inset" collapsible="offcanvas" className="md:!p-0">
@@ -226,10 +223,7 @@ export function Sidebar({
                           label={label}
                           linkProps={linkProps}
                           placeholder={navPlaceholder}
-                          optional={
-                            dataforseoConfigured === false &&
-                            dataforseoPageFor(linkProps.to) !== null
-                          }
+                          optional={needsDataforseoKey(linkProps.to)}
                         />
                       );
                     })}

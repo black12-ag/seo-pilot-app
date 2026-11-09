@@ -12,6 +12,14 @@ vi.mock("cloudflare:workers", () => ({
   DurableObject: vi.fn(),
   waitUntil: vi.fn(),
 }));
+// Seeded tracking uses DataForSEO's default engine here.
+vi.mock(
+  "@/server/features/ai-visibility/services/aiVisibilityProviders",
+  async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    defaultAiEngine: async () => "chatgpt",
+  }),
+);
 vi.mock("@/db", () => ({ db: testDb.db }));
 vi.mock("@/db/runBatch", () => ({ runBatch: testDb.runBatch }));
 vi.mock("@/server/features/ai-visibility/services/aiVisibilityRuns", () => ({

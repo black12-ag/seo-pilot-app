@@ -365,6 +365,13 @@
       "when": 1794235425103,
       "tag": "0051_gsc_rank_tracking",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1794238171516,
+      "tag": "0052_ai_engine_visibility",
+      "breakpoints": true
     }
   ]
 }

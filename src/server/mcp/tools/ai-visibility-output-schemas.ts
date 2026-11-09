@@ -25,6 +25,13 @@ export const aiRunOutput = z.looseObject({
 export const aiTrackerOutput = z.looseObject({
   configured: flag,
   providerConfigured: flag,
+  dataforseoConfigured: flag,
+  // own_ai answers come from this installation's own AI engine.
+  ownEngine: z.looseObject({
+    available: flag,
+    label: nullableText,
+    reason: nullableText,
+  }),
   tracker: z
     .looseObject({
       id: text,
@@ -102,6 +109,8 @@ const observation = z.looseObject({
   citationCount: count,
   collectedAt: nullableText,
   error: nullableText,
+  answeredBy: nullableText,
+  answerMode: z.enum(["model_knowledge"]).nullable(),
 });
 export const aiResultsOutput = z.looseObject({
   runId: nullableText,

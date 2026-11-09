@@ -13,6 +13,7 @@ import { AppError, asAppError } from "@/server/lib/errors";
 import type { ErrorCode } from "@/shared/error-codes";
 import { getIsoCountryCode } from "@/shared/keyword-locations";
 import {
+  aiEngineIsOwn,
   aiEngineUsesModelApi,
   type AiBrand,
   type AiEngine,
@@ -32,7 +33,7 @@ import { recordAiRunOutcome } from "./aiVisibilityRunOutcome";
 // Each function here is one workflow step body: inputs are its parameters and
 // the return value is what the workflow engine persists and replays.
 
-interface AiTask {
+export interface AiTask {
   /** The answer row id. */
   tag: string;
   prompt: string;
@@ -48,7 +49,7 @@ interface AiTaskBatch {
 type AiLiveTask = AiTask & { engine: AiEngine };
 export type AiPendingTask = PostedAiTrackingTask &
   AiLiveTask & { attempts: number };
-interface AiRunMarket {
+export interface AiRunMarket {
   locationCode: number;
   languageCode: string;
 }
@@ -58,6 +59,11 @@ interface AiRunMarket {
  * so a larger step only queues calls behind the first 6.
  */
 const LIVE_ANSWERS_PER_STEP = 6;
+/**
+ * Own AI engine answers per workflow step. The engine runs one job at a time,
+ * so they are asked one after another.
+ */
+const OWN_ANSWERS_PER_STEP = 3;
 
 /**
  * Attempts per answer. A new attempt follows only when DataForSEO returned the
@@ -79,13 +85,16 @@ function errorMessage(error: unknown) {
  * Marks the run running and groups its answers into batches. Manual and
  * baseline runs collect live answers so the user sees results sooner.
  * Scheduled runs use the cheaper standard queue. Claude and Perplexity have no
- * LLM Scraper, so every run asks their model API (`modelBatches`). startRun
+ * LLM Scraper, so every run asks their model API (`modelBatches`). The own AI
+ * engine answers in `ownBatches` on every run, at no data cost. startRun
  * checked credits before the run was created.
  */
-export async function prepareAiRun(
-  runId: string,
-): Promise<
-  { market: AiRunMarket; modelBatches: AiTaskBatch[] } & (
+export async function prepareAiRun(runId: string): Promise<
+  {
+    market: AiRunMarket;
+    modelBatches: AiTaskBatch[];
+    ownBatches?: AiTask[][];
+  } & (
     | { live: false; batches: AiTaskBatch[] }
     | { live: true; batches: AiLiveTask[][] }
   )
@@ -112,16 +121,23 @@ export async function prepareAiRun(
     tasks.filter((task) => aiEngineUsesModelApi(task.engine)),
     LIVE_ANSWERS_PER_STEP,
   );
-  const answers = tasks.filter((task) => !aiEngineUsesModelApi(task.engine));
+  const ownBatches = engineBatches(
+    tasks.filter((task) => aiEngineIsOwn(task.engine)),
+    OWN_ANSWERS_PER_STEP,
+  ).map((batch) => batch.tasks);
+  const answers = tasks.filter(
+    (task) => !aiEngineUsesModelApi(task.engine) && !aiEngineIsOwn(task.engine),
+  );
   if (live) {
     const batches: AiLiveTask[][] = [];
     for (let i = 0; i < answers.length; i += LIVE_ANSWERS_PER_STEP)
       batches.push(answers.slice(i, i + LIVE_ANSWERS_PER_STEP));
-    return { market, modelBatches, live, batches };
+    return { market, modelBatches, ownBatches, live, batches };
   }
   return {
     market,
     modelBatches,
+    ownBatches,
     live,
     batches: engineBatches(answers, MAX_TASKS_PER_POST),
   };
@@ -413,7 +429,7 @@ async function readAiTasks(
 }
 
 /** Brands come from the project as each answer is matched. */
-async function runBrands(runId: string) {
+export async function runBrands(runId: string) {
   const run = await repo.getRunInternal(runId);
   const project = run ? await repo.getProject(run.projectId) : null;
   if (!run || !project) return null;
@@ -446,10 +462,12 @@ async function saveAiOutcome(
 }
 
 /** Saves one answer with its citations and brand results. */
-async function saveAiAnswer(
+export async function saveAiAnswer(
   observationId: string,
   answer: ParsedAiAnswer,
   brands: AiBrand[],
+  // Who answered, for own AI engine answers. DataForSEO answers leave it null.
+  source?: { answeredBy: string; answerMode: "model_knowledge" },
 ) {
   await repo.persistAnswer({
     observationId,
@@ -458,6 +476,8 @@ async function saveAiAnswer(
       collectedAt: answer.collectedAt ?? new Date().toISOString(),
       answerMarkdown: answer.answerMarkdown,
       error: null,
+      answeredBy: source?.answeredBy ?? null,
+      answerMode: source?.answerMode ?? null,
     },
     sources: answer.citations.map((citation) => ({
       id: crypto.randomUUID(),

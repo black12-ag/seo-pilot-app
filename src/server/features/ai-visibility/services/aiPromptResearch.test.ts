@@ -12,7 +12,9 @@ const {
   getCached,
   getTracker,
   listResearchKeywords,
+  ownEngine,
 } = vi.hoisted(() => ({
+  ownEngine: { resolve: vi.fn(), suggest: vi.fn() },
   assertPaidPlan: vi.fn(),
   mentionsSearch: vi.fn(),
   generateText: vi.fn(),
@@ -55,6 +57,10 @@ vi.mock("@/server/lib/r2-cache", () => ({
   setCached: async () => undefined,
 }));
 vi.mock("./aiVisibilityState", () => ({ getTracker }));
+vi.mock("../providers/aiEngineEvidence", () => ({
+  resolveOwnAiEngine: ownEngine.resolve,
+  suggestPromptsWithOwnAiEngine: ownEngine.suggest,
+}));
 vi.mock("@/server/features/ai-search/services/access", () => ({
   assertPaidAiSearchPlan: assertPaidPlan,
 }));
@@ -81,6 +87,7 @@ describe("researchAiPrompts", () => {
     creditsDepleted.mockResolvedValue({ depleted: false });
     getCached.mockResolvedValue(null);
     getTracker.mockResolvedValue({
+      dataforseoConfigured: true,
       brands: [
         {
           own: true,
@@ -149,6 +156,55 @@ describe("researchAiPrompts", () => {
       expect.objectContaining({ projectId: "project" }),
       [expect.objectContaining({ provider: "openrouter", costUsd: 0.003 })],
     );
+  });
+
+  it("asks the own AI engine for likely questions when there is no DataForSEO key", async () => {
+    isHosted.mockResolvedValue(false);
+    getTracker.mockResolvedValue({
+      dataforseoConfigured: false,
+      brands: [],
+      prompts: [{ text: "Which SEO tool is free?", archived: false }],
+    });
+    ownEngine.resolve.mockResolvedValue({
+      available: true,
+      access: { apiKey: "k" },
+      label: "agy · m",
+    });
+    ownEngine.suggest.mockResolvedValue({
+      questions: [
+        "which seo tool is free?",
+        "Which SEO tool is free?",
+        "best seo tool",
+      ],
+      answeredBy: "agy · m",
+    });
+
+    const result = await researchAiPrompts(input, customer);
+
+    expect(mentionsSearch).not.toHaveBeenCalled();
+    expect(result.suggestedBy).toBe("agy · m");
+    expect(result.prompts).toEqual([
+      expect.objectContaining({
+        text: "Which seo tool is free?",
+        sources: [],
+        tracked: true,
+      }),
+      expect.objectContaining({ text: "Best seo tool", tracked: false }),
+    ]);
+  });
+
+  it("says what's missing when neither DataForSEO nor the own AI engine is set up", async () => {
+    isHosted.mockResolvedValue(false);
+    getTracker.mockResolvedValue({ dataforseoConfigured: false, prompts: [] });
+    ownEngine.resolve.mockResolvedValue({
+      available: false,
+      reason: "No AI is set up yet.",
+    });
+
+    await expect(researchAiPrompts(input, customer)).rejects.toThrow(
+      /DataForSEO key or your own AI engine/,
+    );
+    expect(ownEngine.suggest).not.toHaveBeenCalled();
   });
 
   it("refuses research when hosted credits are used up before buying any data", async () => {

@@ -27,6 +27,8 @@ export const aiTrackers = sqliteTable(
     googleAiOverview: integer("google_ai_overview", { mode: "boolean" })
       .notNull()
       .default(false),
+    // Answers from this installation's own AI engine, not DataForSEO.
+    ownAi: integer("own_ai", { mode: "boolean" }).notNull().default(false),
     locationCode: integer("location_code").notNull().default(2840),
     languageCode: text("language_code").notNull().default("en"),
     scheduleInterval: text("schedule_interval", {
@@ -108,7 +110,14 @@ export const aiObservations = sqliteTable(
       .notNull()
       .references(() => aiPrompts.id, { onDelete: "cascade" }),
     engine: text("engine", {
-      enum: ["chatgpt", "gemini", "google_ai_overview", "claude", "perplexity"],
+      enum: [
+        "chatgpt",
+        "gemini",
+        "google_ai_overview",
+        "claude",
+        "perplexity",
+        "own_ai",
+      ],
     }).notNull(),
     // Whether the prompt names the project's own brand when the run started.
     branded: integer("branded", { mode: "boolean" }).notNull(),
@@ -119,6 +128,12 @@ export const aiObservations = sqliteTable(
     // Null on a completed row means the engine gave no answer.
     answerMarkdown: text("answer_markdown"),
     error: text("error"),
+    // The engine and model behind an own AI engine answer, such as
+    // "agy · Gemini 3.8 Flash (Low)". Null for DataForSEO answers.
+    answeredBy: text("answered_by"),
+    // How an own AI engine answer was made: "model_knowledge" means no live
+    // web search. Null for DataForSEO answers.
+    answerMode: text("answer_mode", { enum: ["model_knowledge"] }),
   },
   (t) => [
     uniqueIndex("ai_observations_run_prompt_engine_idx").on(

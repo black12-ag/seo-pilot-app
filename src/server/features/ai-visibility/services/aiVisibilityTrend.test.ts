@@ -35,6 +35,8 @@ function answer(
     runId,
     promptId,
     engine: "chatgpt",
+    answeredBy: null,
+    answerMode: null,
     branded: false,
     status: "completed",
     hasAnswer: 1,
@@ -119,6 +121,7 @@ describe("loadAiTrend", () => {
   it.each([
     ["market", {}, { locationCode: 2826 }],
     ["brand", { brandDomain: "seopilot.com" }, {}],
+    ["engine's model", { answeredBy: "agy · Gemini 3.8 Flash (Medium)" }, {}],
   ] as const)(
     "reports a scope change when the %s changes",
     async (_, answerChange, runChange) => {
@@ -126,9 +129,17 @@ describe("loadAiTrend", () => {
         run("old", 10),
         run("new", 1, runChange),
       ]);
+      const own = (model: string) =>
+        "answeredBy" in answerChange
+          ? {
+              engine: "own_ai" as const,
+              answeredBy: model,
+              answerMode: "model_knowledge" as const,
+            }
+          : {};
       mocks.getTrendObservations.mockResolvedValue([
-        answer("old", "a", false),
-        answer("new", "a", true, answerChange),
+        answer("old", "a", false, own("agy · Gemini 3.8 Flash (Low)")),
+        answer("new", "a", true, { ...own("x"), ...answerChange }),
       ]);
 
       const trend = await loadAiTrend(input);

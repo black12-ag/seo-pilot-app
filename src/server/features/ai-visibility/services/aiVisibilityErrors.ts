@@ -24,6 +24,9 @@ export const AI_ANSWER_FAILURES = {
   notStarted: "Collection could not start.",
   stoppedBeforeStart: "Collection stopped before it started.",
   stopped: "Collection stopped before it finished.",
+  ownEngineOff:
+    "Your AI engine isn't ready. Check Settings > AI engine, then run the check again.",
+  ownEngineFailed: "Your AI engine couldn't answer this prompt.",
 } as const;
 
 const FAILURE_COPY = new Set<string>(Object.values(AI_ANSWER_FAILURES));

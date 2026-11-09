@@ -1,3 +1,4 @@
+import { AI_MODEL_KNOWLEDGE_NOTE } from "@/shared/ai-visibility";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
@@ -65,6 +66,12 @@ function AnswerEvidence({ answer }: { answer: AiAnswer }) {
   const answered = answer.observation.answerStatus === "answered";
   return (
     <div>
+      {answer.observation.engine === "own_ai" && (
+        <p className="border-b px-5 py-3 text-xs text-muted-foreground border-border">
+          Answered by {answer.observation.answeredBy ?? "your AI engine"}.{" "}
+          {AI_MODEL_KNOWLEDGE_NOTE}
+        </p>
+      )}
       {answer.observation.answerStatus === "no_answer" && (
         <p className="border-b px-5 py-3 text-sm text-warning border-border">
           {answer.observation.engine === "google_ai_overview"
