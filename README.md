@@ -4,15 +4,41 @@
 
 A self-hosted SEO and AI search workspace: research, audits, rank tracking, AI visibility, competitors, content review and reports, in one place.
 
-## Run it
+## Use it yourself
 
-You need Node.js 22, `corepack pnpm`, and Docker.
+SEO Pilot is free and open source. You run your own copy, with your own Google account and data. Nothing is shared with us or anyone else.
 
-```sh
-corepack pnpm install --frozen-lockfile
-```
+**You need:** a computer or server with Docker, about 2 GB of free memory (4 GB if you also run AI on your own login), and Git.
 
-Then follow [the self-hosting guide](docs/SELF_HOSTING_SEO_PILOT.md). It runs free with no paid keys. See below for what that covers.
+1. **Download it and add your settings.**
+
+   ```sh
+   git clone https://github.com/black12-ag/seo-pilot-app.git
+   cd seo-pilot-app
+   cp deploy/standalone/.env.example deploy/standalone/.env
+   ```
+
+   In `deploy/standalone/.env`, set `STORAGE_SECRET_KEY` to a long random value (`openssl rand -hex 32`) and add `SEO_PILOT_IMAGE=seo-pilot-platform:local`.
+
+2. **Start it.**
+
+   ```sh
+   docker compose --project-name seo-pilot --env-file deploy/standalone/.env -f deploy/standalone/compose.yaml -f deploy/standalone/compose.build.yaml up -d --build
+   ```
+
+   The first build takes a few minutes.
+
+3. **Create your account.** Open `http://localhost:3001/welcome`. The first person to sign up becomes the administrator. After that, sign-ups are closed and others join by invitation.
+
+4. **Connect Google.** Set up your own free Google login for [Search Console](docs/SELF_HOSTING_GOOGLE_SEARCH_CONSOLE.md) and [Analytics](docs/SELF_HOSTING_GOOGLE_ANALYTICS.md), then add a project for your site and connect it.
+
+5. **Optional extras:**
+   - [Publish it on your own domain](docs/PUBLISH_ON_YOUR_DOMAIN.md) with HTTPS
+   - [Add "Continue with Google"](docs/GOOGLE_SIGN_IN.md) to the sign-in page
+   - [Run AI on your own `agy`, `claude` or `codex` login](docs/AI_ENGINE.md), or on an OpenRouter key
+   - Page speed in audits with a free `PAGESPEED_API_KEY` (see [the self-hosting guide](docs/SELF_HOSTING_SEO_PILOT.md))
+
+Backups, updates and every setting are in [the self-hosting guide](docs/SELF_HOSTING_SEO_PILOT.md).
 
 ## Free setup
 
