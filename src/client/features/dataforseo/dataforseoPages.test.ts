@@ -51,7 +51,7 @@ describe("dataforseoPageFor", () => {
     expect(dataforseoPageFor(path, false)).not.toBeNull();
   });
 
-  it.each(["/p/abc/keywords", "/p/abc/brand-lookup", "/p/abc/rank-tracking"])(
+  it.each(["/p/abc/brand-lookup", "/p/abc/keyword-gap", "/p/abc/local-seo"])(
     "keeps %s gated with only the own AI engine",
     (path) => {
       expect(dataforseoPageFor(path, true)).not.toBeNull();
