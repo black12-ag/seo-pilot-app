@@ -120,11 +120,12 @@ export function AuthPageCard({
   return (
     <div className="w-full max-w-xs space-y-6">
       <div className="space-y-3 text-center">
-        <img
-          src="/transparent-logo.png"
-          alt="SEO Pilot"
-          className="mx-auto size-10 rounded-lg"
-        />
+        <span
+          className="mx-auto grid size-10 place-items-center rounded-full border border-foreground/20 text-sm font-semibold tracking-tight"
+          aria-hidden="true"
+        >
+          SP
+        </span>
         <div>
           <h1 className="text-xl font-semibold">{title}</h1>
           {helperText ? (
@@ -164,7 +165,7 @@ export function AuthPageShell({ children }: { children: React.ReactNode }) {
             <span className="size-2 rounded-full bg-[#ff3b1d]" />
             Free and open source
           </p>
-          <p className="mt-6 font-display text-[clamp(6rem,13vw,15rem)] uppercase leading-[0.82] tracking-[-0.01em] text-[#ff3b1d]">
+          <p className="mt-6 font-display text-[clamp(6rem,13vw,15rem)] uppercase leading-[0.9] tracking-[-0.01em] text-[#ff3b1d]">
             SEO
             <br />
             Pilot
