@@ -31,7 +31,20 @@ The project-context tools are free and shared with the app and other agents.
 
 Deliver through the `seo-report` skill, saving with `skill: "local-seo"`. If that skill is not available, say so and stop before writing HTML.
 
+## Free mode (no DataForSEO key)
+
+Every Maps, local-pack and Business Profile tool below needs the optional DataForSEO key. There is no free and legitimate source for Maps rankings, and SEO Pilot never scrapes Google. If a tool answers "DataForSEO isn't set up", say in one line that the Maps part of this skill needs the key, then offer the free local check instead:
+
+1. `get_search_console_keyword_ideas`: queries that name a place or "near me", with impressions, average position and the page Google shows. That is how the site's own pages do in local organic search.
+2. `run_site_audit`, then `get_audit_pages`: location and service-area pages, their titles, indexability and internal links.
+3. Read the location pages and the contact page: name, address and phone written the same way everywhere, opening hours, a map or directions, and `LocalBusiness` structured data (code that tells search engines the business details).
+4. Optionally, with the own AI engine, `explore_prompt` with `models: ["own_ai"]` for "best <service> in <city>": whether the model names the business. That is model knowledge, not Maps.
+
+Report it as "Local pages check", not as a Maps audit, with a "Needs key" note listing what the full skill would add: Maps rank grid, competitor profiles, reviews and Q&A. Never estimate a Maps position.
+
 ## SEO Pilot MCP tools
+
+All tools in this list need the optional DataForSEO key.
 
 - `search_local_businesses`: nearby listings, filterable by `minRating`, `minReviews`, and `isClaimed` — use `isClaimed: false` to find unclaimed listings when prospecting. One call with the brand name as `query` and a wide radius returns category, rating, review count, claimed status, coordinates, and `cid` for every location of a chain — usually enough that per-location `get_business_profile` calls are unnecessary.
 - `get_local_serp_results`: the Maps/Local Finder result set near a coordinate. The rows carry `cid` and `place_id` — collect them once and reuse them everywhere below.

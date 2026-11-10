@@ -29,6 +29,17 @@ The project-context tools are free and shared with the app and other agents.
 
 Research uses usage credits. The questions come mostly from Google "People also ask" data, not logged ChatGPT prompts, and nobody can see how often a question is asked in ChatGPT. Never present a question as a real user prompt or attach a demand number to it.
 
+## Free mode (no DataForSEO key)
+
+With no DataForSEO key, `research_ai_visibility_prompts` asks the installation's own AI engine instead and sets `suggestedBy` to the engine and model. Those are the model's guesses at likely questions: no sources, no ChatGPT answers, no ordering by how common they are, and `ownDomainCited` and `brandMentioned` are always false. If the call says it needs a DataForSEO key or the own AI engine, neither is set up: say so and point the user at Settings > AI engine.
+
+In free mode:
+
+- Steps 1-3 work as written, but group by intent only. There are no source domains to count.
+- Replace step 4's citation counts with a free spot check: call `explore_prompt` with `models: ["own_ai"]` and `highlightBrand` for the three to five prompts that best represent the leading groups. It costs nothing. Report whether the answer names the brand and which competitors it names instead. These answers come from model knowledge without live web search, so links in them can be old or wrong; never call them citations from ChatGPT.
+- In "All prompt groups", drop the cited and mentioned columns and add "Own-engine spot check" with the result or "not checked".
+- In "How this report was made", say the questions were suggested by the named engine and model, not taken from search data, and that ChatGPT's real answers and citations need the optional DataForSEO key.
+
 ## Workflow
 
 ### 1. Pick head terms

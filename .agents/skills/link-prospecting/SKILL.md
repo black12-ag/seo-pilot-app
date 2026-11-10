@@ -32,12 +32,26 @@ Deliver through the `seo-report` skill, saving with `skill: "link-prospecting"`.
 
 ## SEO Pilot MCP tools
 
-- `get_serp_results`: find ranking articles, listicles, resource pages, comparisons, and topical publishers.
-- `get_backlinks_overview`: inspect competitor domain or page backlink/referring-domain patterns.
-- `get_domain_overview`: qualify important prospect domains.
-- `get_ranked_keywords`: understand what a prospect or competitor ranks for when topical fit matters.
-- `search_local_businesses` and `get_local_serp_results`: use for local SEO link prospecting when nearby businesses, local competitors, or Maps/category signals can reveal partnership targets.
-- `research_keywords`: expand prospecting queries.
+Tools marked (key) need the optional DataForSEO key. Everything else is free.
+
+- `get_serp_results` (key): find ranking articles, listicles, resource pages, comparisons, and topical publishers.
+- `get_backlinks_overview` (key): inspect competitor domain or page backlink/referring-domain patterns.
+- `get_free_backlinks`: free referring domains from Common Crawl for the project's site and each saved competitor. Domains that link to two or more competitors and not to the site are the strongest free prospects.
+- `get_ai_visibility_sources`: free with the own AI engine; pages AI answers link to in the market, often lists and reviews worth getting onto.
+- `get_domain_overview` (key): qualify important prospect domains.
+- `get_ranked_keywords` (key): understand what a prospect or competitor ranks for when topical fit matters.
+- `search_local_businesses` and `get_local_serp_results` (key): use for local SEO link prospecting when nearby businesses, local competitors, or Maps/category signals can reveal partnership targets.
+- `research_keywords` (key): expand prospecting queries.
+
+## Free mode (no DataForSEO key)
+
+SEO Pilot is free by default; DataForSEO is an optional key. If a (key) tool answers "DataForSEO isn't set up", stay in free mode for the rest of the run and say which parts need the key.
+
+1. Call `get_free_backlinks` once without `target` to see which tracked domains have data, then once per competitor with data and once for the site.
+2. Keep referring domains that link to competitors but not to the site. Rank them by how many competitors they link to, then by crawled hosts. Common Crawl is domain-level, so find the actual page by reading the prospect site or with web search; never claim a page links to a competitor until you have seen it.
+3. Add pages that AI answers cite from `get_ai_visibility_sources`, after reading them.
+4. SERP prospecting queries need the key. If the client has its own web search, use it for the query patterns below and attribute those prospects to it.
+5. Contact discovery and outreach drafts work exactly as below.
 
 ## Contact discovery tools
 
@@ -77,7 +91,7 @@ Use `get_serp_results` in batches for the most relevant patterns. Send at most 1
 1. Clarify the linkable asset and the reason someone would reference it.
 2. Build 5-10 prospecting queries by default.
 3. Call `get_serp_results` for those queries.
-4. If competitors are provided, call `get_backlinks_overview` for the strongest competitor domains or pages first. Continue without backlink evidence if it is unavailable.
+4. If competitors are provided, call `get_backlinks_overview` for the strongest competitor domains or pages first, or `get_free_backlinks` in free mode. Continue without backlink evidence if it is unavailable.
 5. For local SEO, use `search_local_businesses` and `get_local_serp_results` around priority locations to identify nearby competitors, categories, and local SERP evidence before searching for local chambers, associations, campus resources, community pages, and directories.
 6. Filter prospects:
    - Keep topical relevance and editorial pages.
