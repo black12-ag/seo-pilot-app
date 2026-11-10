@@ -39,6 +39,7 @@ import { handleOperatorRequest } from "@/server/standalone/admin";
 import { handleImport, isLegacyImportActive } from "@/server/standalone/import";
 import { hasOperatorSecret } from "@/server/standalone/operator-auth";
 import { handleFreeBacklinksOperatorRequest } from "@/server/standalone/freeBacklinksOperator";
+import { publicHomeRedirect } from "@/server/lib/publicHome";
 
 const startHandler = createStartHandler(defaultStreamHandler);
 
@@ -193,6 +194,9 @@ async function handleAppRequest(
   setRuntimeAuthMode(env.AUTH_MODE);
   const publicRequest = requestWithPublicOrigin(request);
   const pathname = new URL(publicRequest.url).pathname;
+
+  const home = publicHomeRedirect(request, publicRequest.url, authMode);
+  if (home) return home;
 
   // Standalone Docker operator tooling (account commands, legacy import,
   // free backlink data). Each handler answers 404 without the operator

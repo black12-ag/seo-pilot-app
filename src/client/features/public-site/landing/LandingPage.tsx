@@ -1,192 +1,343 @@
-import { LandingIllustration } from "./LandingIllustration";
+import { ProductPreview } from "./ProductPreview";
+import { REPO_URL } from "./landingLinks";
+import {
+  features,
+  installOptions,
+  marqueeWords,
+  navLinks,
+  principles,
+  roles,
+  stats,
+} from "./landingContent";
+import { Eyebrow, FeatureVisual, Liquid } from "./LandingParts";
 
-const installGuide = "/help";
+export { INSTALL_COMMAND, REPO_URL } from "./landingLinks";
 
 export function LandingPage() {
   return (
     <>
-      <a className="skip-link" href="#main">
-        Skip to content
-      </a>
-      <header className="public-header">
-        <nav
-          className="landing-container public-nav"
-          aria-label="Main navigation"
-        >
-          <a className="brand" href="/welcome" aria-label="SEO Pilot home">
-            <img src="/seo-pilot-mark.svg" width="27" height="27" alt="" />
-            <span>seo pilot</span>
-            <small>OPEN SOURCE</small>
+      <svg className="liquid-defs" aria-hidden="true" focusable="false">
+        <filter id="liquid">
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.009"
+            numOctaves={2}
+            result="noise"
+          />
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale={1} />
+        </filter>
+      </svg>
+
+      <div className="preloader" aria-hidden="true">
+        <p className="preloader-brand">SEO Pilot</p>
+        <p className="preloader-count">
+          <span data-count>0</span>
+          <span className="accent">%</span>
+        </p>
+      </div>
+
+      <header className="site-nav">
+        <nav aria-label="Main navigation">
+          <a className="logo" href="#top" aria-label="SEO Pilot home">
+            <span className="monogram">SP</span>
+            <span className="logo-name">SEO Pilot</span>
           </a>
-          <div className="nav-links">
-            <a className="desktop-link" href="#product">
-              Product
-            </a>
-            <a className="desktop-link" href="#self-hosting">
-              Self-hosting
-            </a>
-            <a className="desktop-link" href={installGuide}>
-              Docs
-            </a>
-            <a className="desktop-link" href="/">
+          <ul className="nav-links">
+            {navLinks.map(([label, href]) => (
+              <li key={href}>
+                <a href={href}>{label}</a>
+              </li>
+            ))}
+            <li>
+              <a href={REPO_URL}>GitHub</a>
+            </li>
+          </ul>
+          <div className="nav-end">
+            <a className="pill-button" href="/">
               Sign in
             </a>
-            <a className="landing-button" href="/">
-              Open workspace <span aria-hidden="true">↗</span>
-            </a>
+            <button
+              className="burger"
+              type="button"
+              aria-label="Open menu"
+              aria-expanded="false"
+              aria-controls="mobile-menu"
+              data-burger
+            >
+              <i />
+              <i />
+              <i />
+            </button>
           </div>
         </nav>
+        <div className="mobile-menu" id="mobile-menu" data-menu hidden>
+          <ul>
+            {navLinks.map(([label, href]) => (
+              <li key={href}>
+                <a href={href}>{label}</a>
+              </li>
+            ))}
+            <li>
+              <a href={REPO_URL}>GitHub</a>
+            </li>
+            <li>
+              <a href="/">Sign in</a>
+            </li>
+          </ul>
+        </div>
       </header>
-      <main id="main">
-        <section className="hero" aria-labelledby="hero-heading">
-          <div className="landing-container">
-            <p className="eyebrow">
-              The open-source workspace for better search
-            </p>
-            <h1 id="hero-heading">
-              A little more visible.
-              <br />
-              Every day.
-            </h1>
-            <p className="hero-description">
-              See the evidence. Choose the next useful change. We’re building
-              one workspace for technical SEO, AI visibility and content your
-              team can review.
-            </p>
-            <div className="hero-actions">
-              <a className="landing-button" href={installGuide}>
-                Start self-hosting <span aria-hidden="true">↗</span>
-              </a>
-              <a className="text-action" href="/">
-                Explore the workspace <span aria-hidden="true">→</span>
+
+      <main id="top">
+        <section className="hero" aria-labelledby="hero-name">
+          <div className="hero-top">
+            <h2 className="hero-roles" aria-label={roles.join(", ")}>
+              {roles.map((role) => (
+                <span className="line" key={role} aria-hidden="true">
+                  <span className="line-inner" data-hero-role>
+                    {role}
+                  </span>
+                </span>
+              ))}
+            </h2>
+            <div className="hero-desc" data-hero-desc>
+              <p>
+                Your own SEO and AI-search workspace. Audits, real Google
+                rankings, keyword ideas, backlinks and AI visibility, on your
+                server, free.
+              </p>
+              <a className="text-link" href="#install">
+                Install in one command <span aria-hidden="true">↗</span>
               </a>
             </div>
-            <p className="hero-note">
-              Free software. Your providers. Hosting and provider usage cost
-              extra.
-            </p>
-            <LandingIllustration />
+          </div>
+
+          <div className="hero-product" data-hero-product>
+            <Liquid label="Rank Tracking in SEO Pilot, with example data">
+              <ProductPreview />
+            </Liquid>
+          </div>
+          <div className="hero-fade" aria-hidden="true" />
+
+          <h1 className="hero-name" id="hero-name" aria-label="SEO Pilot">
+            <span className="name-line" data-letters aria-hidden="true">
+              SEO
+            </span>
+            <span className="name-line" data-letters aria-hidden="true">
+              Pilot
+            </span>
+          </h1>
+
+          <p className="scroll-cue" data-hero-cue>
+            <span aria-hidden="true" />
+            Scroll to enter
+          </p>
+        </section>
+
+        <section className="marquee" aria-label="What SEO Pilot stands for">
+          <div className="marquee-track">
+            {[0, 1].map((copy) => (
+              <div className="marquee-set" key={copy} aria-hidden={copy === 1}>
+                {marqueeWords.map((word) => (
+                  <span className="marquee-item" key={word}>
+                    {word}
+                    <i aria-hidden="true" />
+                  </span>
+                ))}
+              </div>
+            ))}
           </div>
         </section>
-        <section
-          id="product"
-          className="landing-container product-section"
-          aria-labelledby="product-heading"
-        >
-          <div className="section-intro">
-            <h2 id="product-heading">
-              Less noise.
-              <br />
-              More useful work.
+
+        <section id="idea" className="section idea">
+          <div className="idea-left">
+            <Eyebrow>The Idea</Eyebrow>
+            <h2 className="heading heading-lg" data-lines>
+              Your search data belongs to you.
             </h2>
-            <p>
-              Search work gets scattered between audits, spreadsheets, AI
-              answers and half-finished drafts. Our direction is to bring the
-              evidence and the next step together, while keeping you in control
-              of your website.
+            <p className="lead" data-reveal>
+              SEO tools charge every month to show you numbers about your own
+              website. Most of those numbers already live in your Google
+              account. SEO Pilot brings them together on your own server, adds
+              its own crawler and your own AI, and costs nothing to run.
             </p>
           </div>
-          <div className="feature-grid">
-            <article className="feature-card">
-              <span className="feature-icon" aria-hidden="true">
-                ⌁
-              </span>
-              <p className="feature-stage">Existing foundation</p>
-              <h3>Know where you stand.</h3>
-              <p>
-                The workspace includes audits, keyword and competitor research,
-                ranks, backlinks and AI tracking. Data features need configured
-                providers.
-              </p>
-            </article>
-            <article className="feature-card">
-              <span className="feature-icon" aria-hidden="true">
-                ▤
-              </span>
-              <p className="feature-stage">Planned integration</p>
-              <h3>Make something useful.</h3>
-              <p>
-                Connect findings to sourced briefs, focused drafts and immutable
-                revisions, with a shared review flow before publishing.
-              </p>
-            </article>
-            <article className="feature-card">
-              <span className="feature-icon" aria-hidden="true">
-                ↻
-              </span>
-              <p className="feature-stage">Planned integration</p>
-              <h3>Keep the work moving.</h3>
-              <p>
-                Bring daily routines, budgets, publishing permissions and a
-                clear run history together. These integrated workflows are still
-                to come.
-              </p>
-            </article>
-          </div>
-          <section
-            id="self-hosting"
-            className="self-hosting"
-            aria-labelledby="selfhost-heading"
-          >
+          <ol className="principles">
+            {principles.map((item, index) => (
+              <li key={item.title} data-reveal data-delay={index * 90}>
+                <span className="principle-index">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <div>
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section id="features" className="section">
+          <div className="section-head">
             <div>
-              <p className="eyebrow">Your platform. Your choice.</p>
-              <h2 id="selfhost-heading">
-                A workspace you can
-                <br />
-                make your own.
+              <Eyebrow>What It Does</Eyebrow>
+              <h2 className="heading heading-lg narrow" data-lines>
+                The work you check every week.
               </h2>
-              <p>
-                Start with the attributed SEO Pilot foundation. Self-host with
-                password authentication and invited teammates, then connect the
-                providers you choose. External data, models, rendering and
-                hosting have their own costs.
-              </p>
-              <a className="landing-button" href={installGuide}>
-                Read the install guide <span aria-hidden="true">↗</span>
-              </a>
             </div>
-            <div className="platform-map">
-              <p>THE PLATFORM WE’RE BUILDING</p>
-              <ul>
-                <li>Sites &amp; brand context</li>
-                <li>Search &amp; AI evidence</li>
-                <li>Content &amp; review history</li>
-                <li>Publishing &amp; rollback</li>
-                <li>Daily routines &amp; reports</li>
-              </ul>
-              <p>
-                Website · API · MCP
-                <br />
-                One shared service layer
-              </p>
-            </div>
-          </section>
-          <section
-            className="section-intro build-status"
-            aria-labelledby="status-heading"
-          >
-            <h2 id="status-heading">
-              Work you can inspect.
-              <br />A direction you can follow.
-            </h2>
-            <div>
-              <p className="eyebrow">Early build · development in progress</p>
-              <p>
-                The foundation currently implements upstream SEO Pilot modules.
-                The full integrated SEO Pilot product is planned; this page
-                describes that direction, not a completed release.
-              </p>
-            </div>
-          </section>
+            <p className="head-note">04 / Free features</p>
+          </div>
+          <ul className="features">
+            {features.map((item, index) => (
+              <li
+                key={item.name}
+                className={index % 2 === 1 ? "offset" : undefined}
+                data-reveal
+                data-delay={index % 2 === 1 ? 120 : 0}
+              >
+                <article className="feature">
+                  <Liquid
+                    label={`${item.name}, illustration with example data`}
+                  >
+                    <FeatureVisual kind={item.visual} />
+                  </Liquid>
+                  <div className="feature-row">
+                    <div>
+                      <h3>{item.name}</h3>
+                      <p>{item.blurb}</p>
+                    </div>
+                    <p className="feature-meta">
+                      <span>{item.category}</span>
+                      <b>{item.tag}</b>
+                    </p>
+                  </div>
+                </article>
+              </li>
+            ))}
+          </ul>
+          <p className="footnote">
+            Illustrations use example data, not a real site.
+          </p>
         </section>
+
+        <section id="free" className="section">
+          <div className="section-head">
+            <div>
+              <Eyebrow>By The Numbers</Eyebrow>
+              <h2 className="heading" data-lines>
+                Free, measured.
+              </h2>
+            </div>
+          </div>
+          <dl className="stats">
+            {stats.map(([value, label], index) => (
+              <div key={label} data-reveal data-delay={index * 110}>
+                <dd>{value}</dd>
+                <dt>{label}</dt>
+              </div>
+            ))}
+          </dl>
+          <div className="optional" data-reveal>
+            <p>
+              <b>Optional, pay-as-you-go:</b> search volume, competitor keywords
+              and traffic, live rank checks for other sites and local map
+              rankings come from a DataForSEO key, only if you want them.
+            </p>
+          </div>
+        </section>
+
+        <section id="install" className="section">
+          <div className="section-head">
+            <div>
+              <Eyebrow>Install</Eyebrow>
+              <h2 className="heading" data-lines>
+                Pick how you run it.
+              </h2>
+            </div>
+          </div>
+          <div className="install" data-install>
+            <ul className="install-list">
+              {installOptions.map((option, index) => (
+                <li key={option.name}>
+                  <button
+                    type="button"
+                    className={index === 0 ? "active" : undefined}
+                    aria-pressed={index === 0}
+                    data-install-option={index}
+                  >
+                    <span className="install-index">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span className="install-name">
+                      {option.name}
+                      <small>{option.detail}</small>
+                    </span>
+                    <span className="install-rule" aria-hidden="true" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <div className="install-panels">
+              {installOptions.map((option, index) => (
+                <div
+                  className="install-panel"
+                  key={option.name}
+                  data-install-panel={index}
+                  hidden={index !== 0}
+                >
+                  <p className="install-text" data-words>
+                    {option.text}
+                  </p>
+                  <pre className="terminal">
+                    <code>
+                      <span className="prompt" aria-hidden="true">
+                        ${" "}
+                      </span>
+                      {option.command}
+                    </code>
+                  </pre>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <footer id="contact" className="contact">
+          <Eyebrow>Run It Yourself</Eyebrow>
+          <h2 className="heading heading-xl" data-lines>
+            Have a site the world should find?
+          </h2>
+          <p className="lead" data-reveal>
+            Install SEO Pilot today. You need Docker and about 2 GB of memory.
+          </p>
+          <a className="big-link" href={REPO_URL} data-reveal>
+            github.com/black12-ag/seo-pilot-app
+            <span className="accent" aria-hidden="true">
+              ↗
+            </span>
+          </a>
+
+          <div className="footer-bar">
+            <div className="footer-sign">
+              <p className="signature">SEO Pilot</p>
+              <p className="tagline">Free software under the MIT license.</p>
+            </div>
+            <nav aria-label="Links">
+              <ul className="footer-links">
+                <li>
+                  <a href={REPO_URL}>GitHub</a>
+                </li>
+                <li>
+                  <a href="/privacy">Privacy</a>
+                </li>
+                <li>
+                  <a href="/terms">Terms</a>
+                </li>
+              </ul>
+            </nav>
+            <p className="copyright">© 2026 SEO Pilot contributors.</p>
+          </div>
+        </footer>
       </main>
-      <footer className="landing-container public-footer">
-        <p>SEO Pilot · Search work, on your terms.</p>
-        <nav aria-label="Footer navigation">
-          <a href={installGuide}>Documentation</a>
-          <a href="#self-hosting">Self-hosting</a>
-        </nav>
-      </footer>
     </>
   );
 }

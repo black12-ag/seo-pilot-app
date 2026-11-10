@@ -36,6 +36,8 @@
     "**/*.{js,mjs,ts,tsx}",
     "!src/routeTree.gen.ts",
     "!tests/badseo/**",
+    // Static files served as-is; the public landing page loads them by URL.
+    "!src/public/**",
     // Skill-bundled scripts, run by hand from the skill's instructions
     "!.agents/**",
     "!.claude/**",

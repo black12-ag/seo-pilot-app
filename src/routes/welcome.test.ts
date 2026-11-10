@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { load } from "cheerio";
 import { Route } from "./welcome";
+import {
+  INSTALL_COMMAND,
+  REPO_URL,
+} from "@/client/features/public-site/landing/LandingPage";
 
 describe("public welcome document", () => {
   it("serves semantic content and honest metadata without a session or JavaScript", async () => {
@@ -32,21 +36,26 @@ describe("public welcome document", () => {
     const $ = load(html);
     expect($("html").attr("lang")).toBe("en");
     expect($("title").text()).toContain("SEO Pilot");
-    expect($("title").text()).toContain("in progress");
     expect($("meta[name=description]").attr("content")).toContain(
-      "in development",
+      "Search Console",
     );
     expect($("meta[name=viewport]").attr("content")).toContain(
       "width=device-width",
     );
     expect($("h1")).toHaveLength(1);
-    expect($("h1").text()).toBe("A little more visible.Every day.");
-    expect($("main").text()).toContain(
-      "The full integrated SEO Pilot product is planned",
+    expect($("h1").attr("aria-label")).toBe("SEO Pilot");
+    expect($("main").text()).toContain("Never a made-up number");
+    expect($("main").text()).toContain(INSTALL_COMMAND);
+    expect($("main").text()).toContain("example data, not a real site");
+    expect($("iframe, form")).toHaveLength(0);
+    // Only the page's own script files, never inline code or other hosts.
+    $("script").each((_, script) => {
+      expect($(script).attr("src")).toMatch(/^\/landing(-init)?\.js$/);
+      expect($(script).text()).toBe("");
+    });
+    expect(response.headers.get("content-security-policy")).toContain(
+      "script-src 'self'",
     );
-    expect($("main").text()).toContain("Hosting and provider usage cost extra");
-    expect($("figure").text()).toContain("not live data");
-    expect($("script, iframe, form")).toHaveLength(0);
   });
 
   it("uses working public destinations and local anchors without prototype records", async () => {
@@ -70,10 +79,11 @@ describe("public welcome document", () => {
     expect(
       $("a").filter((_, link) => $(link).attr("href") === "/").length,
     ).toBeGreaterThan(0);
-    expect($("a[href*='github.com']").length).toBe(0);
+    expect($(`a[href='${REPO_URL}']`).length).toBeGreaterThan(0);
     $("a").each((_, link) => {
       const href = $(link).attr("href");
-      expect(href).toMatch(/^(\/(?:welcome|help)?$|#)/);
+      if (href === REPO_URL) return;
+      expect(href).toMatch(/^(\/(?:welcome|privacy|terms)?$|#)/);
       if (href?.startsWith("#")) expect($(href)).toHaveLength(1);
     });
     expect(html).not.toMatch(

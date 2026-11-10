@@ -142,12 +142,53 @@ export function AuthPageCard({
 
 export function AuthPageShell({ children }: { children: React.ReactNode }) {
   return (
-    // `h-[100dvh]` + `overflow-y-auto` makes this a scroll container, and the
-    // auto-margin child centers when it fits but stays fully reachable (top and
-    // bottom) when it's taller than the viewport. Plain `justify-center` clips
-    // the overflow with no way to scroll to it.
-    <div className="flex h-[100dvh] flex-col items-center overflow-y-auto bg-background p-4">
-      <div className="m-auto flex w-full flex-col items-center">{children}</div>
+    // The form side is a scroll container: its auto-margin child centers when
+    // it fits and stays fully reachable when it's taller than the viewport.
+    <div className="grid h-[100dvh] bg-background lg:grid-cols-[1.1fr_1fr]">
+      <aside
+        className="relative hidden overflow-hidden bg-[#f3f1ea] text-[#0c0c0e] lg:flex lg:flex-col lg:justify-between lg:p-10"
+        aria-hidden="true"
+      >
+        <a
+          href="/welcome"
+          tabIndex={-1}
+          className="flex items-center gap-3 text-[0.8125rem] font-medium uppercase tracking-[0.22em] text-[#6e6d66]"
+        >
+          <span className="grid size-10 place-items-center rounded-full border border-[rgba(12,12,14,0.22)] text-sm font-semibold tracking-tight text-[#0c0c0e]">
+            SP
+          </span>
+          SEO Pilot
+        </a>
+        <div>
+          <p className="flex items-center gap-3 text-[0.8125rem] font-medium uppercase tracking-[0.22em] text-[#6e6d66]">
+            <span className="size-2 rounded-full bg-[#ff3b1d]" />
+            Free and open source
+          </p>
+          <p className="mt-6 font-display text-[clamp(6rem,13vw,15rem)] uppercase leading-[0.82] tracking-[-0.01em] text-[#ff3b1d]">
+            SEO
+            <br />
+            Pilot
+          </p>
+          <p className="mt-8 max-w-[28rem] text-[1.0625rem] leading-relaxed text-[#6e6d66]">
+            Audits, real Google rankings, keyword ideas, backlinks and AI
+            visibility, on your own server.
+          </p>
+        </div>
+        <p className="text-[0.8125rem] uppercase tracking-[0.18em] text-[#6e6d66]">
+          Audit · Rank · Track · Cite
+        </p>
+      </aside>
+      <div className="flex flex-col items-center overflow-y-auto p-4">
+        <div className="m-auto flex w-full flex-col items-center">
+          <p
+            className="mb-8 font-display text-5xl uppercase leading-none tracking-[-0.01em] text-[#ff3b1d] lg:hidden"
+            aria-hidden="true"
+          >
+            SEO Pilot
+          </p>
+          {children}
+        </div>
+      </div>
     </div>
   );
 }

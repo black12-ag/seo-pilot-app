@@ -5,10 +5,19 @@
 /* shadcn components here are built on Base UI. The shadcn variables below are
    the source of truth for theme colors. */
 
+/* Display face for the sign-in pages, matching the public landing page. */
+@font-face {
+  font-family: "Anton";
+  src: url("/fonts/anton-400.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
 @custom-variant dark (&:where([data-theme=seo-pilot-dark], [data-theme=seo-pilot-dark] *));
 
 @theme {
   --container-8xl: 88rem;
+  --font-display: "Anton", "Arial Narrow", sans-serif;
 }
 
 @theme inline {

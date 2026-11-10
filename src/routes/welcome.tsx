@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { renderToStaticMarkup } from "react-dom/server";
 import { LandingPage } from "@/client/features/public-site/landing/LandingPage";
 import landingCss from "@/client/features/public-site/landing/landing.css?raw";
-import illustrationCss from "@/client/features/public-site/landing/illustration.css?raw";
 
 // Public static document, like the existing raw report routes: it bypasses
 // the private ClientOnly shell without changing any workspace or API gate.
@@ -21,20 +20,20 @@ export const Route = createFileRoute("/welcome")({
                     content="width=device-width, initial-scale=1"
                   />
                   <title>
-                    SEO Pilot — Open-source search workspace, in progress
+                    SEO Pilot — Free, open-source SEO and AI-search workspace
                   </title>
                   <meta
                     name="description"
-                    content="An open-source SEO workspace in development. Self-host the SEO Pilot foundation today and follow the plan for connected search evidence, content and review."
+                    content="Self-hosted SEO and AI-search workspace: site audits, Google rankings and keyword ideas from Search Console, free backlinks and AI visibility. Install it with one command."
                   />
-                  <meta name="theme-color" content="#111611" />
+                  <meta name="theme-color" content="#f3f1ea" />
                   <meta
                     property="og:title"
-                    content="SEO Pilot — A little more visible. Every day."
+                    content="SEO Pilot — Your own SEO and AI-search workspace"
                   />
                   <meta
                     property="og:description"
-                    content="An open-source search workspace in development. Your software, your providers, your next useful change."
+                    content="Audits, real Google rankings, keyword ideas, backlinks and AI visibility. Free, open source, on your own server."
                   />
                   <meta property="og:type" content="website" />
                   <link
@@ -42,10 +41,26 @@ export const Route = createFileRoute("/welcome")({
                     type="image/svg+xml"
                     href="/seo-pilot-mark.svg"
                   />
-                  <style>{landingCss + illustrationCss}</style>
+                  <link
+                    rel="preload"
+                    href="/fonts/anton-400.woff2"
+                    as="font"
+                    type="font/woff2"
+                    crossOrigin=""
+                  />
+                  <link
+                    rel="preload"
+                    href="/fonts/onest-variable.woff2"
+                    as="font"
+                    type="font/woff2"
+                    crossOrigin=""
+                  />
+                  <style>{landingCss}</style>
+                  <script src="/landing-init.js" />
                 </head>
                 <body className="public-landing">
                   <LandingPage />
+                  <script type="module" src="/landing.js" />
                 </body>
               </html>,
             ),
@@ -54,7 +69,7 @@ export const Route = createFileRoute("/welcome")({
               "Content-Type": "text/html; charset=utf-8",
               "Cache-Control": "public, max-age=0, must-revalidate",
               "Content-Security-Policy":
-                "default-src 'none'; style-src 'unsafe-inline'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'",
+                "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'",
               "X-Content-Type-Options": "nosniff",
               "Referrer-Policy": "strict-origin-when-cross-origin",
             },
