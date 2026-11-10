@@ -25,7 +25,10 @@ import {
 import { SamSessionRepository } from "@/server/features/sam/SamSessionRepository";
 import { ProjectContextService } from "@/server/features/project-context/services/ProjectContextService";
 import { ProjectRepository } from "@/server/features/projects/repositories/ProjectRepository";
-import { buildSamSkillSource } from "@/server/features/sam/samSkills";
+import {
+  finishSkillRun,
+  samSkillSources,
+} from "@/server/features/sam/samCustomSkills";
 import { buildSamSystemPrompt } from "@/server/features/sam/samSystemPrompt";
 import {
   SamTelemetry,
@@ -197,7 +200,7 @@ export class SamChatAgent extends Think {
   }
 
   override getSkills() {
-    return [buildSamSkillSource()];
+    return samSkillSources(() => this.loadSamContext());
   }
 
   override afterToolCall(ctx: ToolCallResultContext) {
@@ -441,6 +444,8 @@ export class SamChatAgent extends Think {
   }
 
   async onChatResponse(result: ChatResponseResult): Promise<void> {
+    // Read before the report below closes the turn's stats.
+    const refusal = this.telemetry.turn?.refusal ?? null;
     this.flushSpend();
     this.ctx.waitUntil(
       this.telemetry.report(
@@ -465,6 +470,7 @@ export class SamChatAgent extends Think {
       } else {
         await SamSessionRepository.touch(ctx.row.id);
       }
+      await finishSkillRun(ctx, result.status, refusal, result.message);
     });
 
     // Re-render the blocks so context written during this turn — or by another
@@ -484,6 +490,9 @@ export class SamChatAgent extends Think {
   // clients replay — returning nothing would make it the string "undefined".
   onChatError(error: unknown, ctx?: ChatErrorContext): unknown {
     console.error("[sam] chat turn error", ctx?.stage, error);
+    const run = this.samContext;
+    if (run)
+      this.ctx.waitUntil(withPgClient(() => finishSkillRun(run, "error")));
     // A stopped or failed turn still consumed what it consumed.
     this.flushSpend();
     this.telemetry.error(error, ctx, this.messages, this.billing);

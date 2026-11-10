@@ -12,6 +12,7 @@ SEO Pilot is a self-hosted SEO and AI search workspace. It runs on the owner's o
 - Local SEO rank tracking
 - A content studio with sources, claims, revisions, human review and export
 - Reports with share links
+- Skills: built-in and workspace-written workflows for SAM (AI Tools > Skills), saved from a chat as a draft with save_skill, downloadable as SKILL.md, and runnable daily or weekly as a report
 - An MCP server, so outside AI agents can use the same tools
 
 ## Costs
