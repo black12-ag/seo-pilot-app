@@ -5,6 +5,9 @@ import { samSessions } from "@/db/schema";
 type CreateSamSessionInput = {
   projectId: string;
   userId: string;
+  /** A scheduled skill run names its own session. */
+  title?: string;
+  skillScheduleId?: string;
 };
 
 async function createSession(input: CreateSamSessionInput) {
@@ -15,6 +18,8 @@ async function createSession(input: CreateSamSessionInput) {
       id,
       projectId: input.projectId,
       userId: input.userId,
+      ...(input.title ? { title: input.title } : {}),
+      skillScheduleId: input.skillScheduleId ?? null,
     })
     .returning();
   return row;
