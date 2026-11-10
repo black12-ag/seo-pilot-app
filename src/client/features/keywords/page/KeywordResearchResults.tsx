@@ -24,6 +24,7 @@ import {
   DataTableToolbar,
 } from "@/client/components/table/DataTableToolbar";
 import type { KeywordResearchControllerState } from "./types";
+import { AskSamButton } from "@/client/features/sam/AskSamButton";
 import {
   FilterIntentSelect,
   FilterRangeInputs,
@@ -55,14 +56,25 @@ type Props = {
   controller: KeywordResearchControllerState;
 };
 
+function formatMetric(value: number | null): string {
+  return value == null ? "unknown" : String(value);
+}
+
+function askAboutKeyword(keyword: KeywordResearchRow): string {
+  return `Tell me about the keyword "${keyword.keyword}": search volume ${formatMetric(keyword.searchVolume)}, difficulty ${formatMetric(keyword.keywordDifficulty)}, intent ${keyword.intent}. Is it worth targeting for this project, which page should target it, and what would that page need?`;
+}
+
 // Below md the page shows one panel at a time behind tabs, and hides the
 // overview stats and the trend chart.
-export function KeywordResearchResults({ controller }: Props) {
+export function KeywordResearchResults({
+  controller,
+  projectId,
+}: Props & { projectId: string }) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden w-full">
       <MobileTabs controller={controller} />
       <div className="flex-1 flex flex-col xl:flex-row overflow-y-auto xl:overflow-hidden gap-4">
-        <KeywordPanel controller={controller} />
+        <KeywordPanel controller={controller} projectId={projectId} />
         <SerpPanel controller={controller} />
       </div>
     </div>
@@ -86,7 +98,10 @@ function MobileTabs({ controller }: Props) {
   );
 }
 
-function KeywordPanel({ controller }: Props) {
+function KeywordPanel({
+  controller,
+  projectId,
+}: Props & { projectId: string }) {
   const { mobileTab, searchedKeyword, showApproximateMatchNotice } = controller;
 
   return (
@@ -104,7 +119,16 @@ function KeywordPanel({ controller }: Props) {
       ) : null}
       {controller.overviewKeyword ? (
         <div className="hidden md:block">
-          <OverviewStats keyword={controller.overviewKeyword} />
+          <OverviewStats
+            keyword={controller.overviewKeyword}
+            action={
+              <AskSamButton
+                projectId={projectId}
+                label="Ask SAM about this keyword"
+                question={askAboutKeyword(controller.overviewKeyword)}
+              />
+            }
+          />
         </div>
       ) : null}
       <TableCard controller={controller} />

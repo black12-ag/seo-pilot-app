@@ -26,9 +26,12 @@ const SUGGESTIONS = [
 export function SamConversation({
   projectId,
   sessionId,
+  initialPrompt,
 }: {
   projectId: string;
   sessionId: string;
+  /** Prefills the composer; the user still reviews it and presses send. */
+  initialPrompt?: string;
 }) {
   // The conversation lives in the SamChatAgent Durable Object, keyed by the
   // session id. The WebSocket is authorized in the Worker (src/server.ts) before
@@ -59,7 +62,7 @@ export function SamConversation({
   // send with no matching turn is a message that never reached the DO.
   const sendText = (
     text: string,
-    source: "composer" | "suggestion" | "edit" | "retry" = "composer",
+    source: "composer" | "suggestion" | "edit" | "retry" | "ask" = "composer",
   ) => {
     pinToBottom();
     captureClientEvent("sam:message_send", {
@@ -281,7 +284,10 @@ export function SamConversation({
           ) : null}
           <ChatComposer
             busy={isBusy}
-            onSend={sendText}
+            initialValue={initialPrompt}
+            onSend={(text) =>
+              sendText(text, text === initialPrompt ? "ask" : "composer")
+            }
             onStop={() => void stop()}
           />
         </div>

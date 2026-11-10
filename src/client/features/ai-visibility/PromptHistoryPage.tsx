@@ -5,6 +5,7 @@ import { BackLink, PageHeader } from "@/client/components/PageHeader";
 import { SkeletonCard } from "@/client/components/SkeletonPresets";
 import { Button } from "@/client/components/ui/button";
 import { type AiRun } from "@/shared/ai-visibility";
+import { AskSamButton } from "@/client/features/sam/AskSamButton";
 import { PromptAnalysis } from "./PromptAnalysis";
 import { prefetchRunNowCost, TrackingCostReview } from "./TrackingCostReview";
 import {
@@ -62,18 +63,25 @@ export function PromptHistoryPage({
           prompt ? `${prompt.topic} · Prompt analysis` : "Prompt analysis"
         }
         actions={
-          state?.tracker &&
-          prompt &&
-          !prompt.archived &&
-          !prompt.paused && (
-            <Button
-              disabled={!state.providerConfigured || busy}
-              onClick={() => setChecking(true)}
-            >
-              <Play />
-              Run now
-            </Button>
-          )
+          <>
+            {(prompt?.text ?? retainedPrompt) && (
+              <AskSamButton
+                projectId={projectId}
+                label="Ask SAM why we're not mentioned"
+                size="default"
+                question={`Why isn't our brand mentioned in AI answers to the tracked prompt "${prompt?.text ?? retainedPrompt}"? Check the latest answers and the pages they cite, tell me who gets mentioned instead, and what we should change.`}
+              />
+            )}
+            {state?.tracker && prompt && !prompt.archived && !prompt.paused && (
+              <Button
+                disabled={!state.providerConfigured || busy}
+                onClick={() => setChecking(true)}
+              >
+                <Play />
+                Run now
+              </Button>
+            )}
+          </>
         }
       />
       {trackerQuery.error && (

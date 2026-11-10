@@ -8,6 +8,7 @@ import {
   CollapsibleTrigger,
 } from "@/client/components/ui/collapsible";
 import { formatDate } from "@/client/features/audit/shared";
+import { AskSamButton } from "@/client/features/sam/AskSamButton";
 import { formatCount } from "@/shared/format";
 import { safeHttpUrl } from "@/shared/safe-url";
 import type {
@@ -253,6 +254,10 @@ export function OpportunityRow({
               {opportunity.whyItMatters}
             </Explanation>
             <Explanation title="What to do">{opportunity.nextStep}</Explanation>
+            <AskSamButton
+              projectId={projectId}
+              question={`Help me act on this opportunity: "${opportunity.title}". Why it matters: ${opportunity.whyItMatters} Suggested next step: ${opportunity.nextStep} Check the evidence and give me concrete steps for this project.`}
+            />
           </div>
           <Evidence projectId={projectId} evidence={opportunity.evidence} />
         </div>

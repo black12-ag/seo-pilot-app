@@ -1,11 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { z } from "zod";
 import { SamChat } from "@/client/features/sam/SamChat";
-
-const samSearchSchema = z.object({
-  // Active session id. Omitted until a session is selected/created.
-  s: z.string().optional(),
-});
+import { samSearchSchema } from "@/client/features/sam/samAsk";
 
 export const Route = createFileRoute("/_app/p/$projectId/sam")({
   validateSearch: samSearchSchema,
@@ -14,6 +9,6 @@ export const Route = createFileRoute("/_app/p/$projectId/sam")({
 
 function SamRoute() {
   const { projectId } = Route.useParams();
-  const { s } = Route.useSearch();
-  return <SamChat projectId={projectId} activeSessionId={s} />;
+  const { s, ask } = Route.useSearch();
+  return <SamChat projectId={projectId} activeSessionId={s} ask={ask} />;
 }

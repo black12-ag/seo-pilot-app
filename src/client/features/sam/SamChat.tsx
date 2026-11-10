@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Brain } from "lucide-react";
 import { QueryError } from "@/client/components/QueryState";
@@ -20,9 +20,12 @@ import { SamConversation } from "./SamConversation";
 export function SamChat({
   projectId,
   activeSessionId,
+  ask,
 }: {
   projectId: string;
   activeSessionId: string | undefined;
+  /** A question from an "Ask SAM" link: it opens a new chat and fills the composer. */
+  ask?: string;
 }) {
   const optedIn = useSamBetaOptIn();
   const access = useSamAccess(projectId);
@@ -38,6 +41,7 @@ export function SamChat({
   const { sessionsQuery, sessions, goToSession, createSession } =
     useSamSessions(projectId, {
       replace: true,
+      ask,
       onCreateError: setCreateError,
       onCreateSettled: () => {
         creating.current = false;
@@ -51,10 +55,15 @@ export function SamChat({
   }, [createSessionMutate]);
 
   // Landing without a session: open the most recent one, or start a fresh
-  // chat when the project has none.
+  // chat when the project has none. A question from an "Ask SAM" link always
+  // gets its own fresh chat.
   const firstSessionId = sessions[0]?.id;
   useEffect(() => {
     if (activeSessionId || !optedIn || access.status !== "ready") return;
+    if (ask) {
+      if (!creating.current) startChat();
+      return;
+    }
     if (firstSessionId) {
       goToSession(firstSessionId);
       return;
@@ -63,6 +72,7 @@ export function SamChat({
     startChat();
   }, [
     activeSessionId,
+    ask,
     optedIn,
     access.status,
     firstSessionId,
@@ -77,6 +87,25 @@ export function SamChat({
   const activeSession = sessions.find(
     (session) => session.id === activeSessionId,
   );
+
+  // Keep the question for this chat, then drop it from the link so a reload
+  // or a shared URL doesn't refill the composer. The composer reads it once,
+  // when the conversation mounts.
+  const navigate = useNavigate();
+  const [prefill, setPrefill] = useState<{ sessionId: string; text: string }>();
+  const activeSessionFound = activeSession !== undefined;
+  useEffect(() => {
+    if (!ask || !activeSessionId || !activeSessionFound) return;
+    setPrefill({ sessionId: activeSessionId, text: ask });
+    void navigate({
+      to: "/p/$projectId/sam",
+      params: { projectId },
+      search: { s: activeSessionId },
+      replace: true,
+    });
+  }, [ask, activeSessionId, activeSessionFound, navigate, projectId]);
+  const initialPrompt =
+    ask ?? (prefill?.sessionId === activeSessionId ? prefill?.text : undefined);
   // Gated on the cached list, not on isSuccess: a failed refetch keeps the
   // old list but leaves the query in error.
   const isMissing =
@@ -209,6 +238,7 @@ export function SamChat({
             key={activeSessionId}
             projectId={projectId}
             sessionId={activeSessionId}
+            initialPrompt={initialPrompt}
           />
         </Suspense>
       </div>

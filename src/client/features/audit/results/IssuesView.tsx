@@ -9,6 +9,7 @@ import {
 import type { AuditResultsData } from "@/client/features/audit/results/types";
 import { SeverityBadge } from "@/client/features/audit/shared";
 import { EmptyState } from "@/client/components/EmptyState";
+import { AskSamButton } from "@/client/features/sam/AskSamButton";
 
 type AuditIssueRow = AuditResultsData["issues"][number];
 
@@ -74,9 +75,11 @@ function groupIssues(issues: AuditIssueRow[]): IssueGroup[] {
 }
 
 export function IssuesView({
+  projectId,
   issues,
   tabs,
 }: {
+  projectId: string;
   issues: AuditIssueRow[];
   tabs: ReactNode;
 }) {
@@ -105,7 +108,11 @@ export function IssuesView({
       ) : (
         <div>
           {sections.map((section) => (
-            <IssueSection key={section.severity} section={section} />
+            <IssueSection
+              key={section.severity}
+              projectId={projectId}
+              section={section}
+            />
           ))}
         </div>
       )}
@@ -114,8 +121,10 @@ export function IssuesView({
 }
 
 function IssueSection({
+  projectId,
   section,
 }: {
+  projectId: string;
   section: { severity: IssueSeverity; groups: IssueGroup[] };
 }) {
   const issueCount = section.groups.reduce(
@@ -133,14 +142,37 @@ function IssueSection({
       </div>
       <div className="divide-y divide-border">
         {section.groups.map((group) => (
-          <IssueRow key={group.issueType} group={group} />
+          <IssueRow key={group.issueType} projectId={projectId} group={group} />
         ))}
       </div>
     </div>
   );
 }
 
-function IssueRow({ group }: { group: IssueGroup }) {
+const ASK_EXAMPLE_URLS = 3;
+
+function askHowToFix(group: IssueGroup): string {
+  const pages = group.issues.length;
+  const examples = group.issues
+    .slice(0, ASK_EXAMPLE_URLS)
+    .map((issue) => issue.pageUrl)
+    .join(", ");
+  return [
+    `How do I fix "${group.title}"? The site audit found it on ${pages} ${pages === 1 ? "page" : "pages"}, for example ${examples}.`,
+    group.howToFix ? `The audit suggests: ${group.howToFix}` : "",
+    "Check those pages and give me the exact changes, most important first.",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function IssueRow({
+  projectId,
+  group,
+}: {
+  projectId: string;
+  group: IssueGroup;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -184,6 +216,11 @@ function IssueRow({ group }: { group: IssueGroup }) {
             </p>
           )}
           <AffectedUrlList issues={group.issues} />
+          <AskSamButton
+            projectId={projectId}
+            label="Ask SAM how to fix"
+            question={askHowToFix(group)}
+          />
         </div>
       )}
     </div>

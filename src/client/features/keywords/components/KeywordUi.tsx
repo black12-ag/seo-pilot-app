@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { KeywordResearchRow } from "@/types/keywords";
 import { Card } from "@/client/components/ui/card";
 import { Separator } from "@/client/components/ui/separator";
@@ -9,7 +10,14 @@ export { SerpAnalysisCard } from "./SerpAnalysisCard";
 export type { SortDir, SortField } from "./DisplayPrimitives";
 export { AreaTrendChart } from "./DisplayPrimitives";
 
-export function OverviewStats({ keyword }: { keyword: KeywordResearchRow }) {
+export function OverviewStats({
+  keyword,
+  action,
+}: {
+  keyword: KeywordResearchRow;
+  /** Shown at the end of the row, e.g. an "Ask SAM" link. */
+  action?: ReactNode;
+}) {
   return (
     <Card className="shrink-0 flex-row items-center gap-4 px-4 py-2.5 min-h-[48px]">
       <div className="flex items-center gap-2 min-w-0 shrink-0">
@@ -42,6 +50,7 @@ export function OverviewStats({ keyword }: { keyword: KeywordResearchRow }) {
         </div>
         <IntentBadge intent={keyword.intent} />
       </div>
+      {action ? <div className="ml-auto shrink-0">{action}</div> : null}
     </Card>
   );
 }
