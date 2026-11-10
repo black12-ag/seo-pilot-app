@@ -169,6 +169,12 @@ export async function erasePostgres(
       .update(schema.reportTemplates)
       .set({ createdByUserId: "gdpr-deleted-user" })
       .where(eq(schema.reportTemplates.createdByUserId, user.id));
+    // Custom skills belong to the workspace (no user FK); a surviving org
+    // keeps them with the attribution wiped.
+    await tx
+      .update(schema.samSkills)
+      .set({ createdByUserId: "gdpr-deleted-user" })
+      .where(eq(schema.samSkills.createdByUserId, user.id));
     if (organizationIds.length > 0) {
       // Re-assert the solo-membership guard at delete time: anyone who
       // accepted an invite after the inventory was taken must abort the

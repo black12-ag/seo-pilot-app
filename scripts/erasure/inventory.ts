@@ -325,6 +325,10 @@ export async function buildInventory(db: Db, user: UserRow) {
       schema.reportTemplates,
       eq(schema.reportTemplates.createdByUserId, user.id),
     ),
+    attributed_skills: await db.$count(
+      schema.samSkills,
+      eq(schema.samSkills.createdByUserId, user.id),
+    ),
     shared_reports: await db.$count(
       schema.reports,
       and(

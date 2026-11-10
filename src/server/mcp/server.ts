@@ -143,6 +143,7 @@ import {
   listSiteAuditsTool,
 } from "@/server/mcp/tools/site-audit-cleanup-tools";
 import { whoamiTool } from "@/server/mcp/tools/whoami";
+import { getSkillTool, listSkillsTool } from "@/server/mcp/tools/skill-tools";
 import { explorePromptTool } from "@/server/mcp/tools/explore-prompt";
 import { registerWidgetResource } from "@/server/mcp/widget-resource";
 import { rememberWidgetResult } from "@/server/mcp/widget-results";
@@ -370,6 +371,8 @@ export function registerSeoPilotTools(
   register(listReportTemplatesTool);
   register(saveReportTemplateTool);
   register(deleteReportTemplateTool);
+  register(listSkillsTool);
+  register(getSkillTool);
 }
 
 export function createSeoPilotMcpServer(

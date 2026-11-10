@@ -5,6 +5,7 @@ import {
 } from "./adaptMcpTool";
 import { waitingAuditStatusTool, recurringAuditTools } from "./samAuditTools";
 import { contentTools } from "./samContentTools";
+import { skillTools } from "./samSkillTools";
 import {
   getAiVisibilityTrackerTool,
   generateAiVisibilityPromptsTool,
@@ -356,6 +357,7 @@ export function buildSamMcpTools(
     ),
     ...recurringAuditTools(toolContext, projectId),
     ...contentTools(toolContext, projectId),
+    ...skillTools(authContext, projectId),
     run_site_audit: adaptTool(runSiteAuditTool),
     list_site_audits: adaptTool(listSiteAuditsTool),
     get_audit_status: waitingAuditStatusTool(adaptTool),

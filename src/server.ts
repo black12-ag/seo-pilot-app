@@ -343,6 +343,12 @@ export default {
         await runScheduledAiVisibility();
       }),
       withPgClient(() => sendFirstAuditEmails()),
+      // Scheduled skills: each due one starts a SAM turn in its own session.
+      withPgClient(async () => {
+        const { runScheduledSkills } =
+          await import("@/server/features/skills/services/scheduledSkillRuns");
+        await runScheduledSkills(env);
+      }),
     ]);
     for (const result of checks)
       if (result.status === "rejected") throw result.reason;

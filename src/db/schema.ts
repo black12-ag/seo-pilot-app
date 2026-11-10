@@ -198,6 +198,8 @@ export const {
   auditIssues,
   auditLighthouseResults,
   samSessions,
+  samSkills,
+  samSkillSchedules,
   user,
   session,
   account,

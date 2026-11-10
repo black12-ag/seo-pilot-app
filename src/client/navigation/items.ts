@@ -17,6 +17,7 @@ import {
   MessageSquare,
   Search,
   Send,
+  Sparkles,
   TrendingUp,
 } from "lucide-react";
 import { linkOptions } from "@tanstack/react-router";
@@ -118,6 +119,11 @@ const projectNavItems = [
     icon: Bot,
   },
   {
+    to: "/p/$projectId/skills" as const,
+    label: "Skills",
+    icon: Sparkles,
+  },
+  {
     to: "/p/$projectId/content" as const,
     label: "Content",
     icon: FilePenLine,
@@ -204,6 +210,7 @@ export function getProjectNavGroups(projectId: string) {
       label: "AI Tools",
       items: [
         byPath("/p/$projectId/sam"),
+        byPath("/p/$projectId/skills"),
         byPath("/p/$projectId/content"),
         byPath("/p/$projectId/publishing"),
         byPath("/p/$projectId/reports"),

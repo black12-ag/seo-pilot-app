@@ -79,7 +79,18 @@ Free mode doesn't include competitor discovery, keyword volume and difficulty, l
 
 **Optional: add DataForSEO for competitor, backlink and ranking data.** It's pay-as-you-go. See [DataForSEO API key](docs/DATAFORSEO_API_KEY.md).
 
-## Built-in skills
+## Skills
+
+Skills are step-by-step workflows SAM follows: built-in ones for audits, keyword research, competitors and more, plus your own. Open a project, then **AI Tools** → **Skills**:
+
+- **Write your own** with a name, a line saying when to use it, and the steps. Or duplicate a built-in skill and change it. Your skills are shared across your workspace and never with other workspaces.
+- **Save one from a chat:** tell SAM "save this as a skill". It writes a draft you review and turn on.
+- **Take it anywhere:** download any skill as `SKILL.md` for Claude Code, Codex or `npx skills add`. Agents on SEO Pilot's MCP server get them with `list_skills` and `get_skill`.
+- **Run it on a schedule:** daily or weekly, at your hour, for one project. Each run saves a report. It needs AI set up, and is off until you switch it on.
+
+See [docs/SKILLS.md](docs/SKILLS.md).
+
+### Built-in skills
 
 SAM, the in-app assistant, and any agent connected over MCP (Claude Code, Codex and others) can run these workflows. They live in [`.agents/skills`](.agents/skills). All of them work without a DataForSEO key: they use Search Console, the site audit, free backlinks and your own AI engine, and say plainly which part needs the key instead of guessing numbers.
 
