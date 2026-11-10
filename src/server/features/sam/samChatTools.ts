@@ -39,6 +39,7 @@ import type { CallToolResult } from "@modelcontextprotocol/server";
 import { type ToolAuthContext, type ToolContext } from "@/server/mcp/context";
 import { getBacklinksOverviewTool } from "@/server/mcp/tools/get-backlinks-overview";
 import { getBacklinksProfileTool } from "@/server/mcp/tools/get-backlinks-profile";
+import { getFreeBacklinksTool } from "@/server/mcp/tools/get-free-backlinks";
 import { getDomainKeywordSuggestionsTool } from "@/server/mcp/tools/get-domain-keyword-suggestions";
 import { getDomainOverviewTool } from "@/server/mcp/tools/get-domain-overview";
 import { addRankTrackingKeywordsTool } from "@/server/mcp/tools/add-rank-tracking-keywords";
@@ -91,6 +92,8 @@ import {
   getSearchConsolePerformanceTool,
   inspectUrlsTool,
 } from "@/server/mcp/tools/search-console-tools";
+import { getSearchConsoleKeywordIdeasTool } from "@/server/mcp/tools/search-console-keyword-ideas";
+import { listSiteAuditsTool } from "@/server/mcp/tools/site-audit-cleanup-tools";
 import { whoamiTool } from "@/server/mcp/tools/whoami";
 import { explorePromptTool } from "@/server/mcp/tools/explore-prompt";
 import { discoverSiteUrls, readPages, readSite } from "@/server/lib/scrape";
@@ -280,6 +283,7 @@ export function buildSamMcpTools(
     get_domain_keyword_suggestions: adaptTool(getDomainKeywordSuggestionsTool),
     get_backlinks_overview: adaptTool(getBacklinksOverviewTool),
     get_backlinks_profile: adaptTool(getBacklinksProfileTool),
+    get_free_backlinks: adaptTool(getFreeBacklinksTool),
     get_serp_results: adaptTool(getSerpResultsTool),
     search_serp_locations: adaptTool(searchSerpLocationsTool),
     get_ai_visibility_tracker: adaptTool(getAiVisibilityTrackerTool),
@@ -316,6 +320,9 @@ export function buildSamMcpTools(
     get_local_rank_grid: adaptTool(getLocalRankGridTool),
     get_keyword_metrics: adaptTool(getKeywordMetricsTool),
     get_search_console_performance: adaptTool(getSearchConsolePerformanceTool),
+    get_search_console_keyword_ideas: adaptTool(
+      getSearchConsoleKeywordIdeasTool,
+    ),
     inspect_urls: adaptTool(inspectUrlsTool),
     // Unconditional like the MCP server's registrations — the GA4 launch gate
     // was removed in #505.
@@ -350,6 +357,7 @@ export function buildSamMcpTools(
     ...recurringAuditTools(toolContext, projectId),
     ...contentTools(toolContext, projectId),
     run_site_audit: adaptTool(runSiteAuditTool),
+    list_site_audits: adaptTool(listSiteAuditsTool),
     get_audit_status: waitingAuditStatusTool(adaptTool),
     get_audit_issues: adaptTool(getAuditIssuesTool),
     get_audit_pages: adaptTool(getAuditPagesTool),
