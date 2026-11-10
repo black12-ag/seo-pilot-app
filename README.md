@@ -6,6 +6,14 @@ A free, self-hosted SEO and AI-search workspace: site audits, real Google rankin
 
 **Website:** [seo.viral4all.com](https://seo.viral4all.com) · **Install:** one command, below · **License:** MIT
 
+## Quick start
+
+1. Run `curl -fsSL https://raw.githubusercontent.com/black12-ag/seo-pilot-app/main/scripts/install.sh | sh` on any computer with Docker.
+2. Open `http://localhost:3001/sign-in` and create your account.
+3. Add your site and [link your Google account](#link-your-accounts). Audits, rankings and keyword ideas start on their own.
+
+That's it. Everything below is detail.
+
 ## Use it yourself
 
 SEO Pilot is free and open source. You run your own copy, with your own Google account and data. Nothing is shared with us or anyone else.
@@ -95,6 +103,10 @@ pnpm lint
 ```
 
 See [local development](docs/LOCAL_DEVELOPMENT.md).
+
+## Contributing
+
+Bug reports, ideas and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) and the [code of conduct](CODE_OF_CONDUCT.md). Report security problems privately: see [SECURITY.md](SECURITY.md).
 
 ## License
 

@@ -2,14 +2,34 @@ import { createFileRoute } from "@tanstack/react-router";
 import { renderToStaticMarkup } from "react-dom/server";
 import { LandingPage } from "@/client/features/public-site/landing/LandingPage";
 import landingCss from "@/client/features/public-site/landing/landing.css?raw";
+import { REPO_URL } from "@/client/features/public-site/landing/landingLinks";
+import { getPublicOrigin } from "@/server/mcp/public-origin";
+
+function softwareJsonLd(origin: string) {
+  return JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "SEO Pilot",
+    url: `${origin}/welcome`,
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Linux, macOS, Windows (Docker)",
+    description:
+      "Free, open-source, self-hosted SEO and AI-search workspace: site audits, Google rankings and keyword ideas from Search Console, free backlinks and AI visibility.",
+    license: "https://opensource.org/licenses/MIT",
+    isAccessibleForFree: true,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    codeRepository: REPO_URL,
+  }).replace(/</g, "\\u003c");
+}
 
 // Public static document, like the existing raw report routes: it bypasses
 // the private ClientOnly shell without changing any workspace or API gate.
 export const Route = createFileRoute("/welcome")({
   server: {
     handlers: {
-      GET: () =>
-        new Response(
+      GET: ({ request }) => {
+        const origin = getPublicOrigin(request);
+        return new Response(
           "<!doctype html>" +
             renderToStaticMarkup(
               <html lang="en">
@@ -36,6 +56,19 @@ export const Route = createFileRoute("/welcome")({
                     content="Audits, real Google rankings, keyword ideas, backlinks and AI visibility. Free, open source, on your own server."
                   />
                   <meta property="og:type" content="website" />
+                  <meta property="og:url" content={`${origin}/welcome`} />
+                  <meta
+                    property="og:image"
+                    content={`${origin}/og-image.png`}
+                  />
+                  <meta property="og:image:width" content="1200" />
+                  <meta property="og:image:height" content="630" />
+                  <meta name="twitter:card" content="summary_large_image" />
+                  <link rel="canonical" href={`${origin}/welcome`} />
+                  <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: softwareJsonLd(origin) }}
+                  />
                   <link
                     rel="icon"
                     type="image/svg+xml"
@@ -74,7 +107,8 @@ export const Route = createFileRoute("/welcome")({
               "Referrer-Policy": "strict-origin-when-cross-origin",
             },
           },
-        ),
+        );
+      },
     },
   },
 });

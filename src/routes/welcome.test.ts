@@ -1,4 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("cloudflare:workers", () => ({
+  env: { AUTH_MODE: "password", BETTER_AUTH_URL: "https://seo.example.com" },
+}));
 import { load } from "cheerio";
 import { Route } from "./welcome";
 import {
@@ -44,12 +48,23 @@ describe("public welcome document", () => {
     );
     expect($("h1")).toHaveLength(1);
     expect($("h1").attr("aria-label")).toBe("SEO Pilot");
+    expect($("link[rel=canonical]").attr("href")).toMatch(/\/welcome$/);
+    expect($("meta[property='og:image']").attr("content")).toMatch(
+      /\/og-image\.png$/,
+    );
+    const jsonLd: unknown = JSON.parse(
+      $("script[type='application/ld+json']").text(),
+    );
+    expect(jsonLd).toMatchObject({
+      "@type": "SoftwareApplication",
+      isAccessibleForFree: true,
+    });
     expect($("main").text()).toContain("Never a made-up number");
     expect($("main").text()).toContain(INSTALL_COMMAND);
     expect($("main").text()).toContain("example data, not a real site");
     expect($("iframe, form")).toHaveLength(0);
     // Only the page's own script files, never inline code or other hosts.
-    $("script").each((_, script) => {
+    $("script:not([type='application/ld+json'])").each((_, script) => {
       expect($(script).attr("src")).toMatch(/^\/landing(-init)?\.js$/);
       expect($(script).text()).toBe("");
     });
