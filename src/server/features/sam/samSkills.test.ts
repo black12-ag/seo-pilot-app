@@ -14,6 +14,9 @@ describe("buildSamSkillSource", () => {
       "ai-visibility-audit",
       "competitive-landscape",
       "competitor-analysis",
+      "competitor-movement",
+      "content-brief-from-gaps",
+      "gsc-quick-wins",
       "keyword-clustering",
       "keyword-research",
       "link-prospecting",
@@ -21,6 +24,7 @@ describe("buildSamSkillSource", () => {
       "seo-audit",
       "seo-coach",
       "seo-project-setup",
+      "weekly-brief",
     ]);
 
     const loaded = await source.load("seo-project-setup");
