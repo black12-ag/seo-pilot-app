@@ -17,6 +17,7 @@ export function robotsTxt(origin: string) {
     "User-agent: *",
     ...PUBLIC_PAGES.map((page) => `Allow: ${page}`),
     "Allow: /llms.txt",
+    "Allow: /docs/",
     ...PRIVATE_PREFIXES.map((prefix) => `Disallow: ${prefix}`),
     "",
     `Sitemap: ${origin}/sitemap.xml`,
@@ -24,8 +25,8 @@ export function robotsTxt(origin: string) {
   ].join("\n");
 }
 
-export function sitemapXml(origin: string) {
-  const urls = PUBLIC_PAGES.map(
+export function sitemapXml(origin: string, extraPaths: string[] = []) {
+  const urls = [...PUBLIC_PAGES, ...extraPaths].map(
     (page) =>
       `  <url><loc>${origin}${page}</loc>${page === "/welcome" ? "<priority>1.0</priority>" : ""}</url>`,
   );
@@ -45,6 +46,7 @@ export function llmsTxt(origin: string) {
 
 - [Home](${origin}/welcome): what SEO Pilot does and how to install it
 - [Source code and guides](https://github.com/black12-ag/seo-pilot-app): install with one command, link Google, Search Console, Analytics and your AI login
+- [Skills](${origin}/docs/skills): free SEO and AI-search workflows for SEO Pilot's assistant, Claude Code and Codex
 - [Privacy](${origin}/privacy)
 - [Terms](${origin}/terms)
 

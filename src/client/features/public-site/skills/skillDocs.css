@@ -1,0 +1,260 @@
+@font-face {
+  font-family: "Anton";
+  src: url("/fonts/anton-400.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Onest";
+  src: url("/fonts/onest-variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  --background: #f3f1ea;
+  --foreground: #0c0c0e;
+  --muted: #6e6d66;
+  --line: rgba(12, 12, 14, 0.1);
+  --accent: #ff3b1d;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Onest", ui-sans-serif, system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+}
+
+.doc-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.doc-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.monogram {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(12, 12, 14, 0.22);
+  border-radius: 50%;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.doc-nav nav {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  font-size: 14px;
+}
+
+.doc-nav nav a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.doc-nav .pill {
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--foreground);
+  color: var(--background);
+  font-weight: 600;
+}
+
+.doc-main {
+  width: min(860px, 100% - 32px);
+  margin: 64px auto 96px;
+}
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+h1 {
+  margin: 20px 0 0;
+  font-family: "Anton", "Arial Narrow", sans-serif;
+  font-size: clamp(44px, 8vw, 88px);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+.lead {
+  max-width: 46ch;
+  margin: 24px 0 0;
+  color: var(--muted);
+  font-size: 20px;
+}
+
+.skill-list {
+  display: grid;
+  gap: 0;
+  margin: 48px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+.skill-list a {
+  display: block;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--line);
+  text-decoration: none;
+}
+
+.skill-list h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: color 0.3s ease;
+}
+
+.skill-list a:hover h2 {
+  color: var(--accent);
+}
+
+.skill-list p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.use-it {
+  margin: 36px 0 0;
+  padding: 20px 24px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.use-it p {
+  margin: 0;
+}
+
+.use-it p + p {
+  margin-top: 10px;
+}
+
+.skill-body {
+  margin-top: 40px;
+}
+
+.skill-body h1,
+.skill-body h2,
+.skill-body h3 {
+  margin: 36px 0 12px;
+  font-family: inherit;
+  font-size: 24px;
+  font-weight: 650;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+
+.skill-body h3 {
+  font-size: 19px;
+}
+
+.skill-body code {
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: rgba(12, 12, 14, 0.07);
+  font-size: 0.9em;
+}
+
+.skill-body pre {
+  overflow-x: auto;
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--foreground);
+  color: #e9e7df;
+}
+
+.skill-body pre code {
+  padding: 0;
+  background: none;
+}
+
+.skill-body table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.skill-body th,
+.skill-body td {
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.skill-body blockquote {
+  margin: 16px 0;
+  padding-left: 16px;
+  border-left: 3px solid var(--accent);
+  color: var(--muted);
+}
+
+.doc-footer {
+  padding: 32px 24px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+.doc-footer p {
+  margin: 4px 0;
+}
+
+@media (max-width: 600px) {
+  .doc-nav nav a:not(.pill) {
+    display: none;
+  }
+}

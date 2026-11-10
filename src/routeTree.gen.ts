@@ -53,6 +53,8 @@ import { Route as AppSettingsOrganizationRouteImport } from './routes/_app/setti
 import { Route as AuthenticatedOnboardingIndexRouteImport } from './routes/_authenticated.onboarding.index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAutumnSplatRouteImport } from './routes/api/autumn/$'
+import { Route as DocsSkillsIndexRouteImport } from './routes/docs/skills/index'
+import { Route as DocsSkillsSkillRouteImport } from './routes/docs/skills/$skill'
 import { Route as ReportMapGrantCopyrightRouteImport } from './routes/report-map/$grant/copyright'
 import { Route as STokenIndexRouteImport } from './routes/s/$token/index'
 import { Route as STokenOgDotpngRouteImport } from './routes/s/$token/og[.]png'
@@ -320,6 +322,16 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 const ApiAutumnSplatRoute = ApiAutumnSplatRouteImport.update({
   id: '/api/autumn/$',
   path: '/api/autumn/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsSkillsIndexRoute = DocsSkillsIndexRouteImport.update({
+  id: '/docs/skills/',
+  path: '/docs/skills/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsSkillsSkillRoute = DocsSkillsSkillRouteImport.update({
+  id: '/docs/skills/$skill',
+  path: '/docs/skills/$skill',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportMapGrantCopyrightRoute = ReportMapGrantCopyrightRouteImport.update({
@@ -624,12 +636,14 @@ export interface FileRoutesByFullPath {
   '/settings/organization': typeof AppSettingsOrganizationRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/autumn/$': typeof ApiAutumnSplatRoute
+  '/docs/skills/$skill': typeof DocsSkillsSkillRoute
   '/report-map/$grant/copyright': typeof ReportMapGrantCopyrightRoute
   '/s/$token/og.png': typeof STokenOgDotpngRoute
   '/s/$token/raw': typeof STokenRawRoute
   '/help/': typeof AppHelpIndexRoute
   '/settings/': typeof AppSettingsIndexRoute
   '/onboarding/': typeof AuthenticatedOnboardingIndexRoute
+  '/docs/skills/': typeof DocsSkillsIndexRoute
   '/s/$token/': typeof STokenIndexRoute
   '/p/$projectId/ai-visibility': typeof AppPProjectIdAiVisibilityRouteWithChildren
   '/p/$projectId/backlinks': typeof AppPProjectIdBacklinksRoute
@@ -712,12 +726,14 @@ export interface FileRoutesByTo {
   '/settings/organization': typeof AppSettingsOrganizationRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/autumn/$': typeof ApiAutumnSplatRoute
+  '/docs/skills/$skill': typeof DocsSkillsSkillRoute
   '/report-map/$grant/copyright': typeof ReportMapGrantCopyrightRoute
   '/s/$token/og.png': typeof STokenOgDotpngRoute
   '/s/$token/raw': typeof STokenRawRoute
   '/help': typeof AppHelpIndexRoute
   '/settings': typeof AppSettingsIndexRoute
   '/onboarding': typeof AuthenticatedOnboardingIndexRoute
+  '/docs/skills': typeof DocsSkillsIndexRoute
   '/s/$token': typeof STokenIndexRoute
   '/p/$projectId/backlinks': typeof AppPProjectIdBacklinksRoute
   '/p/$projectId/brand-lookup': typeof AppPProjectIdBrandLookupRoute
@@ -802,12 +818,14 @@ export interface FileRoutesById {
   '/_app/settings/organization': typeof AppSettingsOrganizationRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/autumn/$': typeof ApiAutumnSplatRoute
+  '/docs/skills/$skill': typeof DocsSkillsSkillRoute
   '/report-map/$grant/copyright': typeof ReportMapGrantCopyrightRoute
   '/s/$token/og.png': typeof STokenOgDotpngRoute
   '/s/$token/raw': typeof STokenRawRoute
   '/_app/help/': typeof AppHelpIndexRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
   '/_authenticated/onboarding/': typeof AuthenticatedOnboardingIndexRoute
+  '/docs/skills/': typeof DocsSkillsIndexRoute
   '/s/$token/': typeof STokenIndexRoute
   '/_app/p/$projectId/ai-visibility': typeof AppPProjectIdAiVisibilityRouteWithChildren
   '/_app/p/$projectId/backlinks': typeof AppPProjectIdBacklinksRoute
@@ -894,12 +912,14 @@ export interface FileRouteTypes {
     | '/settings/organization'
     | '/api/auth/$'
     | '/api/autumn/$'
+    | '/docs/skills/$skill'
     | '/report-map/$grant/copyright'
     | '/s/$token/og.png'
     | '/s/$token/raw'
     | '/help/'
     | '/settings/'
     | '/onboarding/'
+    | '/docs/skills/'
     | '/s/$token/'
     | '/p/$projectId/ai-visibility'
     | '/p/$projectId/backlinks'
@@ -982,12 +1002,14 @@ export interface FileRouteTypes {
     | '/settings/organization'
     | '/api/auth/$'
     | '/api/autumn/$'
+    | '/docs/skills/$skill'
     | '/report-map/$grant/copyright'
     | '/s/$token/og.png'
     | '/s/$token/raw'
     | '/help'
     | '/settings'
     | '/onboarding'
+    | '/docs/skills'
     | '/s/$token'
     | '/p/$projectId/backlinks'
     | '/p/$projectId/brand-lookup'
@@ -1071,12 +1093,14 @@ export interface FileRouteTypes {
     | '/_app/settings/organization'
     | '/api/auth/$'
     | '/api/autumn/$'
+    | '/docs/skills/$skill'
     | '/report-map/$grant/copyright'
     | '/s/$token/og.png'
     | '/s/$token/raw'
     | '/_app/help/'
     | '/_app/settings/'
     | '/_authenticated/onboarding/'
+    | '/docs/skills/'
     | '/s/$token/'
     | '/_app/p/$projectId/ai-visibility'
     | '/_app/p/$projectId/backlinks'
@@ -1148,9 +1172,11 @@ export interface RootRouteChildren {
   RReportIdRoute: typeof RReportIdRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAutumnSplatRoute: typeof ApiAutumnSplatRoute
+  DocsSkillsSkillRoute: typeof DocsSkillsSkillRoute
   ReportMapGrantCopyrightRoute: typeof ReportMapGrantCopyrightRoute
   STokenOgDotpngRoute: typeof STokenOgDotpngRoute
   STokenRawRoute: typeof STokenRawRoute
+  DocsSkillsIndexRoute: typeof DocsSkillsIndexRoute
   STokenIndexRoute: typeof STokenIndexRoute
   ApiGa4OauthCallbackRoute: typeof ApiGa4OauthCallbackRoute
   ApiGscOauthCallbackRoute: typeof ApiGscOauthCallbackRoute
@@ -1467,6 +1493,20 @@ declare module '@tanstack/react-router' {
       path: '/api/autumn/$'
       fullPath: '/api/autumn/$'
       preLoaderRoute: typeof ApiAutumnSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/skills/': {
+      id: '/docs/skills/'
+      path: '/docs/skills'
+      fullPath: '/docs/skills/'
+      preLoaderRoute: typeof DocsSkillsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/skills/$skill': {
+      id: '/docs/skills/$skill'
+      path: '/docs/skills/$skill'
+      fullPath: '/docs/skills/$skill'
+      preLoaderRoute: typeof DocsSkillsSkillRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/report-map/$grant/copyright': {
@@ -2042,9 +2082,11 @@ const rootRouteChildren: RootRouteChildren = {
   RReportIdRoute: RReportIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAutumnSplatRoute: ApiAutumnSplatRoute,
+  DocsSkillsSkillRoute: DocsSkillsSkillRoute,
   ReportMapGrantCopyrightRoute: ReportMapGrantCopyrightRoute,
   STokenOgDotpngRoute: STokenOgDotpngRoute,
   STokenRawRoute: STokenRawRoute,
+  DocsSkillsIndexRoute: DocsSkillsIndexRoute,
   STokenIndexRoute: STokenIndexRoute,
   ApiGa4OauthCallbackRoute: ApiGa4OauthCallbackRoute,
   ApiGscOauthCallbackRoute: ApiGscOauthCallbackRoute,

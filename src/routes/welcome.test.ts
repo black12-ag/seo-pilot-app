@@ -100,7 +100,9 @@ describe("public welcome document", () => {
     $("a").each((_, link) => {
       const href = $(link).attr("href");
       if (href?.startsWith(REPO_URL)) return;
-      expect(href).toMatch(/^(\/(?:welcome|privacy|terms|sign-in)$|#)/);
+      expect(href).toMatch(
+        /^(\/(?:welcome|privacy|terms|sign-in|docs\/skills)$|#)/,
+      );
       if (href?.startsWith("#")) expect($(href)).toHaveLength(1);
     });
     expect(html).not.toMatch(

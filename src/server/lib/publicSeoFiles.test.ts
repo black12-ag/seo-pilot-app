@@ -18,6 +18,9 @@ describe("public SEO files", () => {
     expect(xml).toContain(`<loc>${origin}/privacy</loc>`);
     expect(xml).not.toContain("/p/");
     expect(xml.match(/<url>/g)).toHaveLength(3);
+    expect(sitemapXml(origin, ["/docs/skills"])).toContain(
+      `<loc>${origin}/docs/skills</loc>`,
+    );
   });
 
   it("llms.txt describes the project and links home", () => {
