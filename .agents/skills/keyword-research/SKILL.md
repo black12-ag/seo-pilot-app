@@ -32,14 +32,30 @@ Deliver through the `seo-report` skill, saving with `skill: "keyword-research"`.
 
 ## SEO Pilot MCP tools
 
-- `research_keywords`: primary discovery tool. Use 1-5 seeds per call and prefer 150 results unless the user asks for exhaustive research. For demand in one city, county, or region, call `search_serp_locations` and pass the returned `locationName` on the seed: volume, CPC, and competition become local; keyword ideas, KD, and intent stay national.
-- `get_keyword_metrics`: hydrate up to 700 known keywords with volume, keyword difficulty (KD), search intent, CPC, and monthly trends in one call. Use it to score candidate or known terms — including the Search Console striking-distance queries from step 1.
-- `get_ranked_keywords`: pull exact ranking keyword rows when a target domain or page is part of the research brief.
+Tools marked (key) need the optional DataForSEO key. Everything else is free.
+
+- `get_search_console_keyword_ideas`: free keyword ideas from the project's own Search Console: queries the site already gets impressions for, with impressions, clicks, CTR, average position and the best page. Pass `strikingDistanceOnly: true` for positions 5-20. Impressions are not search volume.
+- `research_keywords` (key): primary discovery tool. Use 1-5 seeds per call and prefer 150 results unless the user asks for exhaustive research. For demand in one city, county, or region, call `search_serp_locations` and pass the returned `locationName` on the seed: volume, CPC, and competition become local; keyword ideas, KD, and intent stay national.
+- `get_keyword_metrics` (key): hydrate up to 700 known keywords with volume, keyword difficulty (KD), search intent, CPC, and monthly trends in one call. Use it to score candidate or known terms — including the Search Console striking-distance queries from step 1.
+- `get_ranked_keywords` (key): pull exact ranking keyword rows when a target domain or page is part of the research brief.
 - `get_search_console_performance`: when Search Console is connected, start from the project's real first-party demand — queries already earning impressions and near-ranking ("striking distance") terms. Pass `minPosition: 5, maxPosition: 20, minImpressions: 50` so the server filters the striking-distance rows for you (Google sorts by clicks and can't filter by position itself). Then hydrate those striking-distance queries with `get_keyword_metrics` to attach difficulty and intent.
-- `get_serp_results`: inspect SERPs for the top candidate terms, especially when intent is ambiguous. Pass the same `locationName` for the SERP in one city, county, or region.
-- `search_local_businesses`, `get_local_serp_results`, and `get_google_business_questions`: use for local SEO topics when a business/location radius matters.
+- `get_serp_results` (key): inspect SERPs for the top candidate terms, especially when intent is ambiguous. Pass the same `locationName` for the SERP in one city, county, or region.
+- `search_local_businesses`, `get_local_serp_results`, and `get_google_business_questions` (key): use for local SEO topics when a business/location radius matters.
 - `list_saved_keywords`: avoid duplicating already-saved work or use existing tags as context.
 - `save_keywords`: save selected keywords only after explicit user confirmation.
+- `create_rank_tracker` with `source: "gsc"`, then `add_rank_tracking_keywords`: free daily tracking of chosen queries from Search Console.
+
+## Free mode (no DataForSEO key)
+
+SEO Pilot is free by default; DataForSEO is an optional key. If a (key) tool answers "DataForSEO isn't set up", stay in free mode for the rest of the run: call no other (key) tool, and say in the result which parts need the key.
+
+1. Start from `get_search_console_keyword_ideas` (`dateRange: "last_3_months"`, `limit: 200`), then again with `strikingDistanceOnly: true`. That list is the opportunity set: real queries, real positions, the page Google already shows.
+2. Map queries to pages with `get_search_console_performance` (`dimensions: ["query","page"]`) when one query splits impressions across URLs.
+3. For seeds the site does not rank for yet, read the site and the user's notes for topics, and offer `research_ai_visibility_prompts` for question ideas. Those are model guesses with no demand data: list them as "unvalidated" and never attach a volume.
+4. Prioritize by impressions, position and business fit instead of volume and difficulty. In the tables, write `needs key` for volume, KD and CPC. Never estimate them.
+5. Offer to track the picks with `create_rank_tracker` (`source: "gsc"`) and save them with `save_keywords`.
+
+Without Search Console connected, free mode has no demand data at all. Say so, link the project's GSC Insights page, and stop before guessing.
 
 ## Workflow
 
@@ -69,7 +85,7 @@ If a report template applies (see `seo-report`), its sections and tone replace t
 Sections in this order:
 
 1. **The opportunity** — one or two opening sentences naming the best theme and why the site can win it now.
-2. **Target these now** — a table of keyword, intent, volume, KD, CPC, and the page to make. Add a bar chart comparing the volumes of the shortlist.
+2. **Target these now** — a table of keyword, intent, volume, KD, CPC, and the page to make. Add a bar chart comparing the volumes of the shortlist. In free mode the columns are keyword, impressions, clicks, average position, best page and the change to make, and the chart compares impressions.
 3. **Why these** — one finding per keyword that needs justifying: the SERP or metric evidence, then the page to build.
 4. **The longer opportunity list** — a second table, same columns.
 5. **Risks and caveats** — notes: SERP intent that would change the recommendation, missing metrics written as `unknown`, close-variant volumes that are one bucket rather than several.
@@ -78,6 +94,7 @@ Sections in this order:
 
 ## Guardrails
 
-- Do not invent metrics. If SEO Pilot does not return a value, write `unknown`.
+- Do not invent metrics. If SEO Pilot does not return a value, write `unknown`, or `needs key` when only the DataForSEO key would supply it.
+- Search Console impressions are how often the site was shown, not search volume. Never convert one into the other.
 - Do not call `save_keywords` without explicit confirmation.
 - Prefer business-fit and intent-fit over chasing the largest volume term.

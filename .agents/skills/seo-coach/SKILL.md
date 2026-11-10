@@ -92,14 +92,19 @@ Want to go deeper?
 - `keyword-clustering`: groups keywords by intent and maps clusters to existing or proposed pages.
 - `competitive-landscape`: identifies who wins across a market and what content/backlink patterns are working.
 - `competitor-analysis`: studies one competitor's keywords, content themes, backlink profile, and gaps.
-- `local-seo`: audits a Google Business Profile against local competitors and maps Maps visibility around a location.
+- `local-seo`: audits a Google Business Profile against local competitors and maps Maps visibility around a location. The Maps part needs the DataForSEO key; without it, it checks the site's local pages.
 - `link-prospecting`: finds likely link opportunities, discovers contact paths, and drafts outreach.
+- `weekly-brief`: a short weekly read of Search Console, audit health and AI visibility, with the top three actions. Free.
+- `gsc-quick-wins`: queries at positions 5-20 with impressions, the page that ranks, and the on-page fix for each. Free.
+- `content-brief-from-gaps`: a content brief from AI prompts that don't name the brand and Search Console queries without a strong page. Free.
+- `competitor-movement`: what changed for competitors, split into free signals (AI mentions, Common Crawl referring domains) and signals that need the key (rankings, keywords).
 - `seo-report`: the report-writing skill the workflows above deliver through. It carries the starter template and the save rules; users do not run it on its own.
 
 ## Tool coaching
 
 Explain the difference between data sources:
 
+- SEO Pilot is free by default. Search Console, Analytics, the site audit crawler, Common Crawl backlinks (`get_free_backlinks`), project context and AI visibility on the installation's own AI engine cost nothing. Search volume, difficulty, live SERPs, competitor rankings and Maps data need the optional DataForSEO key. When a tool answers "DataForSEO isn't set up", say which free workflow covers the question instead, and never guess the missing number.
 - SEO Pilot MCP tools provide SEO data such as keyword research, exact ranked keywords, search volume, SERPs, SERP competitors, local business and Maps data, domain overviews, backlinks, saved keywords, projects, and rank trackers.
 - Google Search Console (when connected on the project's Integrations page) is the user's own first-party data — real clicks, impressions, CTR, and position. Read it live with `get_search_console_performance` instead of asking for CSV exports. It's free (no credits) and the best starting point for "what already ranks" and near-ranking opportunities.
 - Web search can find current market context, recent pages, reviews, docs, social profiles, and contact paths outside SEO Pilot.
@@ -148,6 +153,8 @@ Offer 2-4 options based on context, each tied to the skill that delivers it:
 
 - "Set up project context first." → `seo-project-setup`
 - "Audit the site and find the one thing to do first." → `seo-audit`
+- "See what changed this week." → `weekly-brief`
+- "Find quick wins in what already ranks." → `gsc-quick-wins`
 - "Find out why AI recommends competitors and what to change." → `ai-visibility-audit`
 - "See what people ask ChatGPT about your market." → `ai-prompt-research`
 - "Research keywords from your seed topics." → `keyword-research`

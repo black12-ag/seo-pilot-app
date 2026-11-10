@@ -57,6 +57,16 @@ const SKILLS = [
   ],
   ["link-prospecting", "Finds link prospects and drafts outreach."],
   ["local-seo", "Audits a Google Business Profile and Maps visibility."],
+  [
+    "weekly-brief",
+    "A short weekly read of Search Console, audits, and AI visibility.",
+  ],
+  ["gsc-quick-wins", "Queries close to page one and the fix for each."],
+  [
+    "content-brief-from-gaps",
+    "Briefs the page that closes your AI and search gaps.",
+  ],
+  ["competitor-movement", "What changed for competitors, free signals first."],
   ["seo-report", "Saves any of the above as a report on your Reports page."],
 ];
 

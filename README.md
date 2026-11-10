@@ -79,6 +79,16 @@ Free mode doesn't include competitor discovery, keyword volume and difficulty, l
 
 **Optional: add DataForSEO for competitor, backlink and ranking data.** It's pay-as-you-go. See [DataForSEO API key](docs/DATAFORSEO_API_KEY.md).
 
+## Built-in skills
+
+SAM, the in-app assistant, and any agent connected over MCP (Claude Code, Codex and others) can run these workflows. They live in [`.agents/skills`](.agents/skills). All of them work without a DataForSEO key: they use Search Console, the site audit, free backlinks and your own AI engine, and say plainly which part needs the key instead of guessing numbers.
+
+- **Free from the start:** `weekly-brief`, `gsc-quick-wins`, `content-brief-from-gaps`, `seo-audit`, `seo-coach`, `seo-project-setup`.
+- **Free, richer with a key:** `keyword-research`, `keyword-clustering`, `ai-visibility-audit`, `ai-prompt-research`, `competitor-movement`, `competitor-analysis`, `competitive-landscape`, `link-prospecting`.
+- **Needs a key for Maps data:** `local-seo`. Without one it checks your local pages instead.
+
+Pages such as audit issues, keyword ideas, AI visibility prompts and Opportunities have an **Ask SAM** button. It opens a new chat with the question filled in; nothing is sent until you press send.
+
 ## Choose your AI
 
 You choose how AI runs, and you can change it at any time in Settings with no redeploy.

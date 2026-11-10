@@ -33,15 +33,31 @@ Deliver through the `seo-report` skill, saving with `skill: "competitive-landsca
 
 ## SEO Pilot MCP tools
 
-- `research_keywords`: discover representative market queries.
-- `get_keyword_metrics`: validate known query sets with volume, difficulty, intent, and trends.
-- `get_serp_results`: identify recurring ranking domains across target queries.
-- `find_serp_competitors`: compare domains competing across supplied keywords; use this before manual SERP counting when a keyword set is available.
-- `get_domain_overview`: size organic footprint for candidate leaders.
+Tools marked (key) need the optional DataForSEO key. Everything else is free.
+
+- `research_keywords` (key): discover representative market queries.
+- `get_keyword_metrics` (key): validate known query sets with volume, difficulty, intent, and trends.
+- `get_serp_results` (key): identify recurring ranking domains across target queries.
+- `find_serp_competitors` (key): compare domains competing across supplied keywords; use this before manual SERP counting when a keyword set is available.
+- `get_domain_overview` (key): size organic footprint for candidate leaders.
 - `get_search_console_performance`: when the user's own domain is in the comparison and Search Console is connected, anchor their position with first-party clicks/impressions/CTR rather than third-party estimates.
-- `get_ranked_keywords`: find exact ranking keywords, URLs, ranks, intents, and SERP result types for leaders.
-- `get_backlinks_overview`: compare backlink/referring-domain strength where relevant.
-- `search_local_businesses`, `get_local_serp_results`, and `get_google_business_questions`: use for local SEO markets where proximity, Maps rankings, business categories, reviews, or Google Q&A affect who is winning.
+- `get_ranked_keywords` (key): find exact ranking keywords, URLs, ranks, intents, and SERP result types for leaders.
+- `get_backlinks_overview` (key): compare backlink/referring-domain strength where relevant.
+- `get_free_backlinks`: free referring-domain counts from Common Crawl for the project's site and saved competitors.
+- `get_ai_visibility_results` and `get_ai_visibility_sources`: free when the tracker runs on the own AI engine; which competitors AI answers name, and which pages they link.
+- `search_local_businesses`, `get_local_serp_results`, and `get_google_business_questions` (key): use for local SEO markets where proximity, Maps rankings, business categories, reviews, or Google Q&A affect who is winning.
+
+## Free mode (no DataForSEO key)
+
+SEO Pilot is free by default; DataForSEO is an optional key. If a (key) tool answers "DataForSEO isn't set up", stay in free mode for the rest of the run. Without the key there is no free and legitimate source for who ranks in Google or for other sites' traffic, so say plainly that the search-ranking side of the landscape needs the key. Do not scrape Google. What you can still map for free:
+
+- **Roster**: saved competitors from project context, plus brands that AI answers name (`get_ai_visibility_results`), plus any the user names.
+- **Market queries**: the site's own Search Console queries (`get_search_console_keyword_ideas`) show which themes the market searches for and where the site already appears.
+- **Authority**: `get_free_backlinks` for the site and each saved competitor; compare referring-domain counts from the same Common Crawl release only.
+- **Content themes**: read each competitor's sitemap and key pages (web reading, or `map_links` and `read_pages` in SAM) and group their page families.
+- **AI answers**: which competitors the tracked answers mention and which pages they link, labeled as own-engine answers when the engine is `own_ai`.
+
+In "Who is winning", replace organic footprint with referring domains and AI mentions, and add a "Needs key" row for rankings and traffic. Call the read directional.
 
 ## Workflow
 

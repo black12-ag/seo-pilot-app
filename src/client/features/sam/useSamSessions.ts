@@ -17,11 +17,14 @@ export function useSamSessions(
   projectId: string,
   {
     replace = false,
+    ask,
     onNavigate,
     onCreateError,
     onCreateSettled,
   }: {
     replace?: boolean;
+    /** A question to keep in the link, so the opened chat can prefill it. */
+    ask?: string;
     onNavigate?: () => void;
     onCreateError?: (error: Error) => void;
     onCreateSettled?: () => void;
@@ -35,12 +38,12 @@ export function useSamSessions(
       void navigate({
         to: "/p/$projectId/sam",
         params: { projectId },
-        search: sessionId ? { s: sessionId } : {},
+        search: sessionId ? { s: sessionId, ask } : { ask },
         replace,
       });
       onNavigate?.();
     },
-    [navigate, projectId, replace, onNavigate],
+    [navigate, projectId, replace, ask, onNavigate],
   );
 
   const createSession = useMutation({

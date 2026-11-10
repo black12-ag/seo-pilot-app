@@ -9,6 +9,7 @@ import {
   formatCtr,
   formatPosition,
 } from "@/client/features/search-performance/SearchPerformanceColumns";
+import { AskSamButton } from "@/client/features/sam/AskSamButton";
 import { safeHttpUrl } from "@/shared/safe-url";
 import type { getGscKeywordIdeas } from "@/serverFunctions/gscKeywordIdeas";
 
@@ -23,8 +24,14 @@ const rightAligned = {
   cellClassName: "text-right tabular-nums",
 } as const;
 
+function askAboutQuery(row: GscKeywordIdeaRow): string {
+  const page = row.page ? ` My best page for it is ${row.page}.` : "";
+  return `Tell me about the Search Console query "${row.keyword}": ${formatCount(row.impressions)} impressions, ${formatCount(row.clicks)} clicks, average position ${formatPosition(row.position)}.${page} What should I change to rank higher and get more clicks for it?`;
+}
+
 export function buildGscKeywordIdeaColumns(
   anchorRef: MutableRefObject<SelectionAnchor | null>,
+  projectId: string,
 ): ColumnDef<GscKeywordIdeaRow>[] {
   return [
     makeSelectionColumn<GscKeywordIdeaRow>(
@@ -103,6 +110,19 @@ export function buildGscKeywordIdeaColumns(
           </a>
         );
       },
+    }),
+    helper.display({
+      id: "askSam",
+      header: () => <span className="sr-only">Ask SAM</span>,
+      cell: ({ row }) => (
+        <AskSamButton
+          projectId={projectId}
+          label={`Ask SAM about "${row.original.keyword}"`}
+          question={askAboutQuery(row.original)}
+          size="xs"
+          iconOnly
+        />
+      ),
     }),
   ];
 }

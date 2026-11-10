@@ -267,7 +267,7 @@ function KeywordResearchContent({
   return (
     <>
       {errorCard}
-      <KeywordResearchResults controller={controller} />
+      <KeywordResearchResults controller={controller} projectId={projectId} />
     </>
   );
 }

@@ -96,7 +96,7 @@ Write to `positioning`: audience, the problem, the differentiator, and any claim
 
 ### 6. Save competitors
 
-Turn the competitors and substitutes from step 5 into `addCompetitors` entries: one row per domain, with a short `notes` line on why they matter ("direct competitor, owns the comparison pages"). If the user is unsure who competes in search, `find_serp_competitors` on a handful of seed keywords will name them — confirm the list with the user before saving, and log the spend.
+Turn the competitors and substitutes from step 5 into `addCompetitors` entries: one row per domain, with a short `notes` line on why they matter ("direct competitor, owns the comparison pages"). If the user is unsure who competes in search, `find_serp_competitors` on a handful of seed keywords will name them — confirm the list with the user before saving, and log the spend. It needs the optional DataForSEO key; without it, propose competitors from the site, the user's notes and any brands AI answers name, and confirm them the same way.
 
 Competitors saved here are reused by `competitive-landscape`, `competitor-analysis`, and `link-prospecting`.
 
@@ -118,7 +118,7 @@ Save the pages that actually matter with `addKeyPages` — money pages, topic hu
 
 GSC is the richest first-party signal: existing impressions, near-ranking terms, cannibalization, and pages that already have search demand.
 
-**Preferred (hosted): connect it natively.** On the project's Integrations page, connect Google Search Console and pull live data with `get_search_console_performance`. If the user has already connected a Google account there, you can pick the property yourself: `list_search_console_sites` shows what each connected account can see, and `set_search_console_site` binds one to the project (`list_google_analytics_properties` / `set_google_analytics_property` do the same for GA4). Once connected, the agent reads it directly in `keyword-research` and `keyword-clustering` — no manual files to maintain.
+**Preferred (hosted): connect it natively.** On the project's Integrations page, connect Google Search Console and pull live data with `get_search_console_performance`. If the user has already connected a Google account there, you can pick the property yourself: `list_search_console_sites` shows what each connected account can see, and `set_search_console_site` binds one to the project (`list_google_analytics_properties` / `set_google_analytics_property` do the same for GA4). Once connected, the agent reads it directly in `keyword-research`, `keyword-clustering` and `gsc-quick-wins` — no manual files to maintain. It is also what makes SEO Pilot work without a DataForSEO key: `get_search_console_keyword_ideas` lists the queries the site already gets, and `create_rank_tracker` with `source: "gsc"` tracks positions for free.
 
 **Fallback (self-hosted, or if the user prefers files):** ask the user to export CSVs from Search Console into a local working folder (see step 9).
 
@@ -163,6 +163,8 @@ After intake, recommend one next SEO Pilot workflow:
 - `competitive-landscape`: when the market is unclear
 - `competitor-analysis`: when they know a competitor to study
 - `link-prospecting`: when they have a linkable asset or target page
+- `gsc-quick-wins`: when Search Console is connected and they want the fastest free win
+- `weekly-brief`: when they want a short weekly check-in
 
 ## Output format
 

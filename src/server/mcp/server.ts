@@ -56,6 +56,7 @@ import { instrumentMcpToolHandler } from "@/server/mcp/instrumentation";
 import { submitIndexNowUrlsTool } from "@/server/mcp/tools/submit-indexnow-urls";
 import { getBacklinksOverviewTool } from "@/server/mcp/tools/get-backlinks-overview";
 import { getBacklinksProfileTool } from "@/server/mcp/tools/get-backlinks-profile";
+import { getFreeBacklinksTool } from "@/server/mcp/tools/get-free-backlinks";
 import { getDomainKeywordSuggestionsTool } from "@/server/mcp/tools/get-domain-keyword-suggestions";
 import { getDomainOverviewTool } from "@/server/mcp/tools/get-domain-overview";
 import { addRankTrackingKeywordsTool } from "@/server/mcp/tools/add-rank-tracking-keywords";
@@ -294,6 +295,7 @@ export function registerSeoPilotTools(
   register(getDomainKeywordSuggestionsTool);
   register(getBacklinksOverviewTool);
   register(getBacklinksProfileTool);
+  register(getFreeBacklinksTool);
   register(getSerpResultsTool);
   register(searchSerpLocationsTool);
   register(getAiVisibilityTrackerTool);

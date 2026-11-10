@@ -15,7 +15,7 @@ Group keywords into page-level clusters and decide which existing or new page sh
 - A keyword list, saved keyword tag, seed topic, or target domain
 - Optional existing URLs/pages to map against
 
-If keywords are not provided, use `list_saved_keywords` for saved sets, `research_keywords` for seed discovery, or `get_ranked_keywords` when the user starts from a target domain.
+If keywords are not provided, use `list_saved_keywords` for saved sets, `get_search_console_keyword_ideas` for the queries the site already gets, `research_keywords` for seed discovery, or `get_ranked_keywords` when the user starts from a target domain.
 
 ## Project context
 
@@ -32,13 +32,25 @@ Deliver through the `seo-report` skill, saving with `skill: "keyword-clustering"
 
 ## SEO Pilot MCP tools
 
+Tools marked (key) need the optional DataForSEO key. Everything else is free.
+
 - `list_saved_keywords`: fetch an existing keyword set, optionally filtered by tags.
-- `research_keywords`: expand a seed when the user starts from a topic.
-- `get_ranked_keywords`: gather exact ranking keywords and URLs when the user starts from a domain or page.
+- `get_search_console_keyword_ideas`: free; the site's own queries with impressions, position and best page.
+- `research_keywords` (key): expand a seed when the user starts from a topic.
+- `get_ranked_keywords` (key): gather exact ranking keywords and URLs when the user starts from a domain or page.
 - `get_search_console_performance`: when Search Console is connected, pull real queries with `dimensions: ["query","page"]` to map terms to the pages already earning impressions and to surface cannibalization (one query splitting clicks across multiple URLs).
-- `get_serp_results`: validate whether keywords belong on the same page by checking SERP overlap and intent.
-- `get_local_serp_results`: use for local SEO clusters when Maps/local-pack intent should affect page mapping.
+- `get_serp_results` (key): validate whether keywords belong on the same page by checking SERP overlap and intent.
+- `get_local_serp_results` (key): use for local SEO clusters when Maps/local-pack intent should affect page mapping.
 - `save_keywords`: optionally tag final clusters after user confirmation.
+
+## Free mode (no DataForSEO key)
+
+SEO Pilot is free by default; DataForSEO is an optional key. If a (key) tool answers "DataForSEO isn't set up", stay in free mode for the rest of the run and say which parts need the key.
+
+- Gather the set from saved keywords, `get_search_console_keyword_ideas`, and `get_search_console_performance` with `dimensions: ["query","page"]`.
+- Without SERP overlap checks, cluster by intent plus Search Console page overlap: queries that send impressions to the same URL usually belong to one page; one query split across URLs is a cannibalization lead.
+- Say in the report that clusters come from intent and Search Console page data, not SERP overlap, and mark borderline terms "check SERP with the key" instead of guessing.
+- Use impressions and average position where the table asks for demand. Never write a volume.
 
 ## Workflow
 

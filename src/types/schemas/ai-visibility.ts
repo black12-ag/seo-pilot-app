@@ -98,10 +98,10 @@ export const setAiScheduleSchema = aiProjectSchema.extend({
 export const runAiCheckSchema = aiProjectSchema.extend({
   maxCostUsd: z
     .number()
-    .positive()
+    .nonnegative()
     .max(100)
     .describe(
-      "The most the user approved for this one check: runNowCostUsd from estimate_ai_visibility_cost. The check is refused if its current cost is higher.",
+      "The most the user approved for this one check: runNowCostUsd from estimate_ai_visibility_cost. The check is refused if its current cost is higher. 0 when only the installation's own AI engine answers, which costs nothing.",
     ),
   promptIds: z.array(z.string().uuid()).min(1).max(100).optional(),
 });

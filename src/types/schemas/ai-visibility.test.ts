@@ -3,6 +3,7 @@ import {
   aiResultsSchema,
   aiSourcesSchema,
   aiTrackerPatchSchema,
+  runAiCheckSchema,
 } from "./ai-visibility";
 
 describe("AI tracker input boundary", () => {
@@ -66,5 +67,17 @@ describe("AI review query filters", () => {
       expect(aiResultsSchema.safeParse({ projectId, ...patch }).success).toBe(
         false,
       );
+  });
+});
+
+describe("AI check approval", () => {
+  const projectId = "00000000-0000-4000-8000-000000000001";
+  it("accepts a zero-cost approval for own-engine checks and rejects a negative one", () => {
+    expect(
+      runAiCheckSchema.safeParse({ projectId, maxCostUsd: 0 }).success,
+    ).toBe(true);
+    expect(
+      runAiCheckSchema.safeParse({ projectId, maxCostUsd: -0.01 }).success,
+    ).toBe(false);
   });
 });

@@ -97,8 +97,8 @@ export function GscKeywordIdeasPage({ projectId }: { projectId: string }) {
   }, [result, tab]);
 
   const columns = useMemo(
-    () => buildGscKeywordIdeaColumns(anchorRef),
-    [anchorRef],
+    () => buildGscKeywordIdeaColumns(anchorRef, projectId),
+    [anchorRef, projectId],
   );
   const table = useDataTable({
     data: rows,

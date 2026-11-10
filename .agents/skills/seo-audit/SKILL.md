@@ -22,14 +22,30 @@ Deliver through the `seo-report` skill, saving with `skill: "seo-audit"`. If tha
 
 ## SEO Pilot MCP tools
 
+Tools marked (key) need the optional DataForSEO key. Everything else is free.
+
 - `whoami`: confirm the connection and credits before spending. If SEO Pilot is not connected, stop and ask the user to connect it.
 - `run_site_audit`, then `get_audit_status` (wait a minute or two between checks), `get_audit_issues`, `get_audit_pages`. Leave Lighthouse off unless the user asked for performance depth. Crawl reads are free.
-- `get_backlinks_overview` and `get_domain_overview`: orientation only. Provider traffic and keyword counts are estimates with no single observation date; they are not measured visits.
-- `get_ranked_keywords`: which queries send which pages traffic. Start with one domain-level call with `resultTypes: ["organic"]`; use `scope: "exact_url"` for the specific pages you compare. A page missing from a limited domain sample is not proof it has no rankings. Ranking rows carry their own `last_updated_time`; keyword metric dates are not ranking dates.
-- `get_serp_results`: the live check behind every ranking claim in the report. The returned `rank` counts every result block, so count organic (unpaid) listings yourself and report the spot with its page, ten spots per page: "#10 (page 1)", "#11 (page 2)". Request depth 20; a page not seen is "not in the first 20 results". Record the exact query, country, language, date, how many organic listings came back, and the matching URL; those details go in the evidence appendix, not the tables. A failed lookup is unknown, not "not in the first 20 results".
+- `get_backlinks_overview` and `get_domain_overview` (key): orientation only. Provider traffic and keyword counts are estimates with no single observation date; they are not measured visits.
+- `get_ranked_keywords` (key): which queries send which pages traffic. Start with one domain-level call with `resultTypes: ["organic"]`; use `scope: "exact_url"` for the specific pages you compare. A page missing from a limited domain sample is not proof it has no rankings. Ranking rows carry their own `last_updated_time`; keyword metric dates are not ranking dates.
+- `get_serp_results` (key): the live check behind every ranking claim in the report. The returned `rank` counts every result block, so count organic (unpaid) listings yourself and report the spot with its page, ten spots per page: "#10 (page 1)", "#11 (page 2)". Request depth 20; a page not seen is "not in the first 20 results". Record the exact query, country, language, date, how many organic listings came back, and the matching URL; those details go in the evidence appendix, not the tables. A failed lookup is unknown, not "not in the first 20 results".
 - `get_search_console_performance`: when connected, first-party clicks and impressions separate low visibility from low click-through. Missing access is a coverage gap, not a blocker.
-- `get_keyword_metrics` and `research_keywords`: demand for the queries a candidate page targets. One focused metrics batch usually suffices; one research call with 1–3 seeds when a demand gap could change the decision.
+- `get_keyword_metrics` and `research_keywords` (key): demand for the queries a candidate page targets. One focused metrics batch usually suffices; one research call with 1–3 seeds when a demand gap could change the decision.
+- `get_search_console_keyword_ideas`: free; the site's queries with impressions, average position and best page, with striking-distance rows marked.
+- `get_free_backlinks`: free referring-domain counts from Common Crawl; orientation only, like the provider overview.
 - Web reading (fetch, scrape, or search): the site's own pages, sitemap, the leading results for a query, and competitor pages.
+
+### Free mode (no DataForSEO key)
+
+The crawl, the audit reads, Search Console and web reading are free, so most of this skill runs without the key. If a (key) tool answers "DataForSEO isn't set up", stay in free mode for the rest of the run:
+
+- **Visibility evidence**: use `get_search_console_performance` (`dimensions: ["query","page"]`, `dateRange: "last_3_months"`) instead of live checks. Write it as Google reports it: "avg. position 9.4 (Search Console, Aug 10 to Nov 7)", never as a live spot like "#9 (page 1)". A query with no impressions is "no impressions in Search Console", not "not in the first 20 results".
+- **Demand**: impressions over the same window, with the window in the column header. Impressions are not searches; never call them volume.
+- **Benefit**: size against current impressions and CTR (more clicks at the current position, or a higher position on queries already shown), not against search volume.
+- **Orientation**: `get_free_backlinks` replaces the backlinks and domain overviews.
+- **Without Search Console**: the audit stands on the crawl and page reading. Ranking and demand claims become "unknown; connect Search Console", and recommendations favor demonstrated defects.
+
+Say in "How this report was made" that no live ranking checks or volumes were used and that they need the optional key.
 
 Research until another lookup is unlikely to change which opportunities lead. Respect an explicit user budget and say which comparison it prevented.
 

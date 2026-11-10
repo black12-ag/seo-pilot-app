@@ -28,8 +28,19 @@ The project-context tools are free and shared with the app and other agents.
 - `research_ai_visibility_prompts`: the questions around a prompt group and the sources ChatGPT cites for them (US English only).
 - `explore_prompt`: asks ChatGPT one prompt through its API and returns the answer, citations and `fanOutQueries`, the web searches the model ran before answering. Charged at actual usage per uncached answer; cached answers are free for seven days. Requires a paid plan in hosted mode.
 - `estimate_ai_visibility_cost`, `save_ai_visibility_tracker`, `set_ai_visibility_schedule`, `run_ai_visibility_check`, `get_ai_visibility_run`: only for the first-run path below.
-- `get_ranked_keywords`, `get_serp_results`, `get_backlinks_overview`: optional context when an owned page's search performance or authority could change a recommendation.
+- `get_ranked_keywords`, `get_serp_results`, `get_backlinks_overview` (all need the optional DataForSEO key): optional context when an owned page's search performance or authority could change a recommendation. Free alternatives: `get_search_console_keyword_ideas` for the owned page's own queries and `get_free_backlinks` for referring domains.
 - Web reading (fetch, scrape or search): `robots.txt`, the owned pages that should be cited, and the pages AI answers cite instead.
+
+## Free mode (no DataForSEO key)
+
+The tracker can run on engine `own_ai`, the installation's own AI engine: `get_ai_visibility_tracker` lists it under the engines and names its model in `ownEngine`. With no DataForSEO key it is the only engine, so a new tracker is saved with `engines: ["own_ai"]`. It costs nothing: `estimate_ai_visibility_cost` returns 0, and `run_ai_visibility_check` then takes `maxCostUsd: 0`. If the tracker shows no ready engine, say the audit needs the AI engine (Settings > AI engine) or the optional key, and stop.
+
+Read own-engine evidence for what it is:
+
+- Answers come from model knowledge, with no live web search. They show what the model says about the market, not what people see in ChatGPT, Gemini or Google today. Say that next to every rate.
+- Its cited sources are links the model wrote. Read a page before recommending outreach to it; a link that does not resolve is a dead end, not a gap.
+- In step 3, call `explore_prompt` with `models: ["own_ai"]`. It returns no `fanOutQueries`, so skip the search check behind the answer.
+- Steps 4 and 5 work as written: `robots.txt`, owned pages and competitor pages are read with free web reading.
 
 ## Workflow
 

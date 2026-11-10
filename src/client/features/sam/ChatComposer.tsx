@@ -9,15 +9,18 @@ import {
 
 export function ChatComposer({
   busy,
+  initialValue,
   onSend,
   onStop,
 }: {
   busy: boolean;
+  /** Text the composer starts with, e.g. from an "Ask SAM" link. Never sent on its own. */
+  initialValue?: string;
   onSend: (text: string) => void;
   /** Cancels the running turn; while busy the send button becomes Stop. */
   onStop: () => void;
 }) {
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(initialValue ?? "");
 
   function submit() {
     const text = value.trim();
@@ -47,7 +50,8 @@ export function ChatComposer({
           value={value}
           onChange={(event) => setValue(event.target.value)}
           onKeyDown={handleKey}
-          rows={1}
+          rows={initialValue ? 3 : 1}
+          autoFocus={Boolean(initialValue)}
           placeholder="Ask SAM to research, analyze, or track anything…"
           className="max-h-40 min-h-0 px-3 leading-relaxed"
         />

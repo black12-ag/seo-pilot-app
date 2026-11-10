@@ -33,14 +33,29 @@ Deliver through the `seo-report` skill, saving with `skill: "competitor-analysis
 
 ## SEO Pilot MCP tools
 
-- `get_domain_overview`: baseline organic traffic and keyword count.
+Tools marked (key) need the optional DataForSEO key. Everything else is free.
+
+- `get_domain_overview` (key): baseline organic traffic and keyword count.
 - `get_search_console_performance`: when comparing to the user's own domain and Search Console is connected, use it as the first-party baseline (real clicks/impressions/CTR/position) instead of estimating the user's own performance from third-party data.
-- `get_ranked_keywords`: exact keyword, URL, rank, intent, traffic, CPC, and SERP-type rows for the competitor domain or page.
-- `get_backlinks_overview`: backlink/referring-domain profile.
-- `find_serp_competitors`: validate whether the named competitor is a real search competitor across the target keyword set.
-- `search_local_businesses`, `get_local_serp_results`, and `get_google_business_questions`: use for local SEO competitors when Maps/local-pack visibility, nearby businesses, categories, or Google Q&A matter.
-- `get_serp_results`: validate direct head-to-head SERPs for important keywords.
-- `research_keywords`: expand gaps or category terms when needed.
+- `get_ranked_keywords` (key): exact keyword, URL, rank, intent, traffic, CPC, and SERP-type rows for the competitor domain or page.
+- `get_backlinks_overview` (key): backlink/referring-domain profile.
+- `get_free_backlinks`: free referring domains from Common Crawl, for the project's site and saved competitors only. Save the competitor first with `update_project_context` if it is new; its data arrives with the next monthly run.
+- `get_ai_visibility_results`: free with the own AI engine; whether tracked AI answers name this competitor and in which prompts.
+- `find_serp_competitors` (key): validate whether the named competitor is a real search competitor across the target keyword set.
+- `search_local_businesses`, `get_local_serp_results`, and `get_google_business_questions` (key): use for local SEO competitors when Maps/local-pack visibility, nearby businesses, categories, or Google Q&A matter.
+- `get_serp_results` (key): validate direct head-to-head SERPs for important keywords.
+- `research_keywords` (key): expand gaps or category terms when needed.
+
+## Free mode (no DataForSEO key)
+
+SEO Pilot is free by default; DataForSEO is an optional key. If a (key) tool answers "DataForSEO isn't set up", stay in free mode for the rest of the run. The competitor's traffic, ranking keywords and SERP positions need the key: say so in the Snapshot instead of estimating them. The free analysis:
+
+1. Content: read the competitor's sitemap and main pages (web reading, or `map_links` and `read_pages` in SAM). Group page families and note the angles and proof they use.
+2. Authority: `get_free_backlinks` with the competitor as `target`, and again for the project's site. Referring domains linking to them and not to the site are outreach leads for `link-prospecting`.
+3. AI answers: `get_ai_visibility_results` with the latest run shows the prompts where AI names them and not the brand.
+4. The user's side: `get_search_console_keyword_ideas` shows which of the competitor's themes the site already gets impressions for.
+
+Snapshot columns become referring domains (Common Crawl, with the release), page families found, and AI mentions. Write `needs key` for traffic and keyword count.
 
 ## Workflow
 
