@@ -53,7 +53,7 @@ function skills() {
     const match = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/.exec(raw);
     return {
       directory: path.split("/").at(-2) ?? "",
-      frontmatter: match ? parseYaml(match[1]) : null,
+      frontmatter: match ? (parseYaml(match[1]) as unknown) : null,
       tools: new Set([...raw.matchAll(TOOL_NAME)].map((m) => m[1])),
     };
   });
