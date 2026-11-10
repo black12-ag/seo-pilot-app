@@ -526,6 +526,13 @@
       "when": 1794238170480,
       "tag": "0074_ai_engine_visibility",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "6",
+      "when": 1794314996605,
+      "tag": "0075_skills",
+      "breakpoints": true
     }
   ]
 }
