@@ -5,6 +5,7 @@ export const navLinks = [
   ["Features", "#features"],
   ["Free", "#free"],
   ["Install", "#install"],
+  ["Connect", "#connect"],
 ] as const;
 
 export const roles = ["Audit", "Rank", "Track", "Cite"];
@@ -96,5 +97,44 @@ export const installOptions = [
     detail: "Your own HTTPS address",
     text: "Sets the public address so Google sign-in and Search Console links point at your domain.",
     command: `${INSTALL_COMMAND} -s -- --url https://seo.example.com`,
+  },
+];
+
+export const connectSteps = [
+  {
+    title: "Search Console and Analytics",
+    text: "Create a free Google login for your copy once, then add your Google account and pick each site's property. Or use Import my sites to add them all at once.",
+    where: "Project → GSC Insights → Add Google account",
+    guide: "SELF_HOSTING_GOOGLE_SEARCH_CONSOLE.md",
+  },
+  {
+    title: "Continue with Google",
+    text: "Let people sign in with Google. An existing account with the same verified email links itself on the first Google sign-in.",
+    where: "Sign-in page",
+    guide: "GOOGLE_SIGN_IN.md",
+  },
+  {
+    title: "Your AI login",
+    text: "Sign in to agy, claude or codex on your computer and install with --with-ai, or add an OpenRouter key. Switch any time in Settings.",
+    where: "Settings → AI engine",
+    guide: "AI_ENGINE.md",
+  },
+  {
+    title: "Your own domain",
+    text: "Put SEO Pilot on an HTTPS address like seo.example.com, so Google sign-in and Search Console point at it.",
+    where: "install.sh --url",
+    guide: "PUBLISH_ON_YOUR_DOMAIN.md",
+  },
+  {
+    title: "Rankings and backlinks",
+    text: "Rank tracking fills in from Search Console on its own. Backlinks need one monthly command that downloads Common Crawl's free data.",
+    where: "Rank Tracking · Backlinks",
+    guide: "FREE_RANKINGS.md",
+  },
+  {
+    title: "Updates and backups",
+    text: "Run the install command again with --update for a new version. The guide covers backups and every setting.",
+    where: "install.sh --update",
+    guide: "SELF_HOSTING_SEO_PILOT.md",
   },
 ];

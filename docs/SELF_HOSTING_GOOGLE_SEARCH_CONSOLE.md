@@ -93,9 +93,13 @@ docker compose up -d --force-recreate init web crawl-gateway
 On the older Docker image, run `docker compose up -d --force-recreate open-seo`
 instead.
 
-Then open **Integrations**, click **Connect with Google**, authorize the Google
-account that owns your verified property, and pick the property to bind to your
-project.
+Then open a project and go to **GSC Insights**. Click **Add Google account**,
+authorize the Google account that owns your verified property, choose the
+property under **Choose property**, and click **Save property**.
+
+To add every Search Console site at once, open **Projects**, click **New
+project**, then **Import my sites**. SEO Pilot makes one project per site,
+connects it to Search Console and starts its first audit.
 
 ## How it works
 

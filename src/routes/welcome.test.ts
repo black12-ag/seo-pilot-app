@@ -76,14 +76,16 @@ describe("public welcome document", () => {
       throw new Error("Expected a document response");
     const html = await response.text();
     const $ = load(html);
+    // "/" sends signed-out visitors back here, so sign-in must go to /sign-in.
     expect(
       $("a").filter((_, link) => $(link).attr("href") === "/").length,
-    ).toBeGreaterThan(0);
+    ).toBe(0);
+    expect($("a[href='/sign-in']").length).toBeGreaterThan(0);
     expect($(`a[href='${REPO_URL}']`).length).toBeGreaterThan(0);
     $("a").each((_, link) => {
       const href = $(link).attr("href");
-      if (href === REPO_URL) return;
-      expect(href).toMatch(/^(\/(?:welcome|privacy|terms)?$|#)/);
+      if (href?.startsWith(REPO_URL)) return;
+      expect(href).toMatch(/^(\/(?:welcome|privacy|terms|sign-in)$|#)/);
       if (href?.startsWith("#")) expect($(href)).toHaveLength(1);
     });
     expect(html).not.toMatch(

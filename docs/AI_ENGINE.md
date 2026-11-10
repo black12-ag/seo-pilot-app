@@ -11,7 +11,17 @@ SEO Pilot can run AI two ways. You can switch at any time in **Settings > AI eng
 
 The SEO Pilot runtime can't start programs. A small service in `services/ai-engine/` runs next to it on your server, and only that service runs the command-line tool. It needs Node.js 22 and has no dependencies.
 
-## Set it up
+## Quick setup with the installer
+
+Install and sign in to `agy`, `claude` or `codex` on the same computer as SEO Pilot, then run the installer with `--with-ai`:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/black12-ag/seo-pilot-app/main/scripts/install.sh | sh -s -- --with-ai
+```
+
+It finds the signed-in tool, creates a private token, starts the AI engine (as a systemd user service on Linux) and connects SEO Pilot to it. Then open **Settings > AI engine**, choose a model and press **Save**. Read the security note below first: on a shared server, use the manual setup with a dedicated user.
+
+## Set it up by hand
 
 Use a dedicated OS user with nothing else in its home folder. This limits what a tool can write, but it isn't a sandbox. The service removes the tools' abilities and checks that they stayed removed. If a tool ever got past that, nothing at OS level would stop it reading world-readable files, reaching other services on the same machine, or reading this service's token. So don't run this on a machine that holds other sensitive services, such as payments, unless you've added your own isolation, for example a separate VM.
 

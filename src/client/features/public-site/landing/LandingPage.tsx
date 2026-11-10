@@ -10,6 +10,7 @@ import {
   stats,
 } from "./landingContent";
 import { Eyebrow, FeatureVisual, Liquid } from "./LandingParts";
+import { ConnectSection } from "./ConnectSection";
 
 export { INSTALL_COMMAND, REPO_URL } from "./landingLinks";
 
@@ -53,7 +54,7 @@ export function LandingPage() {
             </li>
           </ul>
           <div className="nav-end">
-            <a className="pill-button" href="/">
+            <a className="pill-button" href="/sign-in">
               Sign in
             </a>
             <button
@@ -81,7 +82,7 @@ export function LandingPage() {
               <a href={REPO_URL}>GitHub</a>
             </li>
             <li>
-              <a href="/">Sign in</a>
+              <a href="/sign-in">Sign in</a>
             </li>
           </ul>
         </div>
@@ -300,6 +301,8 @@ export function LandingPage() {
             </div>
           </div>
         </section>
+
+        <ConnectSection />
 
         <footer id="contact" className="contact">
           <Eyebrow>Run It Yourself</Eyebrow>

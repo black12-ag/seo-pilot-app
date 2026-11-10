@@ -2,7 +2,9 @@
 
 [![CI](https://github.com/black12-ag/seo-pilot-app/actions/workflows/ci.yml/badge.svg)](https://github.com/black12-ag/seo-pilot-app/actions/workflows/ci.yml)
 
-A self-hosted SEO and AI search workspace: research, audits, rank tracking, AI visibility, competitors, content review and reports, in one place.
+A free, self-hosted SEO and AI-search workspace: site audits, real Google rankings and keyword ideas, backlinks, AI visibility, content and reports, in one place.
+
+**Website:** [seo.viral4all.com](https://seo.viral4all.com) · **Install:** one command, below · **License:** MIT
 
 ## Use it yourself
 
@@ -20,9 +22,9 @@ SEO Pilot is free and open source. You run your own copy, with your own Google a
 
 2. **Or do it by hand.** Copy `deploy/standalone/.env.example` to `deploy/standalone/.env`, set `STORAGE_SECRET_KEY` to a long random value (`openssl rand -hex 32`) and `SEO_PILOT_IMAGE=ghcr.io/black12-ag/seo-pilot-app:latest`, then run `docker compose --project-name seo-pilot --env-file deploy/standalone/.env -f deploy/standalone/compose.yaml up -d`. To build the image yourself instead, use `SEO_PILOT_IMAGE=seo-pilot-platform:local` and add `-f deploy/standalone/compose.build.yaml` and `--build`.
 
-3. **Create your account.** Open `http://localhost:3001/welcome`. The first person to sign up becomes the administrator. After that, sign-ups are closed and others join by invitation.
+3. **Create your account.** Open `http://localhost:3001/sign-in`. On a new install it takes you to create the first account, which becomes the administrator. After that, sign-ups are closed and others join by invitation. `http://localhost:3001/welcome` is the public home page.
 
-4. **Connect Google.** Set up your own free Google login for [Search Console](docs/SELF_HOSTING_GOOGLE_SEARCH_CONSOLE.md) and [Analytics](docs/SELF_HOSTING_GOOGLE_ANALYTICS.md), then add a project for your site and connect it.
+4. **Connect Google.** Set up your own free Google login for [Search Console](docs/SELF_HOSTING_GOOGLE_SEARCH_CONSOLE.md) and [Analytics](docs/SELF_HOSTING_GOOGLE_ANALYTICS.md), then add your sites (see [Link your accounts](#link-your-accounts)).
 
 5. **Optional extras:**
    - [Publish it on your own domain](docs/PUBLISH_ON_YOUR_DOMAIN.md) with HTTPS
@@ -33,6 +35,25 @@ SEO Pilot is free and open source. You run your own copy, with your own Google a
    - [Free rank tracking and keyword ideas](docs/FREE_RANKINGS.md) from your own Search Console
 
 Backups, updates and every setting are in [the self-hosting guide](docs/SELF_HOSTING_SEO_PILOT.md).
+
+## Link your accounts
+
+Each link is optional and takes a few minutes. The guides go step by step.
+
+| What                        | Why                                                                                                                         | Where in SEO Pilot                                                                                                                                             | Guide                                                        |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Search Console              | Clicks, positions, keyword ideas, free rank tracking                                                                        | A project → **GSC Insights** → **Add Google account** → **Choose property**. Or **Projects** → **New project** → **Import my sites** to add every site at once | [Search Console](docs/SELF_HOSTING_GOOGLE_SEARCH_CONSOLE.md) |
+| Google Analytics            | Traffic reports per project                                                                                                 | **Project settings** → **Analytics** → connect, then choose the GA4 property                                                                                   | [Analytics](docs/SELF_HOSTING_GOOGLE_ANALYTICS.md)           |
+| Continue with Google        | Sign in with Google instead of a password. An account with the same verified email links itself on the first Google sign-in | Sign-in page                                                                                                                                                   | [Google sign-in](docs/GOOGLE_SIGN_IN.md)                     |
+| Your AI login               | SAM, drafts, website research and AI visibility, on `agy`, `claude` or `codex` (or an OpenRouter key)                       | **Settings** → **AI engine**                                                                                                                                   | [AI engine](docs/AI_ENGINE.md)                               |
+| Page speed                  | Speed scores in audits                                                                                                      | `PAGESPEED_API_KEY` in `deploy/standalone/.env`                                                                                                                | [Self-hosting guide](docs/SELF_HOSTING_SEO_PILOT.md)         |
+| Your domain                 | HTTPS address for sign-in and Google callbacks                                                                              | `install.sh --url https://seo.example.com`                                                                                                                     | [Your domain](docs/PUBLISH_ON_YOUR_DOMAIN.md)                |
+| Backlinks                   | Who links to you, from Common Crawl                                                                                         | One monthly command                                                                                                                                            | [Free backlinks](docs/FREE_BACKLINKS.md)                     |
+| DataForSEO (paid, optional) | Search volume, competitor data, local rankings                                                                              | `DATAFORSEO_API_KEY`                                                                                                                                           | [DataForSEO](docs/DATAFORSEO_API_KEY.md)                     |
+
+The Google logins are your own: you create one free Google Cloud login for your copy of SEO Pilot, and your data goes from Google to your server only.
+
+**Update:** run the install command again with `--update` (from your checkout: `sh scripts/install.sh --update`). **Back up:** see [the self-hosting guide](docs/SELF_HOSTING_SEO_PILOT.md).
 
 ## Free setup
 
